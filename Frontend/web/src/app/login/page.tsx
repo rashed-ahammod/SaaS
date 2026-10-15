@@ -46,7 +46,7 @@ function LoginForm() {
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-erp-client': 'pwa', 'accept-language': lang },
+        headers: { 'content-type': 'application/json', 'x-erp-client': 'pwa', 'x-language': lang },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw await toError(res);

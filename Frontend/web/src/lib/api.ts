@@ -26,7 +26,7 @@ export class ApiError extends Error {
 type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
 async function call<T>(method: Method, path: string, body?: unknown, o: { idempotencyKey?: string; raw?: boolean } = {}): Promise<T> {
-  const headers: Record<string, string> = { 'x-erp-client': 'pwa', 'accept-language': currentLang() };
+  const headers: Record<string, string> = { 'x-erp-client': 'pwa', 'x-language': currentLang() };
   if (body !== undefined) headers['content-type'] = 'application/json';
   if (method !== 'GET') headers['idempotency-key'] = o.idempotencyKey ?? crypto.randomUUID();
 

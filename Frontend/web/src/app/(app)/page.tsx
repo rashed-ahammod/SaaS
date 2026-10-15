@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { DayBadge } from '@/components/status';
 import { Alert, ButtonLink, Card, CardTitle, Loading, Row } from '@/components/ui';
 import { useApi } from '@/lib/api';
-import { dhakaToday, formatDate, formatDays, formatMonth, formatTaka, formatTime } from '@/lib/format';
+import { dhakaToday, formatDate, formatDays, formatMonth, formatTaka, formatTime, num } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import type { AttendanceDays, Balance, InboxItem, PayslipSummary } from '@/lib/types';
@@ -37,7 +37,7 @@ export default function HomePage() {
 
       {(inbox.data?.length ?? 0) > 0 && (
         <Link href="/approvals" className="block rounded-2xl bg-amber-100 px-4 py-3 font-semibold text-amber-900 ring-1 ring-amber-300">
-          {t('home.approvalsWaiting', { n: inbox.data!.length })} →
+          {t('home.approvalsWaiting', { n: num(inbox.data!.length, lang) })} →
         </Link>
       )}
 

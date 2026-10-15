@@ -9,7 +9,7 @@ import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
-import type { InboxItem } from '@/lib/types';
+import type { Inbox, InboxItem } from '@/lib/types';
 import { num } from '@/lib/format';
 
 const ICONS: Record<string, string> = {
@@ -40,6 +40,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const online = useOnline();
   const pathname = usePathname();
   const [waiting, setWaiting] = useState(0);
+  const [unread, setUnread] = useState(0);
+
+  // unread messages (bell), refreshed when the page changes
+  useEffect(() => {
+    api.get<Inbox>('/me/notifications?unread=true').then((inbox) => setUnread(inbox.unread)).catch(() => undefined);
+  }, [pathname]);
 
   // pending approvals badge, refreshed when the page changes
   useEffect(() => {
@@ -59,6 +65,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
       {!online && <div className="sticky top-0 z-20 bg-amber-500 px-4 py-2 text-center text-sm font-medium text-white">{t('app.offline')}</div>}
+      <Link
+        href="/notifications"
+        aria-label={t('notif.open', { n: num(unread, lang) })}
+        className="fixed top-3 right-[max(1rem,calc(50%-15rem))] z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-slate-200"
+      >
+        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0" />
+        </svg>
+        {unread > 0 && <span className="absolute -top-1 -right-1 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">{num(unread, lang)}</span>}
+      </Link>
       <main className="flex-1 px-4 pt-5 pb-28">{children}</main>
       <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]">
         <ul className="mx-auto flex max-w-lg">

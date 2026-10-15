@@ -139,3 +139,8 @@ export interface ApprovalRequest {
   snapshot: Record<string, unknown>;
   history: Array<{ action: string; step: number | null; comment: string | null; at: string }>;
 }
+
+export interface Inbox {
+  unread: number;
+  items: Array<{ id: string; kind: string; title: string; text: string; link: string | null; createdAt: string; read: boolean }>;
+}

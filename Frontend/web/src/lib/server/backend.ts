@@ -19,14 +19,15 @@ export function sessionCookieOptions(maxAgeSeconds: number) {
   return {
     httpOnly: true,
     sameSite: 'strict' as const,
-    secure: process.env.NODE_ENV === 'production',
+    // HTTPS only in production; SESSION_COOKIE_SECURE=false allows a pilot test over plain http on the office LAN
+    secure: process.env.NODE_ENV === 'production' && process.env.SESSION_COOKIE_SECURE !== 'false',
     path: '/',
     maxAge: maxAgeSeconds,
   };
 }
 
 /** Headers copied from the browser request to the API request. */
-const FORWARDED_REQUEST_HEADERS = ['content-type', 'idempotency-key', 'x-otp-code', 'accept-language'];
+const FORWARDED_REQUEST_HEADERS = ['content-type', 'idempotency-key', 'x-otp-code', 'x-language', 'accept-language'];
 /** Headers copied from the API response back to the browser. */
 const FORWARDED_RESPONSE_HEADERS = ['content-type', 'content-disposition', 'idempotent-replayed', 'x-payslip-password'];
 

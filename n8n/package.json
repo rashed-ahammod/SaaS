@@ -1,0 +1,13 @@
+{
+  "name": "erp-n8n",
+  "private": true,
+  "description": "Local n8n for developing and testing the ERP notification workflows (production runs n8n in Docker, guide §2).",
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "import": "node scripts/import.mjs",
+    "mocks": "node scripts/mock-gateways.mjs"
+  },
+  "dependencies": {
+    "n8n": "2.43.6"
+  }
+}

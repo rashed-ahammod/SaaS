@@ -7,7 +7,7 @@
  *   t('home.hello', { name: 'Rafi' })      -> "Hello, Rafi"
  *
  * The choice is kept on the phone (localStorage) and sent to the API as
- * Accept-Language, so error messages from the server come in the same language.
+ * X-Language, so error messages from the server come in the same language.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Lang } from './format';
@@ -140,6 +140,11 @@ const en = {
   'appr.type.salary_advance': 'Salary advance',
   'appr.type.payroll_run': 'Payroll',
   'appr.type.disbursement_file_cancel': 'Cancel bank file',
+  'notif.title': 'Notifications',
+  'notif.empty': 'No messages yet.',
+  'notif.readAll': 'Mark all read',
+  'notif.unread': 'Unread',
+  'notif.open': 'Notifications ({n} unread)',
   'me.title': 'My profile',
   'me.code': 'Employee code',
   'me.joined': 'Joined',
@@ -288,6 +293,11 @@ const bn: Record<MessageKey, string> = {
   'appr.type.salary_advance': 'অগ্রিম বেতন',
   'appr.type.payroll_run': 'বেতন প্রক্রিয়া',
   'appr.type.disbursement_file_cancel': 'ব্যাংক ফাইল বাতিল',
+  'notif.title': 'বার্তা',
+  'notif.empty': 'এখনো কোনো বার্তা নেই।',
+  'notif.readAll': 'সব পড়া হয়েছে',
+  'notif.unread': 'পড়া হয়নি',
+  'notif.open': 'বার্তা ({n}টি পড়া হয়নি)',
   'me.title': 'আমার প্রোফাইল',
   'me.code': 'কর্মী কোড',
   'me.joined': 'যোগদান',

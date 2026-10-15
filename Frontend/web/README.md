@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# My Office (আমার অফিস): employee self-service app (PWA)
 
-## Getting Started
+A Next.js 16 app for employees and line managers, built for the phone. It runs in Bangla or
+English.
 
-First, run the development server:
+| Screen | What it does |
+| --- | --- |
+| **Home** | Today's attendance, leave balances, latest payslip, approvals waiting |
+| **Attendance** | Punch from a registered phone inside the office geo-fence (or from an office computer, when allowed); the month's days |
+| **Leave** | Balances, apply (with a day count and team warning before sending), status, cancel |
+| **Payslips** | List, details, PDF in Bangla or English, optionally password-protected |
+| **Approvals** | Managers only: inbox, details, approve, return or reject (a comment is required to return or reject) |
+| **Notifications** (bell, top right) | In-app messages from the ERP: approvals waiting, salary paid, leave decisions, the morning attendance list (WP10) |
+| **Me** | Profile, edit contact details, language, two-step verification for privileged roles, sign out |
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## How it talks to the API
+
+```
+phone browser ──► this app (Next.js, :3001) ──► ERP API (backend, :3000)
+                  /api/session  login / logout / who am I
+                  /api/erp/*    pass-through, adds "Authorization: Bearer <token>"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **The token stays on the server side of this app.** After login it is kept in an `httpOnly`,
+  `SameSite=Strict` cookie. JavaScript in the page never sees it, and the browser never calls
+  the API directly.
+- **CSRF protection:** the app's own pages send the header `x-erp-client: pwa`. Requests without
+  it are refused.
+- **Duplicate protection:** every write gets a fresh `Idempotency-Key`, so a double tap does
+  nothing twice.
+- **Language:** the app sends `X-Language: bn|en`, so server messages match the language
+  chosen in the app.
+- **Offline:** the service worker (`public/sw.js`) caches only app files, never personal data.
+  Without a network, the app shows an offline banner or the offline page. Punching always needs
+  the internet, because the server's clock is the punch time.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run it
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env.local         # BACKEND_URL=http://localhost:3000
+npm install
+npm run dev                        # http://localhost:3001  (API must be running: cd ../../backend && npm run start:dev)
+```
 
-## Learn More
+**Production:** run `npm run build && npm run start`, and serve the app over **HTTPS**. HTTPS is
+needed for the secure session cookie, for phone location, and for "Add to Home screen".
 
-To learn more about Next.js, take a look at the following resources:
+**Testing on phones over the office Wi-Fi without HTTPS:** add `SESSION_COOKIE_SECURE=false` to
+`.env.local`. Location may still be refused by the phone's browser on plain `http`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Demo logins** (password `Demo-Pass-123`, company code `demo`):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `rafi@demo.test`: employee in Chattogram. The geo-fence is Agrabad, 22.3245, 91.8123.
+- `tanvir.hossain@demo.test`: Department Head, with approvals.
+- `farzana.akter@demo.test`: HR. HR must set up two-step verification only when
+  `SECURITY_MFA_ENFORCED=true`.
 
-## Deploy on Vercel
+## Tests
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm test             # unit: formatting (lakh, Bangla digits, Dhaka time), translations, API pass-through
+npm run typecheck
+npm run lint
+npm run e2e          # usability tasks on a phone-sized browser (Playwright, Pixel 7, Dhaka time zone)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`npm run e2e` needs the API and the built app running, with the demo data (`npm run db:seed` in
+`backend`). It changes the demo data: it registers and approves a test phone for Rafi, which
+replaces his demo phone, punches, saves his emergency contact, and applies for and cancels a
+leave request.
+
+The tasks are the ones pilot employees do in the usability test:
+[docs/usability-test-wp9.md](../../docs/usability-test-wp9.md).
+
+## Code map
+
+```
+src/
+  app/
+    login/              sign in (+ 2FA code)
+    (app)/              signed-in screens: home, attendance, leave, payslips, approvals, profile
+    api/session/        login / logout / current user (sets the httpOnly cookie)
+    api/erp/[...path]/  pass-through to the ERP API
+    manifest.ts         PWA manifest            offline/  page shown when offline
+  proxy.ts              no session cookie -> /login
+  lib/
+    api.ts              api.get / api.post / useApi (Idempotency-Key, X-Language, 401 -> login)
+    i18n.tsx            Bangla / English text          format.ts  money, dates, Bangla digits
+    session.tsx         who is signed in               device.ts  phone install id, location
+    server/             server-side only: API URL, cookie, header forwarding
+  components/           ui.tsx (buttons, cards, fields), app-shell.tsx (bottom navigation)
+public/                 sw.js (service worker), icons/, fonts/ (Noto Sans Bengali, OFL licence)
+e2e/                    Playwright usability tasks
+```

@@ -1,0 +1,40 @@
+/**
+ * npm run import   — load the reviewed workflow(s) from workflows/ and the
+ * credentials (secrets from .env files, encrypted by n8n on import), then
+ * publish the workflow. Run again after editing a workflow file.
+ */
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { settings } from './env.mjs';
+
+if (!settings.webhookSecret) throw new Error('No webhook secret: set OUTBOX_WEBHOOK_SECRET in backend/.env (or ERP_WEBHOOK_SECRET in n8n/.env)');
+
+const n8n = path.join(settings.root, 'node_modules', 'n8n', 'bin', 'n8n');
+const run = (...args) => execFileSync(process.execPath, [n8n, ...args], { env: { ...process.env, ...settings.env }, stdio: 'inherit' });
+mkdirSync(settings.env.N8N_USER_FOLDER, { recursive: true });
+
+// credentials: written to a temporary file only for the import
+const credentialsFile = path.join(settings.env.N8N_USER_FOLDER, 'credentials-import.json');
+const header = (id, name, value) => ({ id, name, type: 'httpHeaderAuth', data: { name: 'Authorization', value: `Bearer ${value}` } });
+writeFileSync(
+  credentialsFile,
+  JSON.stringify([
+    { id: 'erpWebhookSecret', name: 'ERP webhook secret', type: 'crypto', data: { hmacSecret: settings.webhookSecret } },
+    header('erpEmailApi', 'E-mail API', settings.credentials.emailApiKey),
+    header('erpSmsPrimary', 'SMS gateway (primary)', settings.credentials.smsPrimaryKey),
+    header('erpSmsFallback', 'SMS gateway (fallback)', settings.credentials.smsFallbackKey),
+  ]),
+);
+try {
+  run('import:credentials', `--input=${credentialsFile}`);
+} finally {
+  rmSync(credentialsFile, { force: true });
+}
+
+// workflows, then publish (active)
+for (const file of readdirSync(path.join(settings.root, 'workflows')).filter((f) => f.endsWith('.json'))) {
+  run('import:workflow', `--input=${path.join(settings.root, 'workflows', file)}`);
+}
+run('publish:workflow', '--id=erpNotifications01');
+console.log('Imported and published. Start (or restart) n8n: npm start');
