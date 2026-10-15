@@ -1,0 +1,358 @@
+'use client';
+/**
+ * Bangla and English text for the app (spec §8: Bangla and English from day one).
+ *
+ *   const { t, lang, setLang } = useI18n();
+ *   t('leave.apply')                       -> "Apply for leave" / "ছুটির আবেদন"
+ *   t('home.hello', { name: 'Rafi' })      -> "Hello, Rafi"
+ *
+ * The choice is kept on the phone (localStorage) and sent to the API as
+ * Accept-Language, so error messages from the server come in the same language.
+ */
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { Lang } from './format';
+
+const en = {
+  'app.name': 'My Office',
+  'app.offline': 'You are offline. Showing what was loaded; actions need the internet.',
+  'common.loading': 'Loading…',
+  'common.retry': 'Try again',
+  'common.save': 'Save',
+  'common.cancel': 'Cancel',
+  'common.close': 'Close',
+  'common.back': 'Back',
+  'common.submit': 'Submit',
+  'common.yes': 'Yes',
+  'common.no': 'No',
+  'common.none': 'Nothing here yet.',
+  'common.days': '{n} day(s)',
+  'common.reason': 'Reason',
+  'common.saved': 'Saved.',
+  'common.error': 'Something went wrong. Please try again.',
+  'nav.home': 'Home',
+  'nav.attendance': 'Attendance',
+  'nav.leave': 'Leave',
+  'nav.payslips': 'Payslips',
+  'nav.approvals': 'Approvals',
+  'nav.profile': 'Me',
+  'login.title': 'Sign in',
+  'login.workspace': 'Company code',
+  'login.workspaceHint': 'Given by HR, e.g. demo',
+  'login.login': 'E-mail or mobile number',
+  'login.password': 'Password',
+  'login.submit': 'Sign in',
+  'login.code': '6-digit code from your authenticator app',
+  'login.verify': 'Verify',
+  'login.mfaTitle': 'Two-step verification',
+  'home.hello': 'Hello, {name}',
+  'home.today': 'Today',
+  'home.punchNow': 'Punch in / out',
+  'home.balances': 'Leave balance',
+  'home.lastPayslip': 'Latest payslip',
+  'home.approvalsWaiting': '{n} request(s) waiting for your approval',
+  'home.noEmployee': 'Your login is not linked to an employee record. Please contact HR.',
+  'status.present': 'Present',
+  'status.late': 'Late',
+  'status.half_day': 'Half day',
+  'status.absent': 'Absent',
+  'status.on_leave': 'On leave',
+  'status.holiday': 'Holiday',
+  'status.weekend': 'Weekend',
+  'status.missing_punch': 'Missing punch',
+  'status.notYet': 'No punch yet',
+  'att.title': 'Attendance',
+  'att.in': 'In',
+  'att.out': 'Out',
+  'att.late': 'Late {m} min',
+  'att.punch': 'Punch now',
+  'att.punchOffice': 'Punch from office computer',
+  'att.punched': 'Punched at {time}.',
+  'att.locating': 'Finding your location…',
+  'att.locationDenied': 'Location is needed to punch from the phone. Allow location for this site and try again.',
+  'att.registerPhone': 'Register this phone',
+  'att.phoneName': 'Phone name, e.g. Samsung A15',
+  'att.phonePending': 'This phone is waiting for HR approval. You can punch once HR approves it.',
+  'att.phoneRevoked': 'This phone was revoked by HR.',
+  'att.phoneNotRegistered': 'To punch with this phone, register it once. HR approves it.',
+  'att.month': 'Month',
+  'att.summary': 'Present {p} · Late {l} · Absent {a} · Leave {lv}',
+  'leave.title': 'Leave',
+  'leave.balances': 'Balances',
+  'leave.available': '{n} available',
+  'leave.pending': '{n} pending',
+  'leave.apply': 'Apply for leave',
+  'leave.myRequests': 'My requests',
+  'leave.type': 'Leave type',
+  'leave.from': 'From',
+  'leave.to': 'To',
+  'leave.halfDay': 'Half day',
+  'leave.fullDay': 'Full day',
+  'leave.firstHalf': 'First half',
+  'leave.secondHalf': 'Second half',
+  'leave.reason': 'Reason (optional)',
+  'leave.check': 'Check days',
+  'leave.preview': '{n} day(s) will be counted.',
+  'leave.previewAvailable': 'Balance before: {n} day(s).',
+  'leave.teamWarning': '{date}: {count} of {total} in your team would be on leave.',
+  'leave.applied': 'Your leave request was sent for approval.',
+  'leave.cancel': 'Cancel request',
+  'leave.cancelReason': 'Why do you cancel it?',
+  'leave.cancelled': 'Request cancelled.',
+  'leave.state.pending': 'Waiting',
+  'leave.state.approved': 'Approved',
+  'leave.state.rejected': 'Rejected',
+  'leave.state.returned': 'Returned',
+  'leave.state.cancelled': 'Cancelled',
+  'pay.title': 'Payslips',
+  'pay.net': 'Net pay',
+  'pay.gross': 'Total earnings',
+  'pay.deductions': 'Deductions',
+  'pay.earnings': 'Earnings',
+  'pay.employer': 'Paid by the employer',
+  'pay.download': 'Download PDF',
+  'pay.downloadBn': 'বাংলা PDF',
+  'pay.downloadEn': 'English PDF',
+  'pay.protect': 'Protect the PDF with a password',
+  'pay.passwordHint': 'Password: your {hint}.',
+  'pay.hint.date of birth as DDMMYYYY': 'date of birth as DDMMYYYY',
+  'pay.hint.employee code': 'employee code',
+  'pay.type.regular': 'Salary',
+  'pay.type.bonus': 'Festival bonus',
+  'pay.type.final_settlement': 'Final settlement',
+  'appr.title': 'Approvals',
+  'appr.empty': 'Nothing is waiting for you.',
+  'appr.step': 'Step {n}',
+  'appr.submitted': 'Submitted {date}',
+  'appr.escalates': 'Escalates {date}',
+  'appr.onBehalf': 'On behalf of a colleague',
+  'appr.approve': 'Approve',
+  'appr.reject': 'Reject',
+  'appr.return': 'Return for correction',
+  'appr.comment': 'Comment',
+  'appr.commentRequired': 'A comment is needed to reject or return.',
+  'appr.done': 'Done.',
+  'appr.details': 'Details',
+  'appr.history': 'History',
+  'appr.type.leave_request': 'Leave',
+  'appr.type.attendance_correction': 'Attendance correction',
+  'appr.type.overtime_request': 'Overtime',
+  'appr.type.bank_account_change': 'Salary account change',
+  'appr.type.salary_advance': 'Salary advance',
+  'appr.type.payroll_run': 'Payroll',
+  'appr.type.disbursement_file_cancel': 'Cancel bank file',
+  'me.title': 'My profile',
+  'me.code': 'Employee code',
+  'me.joined': 'Joined',
+  'me.contact': 'Contact details',
+  'me.phone': 'Mobile',
+  'me.email': 'Personal e-mail',
+  'me.address': 'Present address',
+  'me.emergencyName': 'Emergency contact name',
+  'me.emergencyPhone': 'Emergency contact mobile',
+  'me.language': 'Language',
+  'me.signOut': 'Sign out',
+  'me.mfa': 'Two-step verification',
+  'me.mfaSetup': 'Your role needs two-step verification. Add this key to an authenticator app (e.g. Google Authenticator), then enter the 6-digit code.',
+  'me.mfaStart': 'Set up two-step verification',
+  'me.mfaDone': 'Two-step verification is on.',
+  'me.install': 'Tip: use "Add to Home screen" in your browser menu to open this like an app.',
+} as const;
+
+export type MessageKey = keyof typeof en;
+
+const bn: Record<MessageKey, string> = {
+  'app.name': 'আমার অফিস',
+  'app.offline': 'আপনি অফলাইনে আছেন। আগে লোড হওয়া তথ্য দেখানো হচ্ছে; কাজ করতে ইন্টারনেট লাগবে।',
+  'common.loading': 'লোড হচ্ছে…',
+  'common.retry': 'আবার চেষ্টা করুন',
+  'common.save': 'সংরক্ষণ',
+  'common.cancel': 'বাতিল',
+  'common.close': 'বন্ধ',
+  'common.back': 'পেছনে',
+  'common.submit': 'জমা দিন',
+  'common.yes': 'হ্যাঁ',
+  'common.no': 'না',
+  'common.none': 'এখনো কিছু নেই।',
+  'common.days': '{n} দিন',
+  'common.reason': 'কারণ',
+  'common.saved': 'সংরক্ষিত হয়েছে।',
+  'common.error': 'কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।',
+  'nav.home': 'হোম',
+  'nav.attendance': 'হাজিরা',
+  'nav.leave': 'ছুটি',
+  'nav.payslips': 'বেতন',
+  'nav.approvals': 'অনুমোদন',
+  'nav.profile': 'আমি',
+  'login.title': 'সাইন ইন',
+  'login.workspace': 'কোম্পানি কোড',
+  'login.workspaceHint': 'মানবসম্পদ বিভাগ দেবে, যেমন demo',
+  'login.login': 'ই-মেইল বা মোবাইল নম্বর',
+  'login.password': 'পাসওয়ার্ড',
+  'login.submit': 'সাইন ইন',
+  'login.code': 'অথেনটিকেটর অ্যাপের ৬ অঙ্কের কোড',
+  'login.verify': 'যাচাই করুন',
+  'login.mfaTitle': 'দুই ধাপের যাচাই',
+  'home.hello': 'আসসালামু আলাইকুম, {name}',
+  'home.today': 'আজ',
+  'home.punchNow': 'পাঞ্চ ইন / আউট',
+  'home.balances': 'ছুটির ব্যালান্স',
+  'home.lastPayslip': 'সর্বশেষ বেতন বিবরণী',
+  'home.approvalsWaiting': '{n}টি অনুরোধ আপনার অনুমোদনের অপেক্ষায়',
+  'home.noEmployee': 'আপনার লগইন কোনো কর্মীর সাথে যুক্ত নয়। মানবসম্পদ বিভাগে যোগাযোগ করুন।',
+  'status.present': 'উপস্থিত',
+  'status.late': 'দেরি',
+  'status.half_day': 'অর্ধদিবস',
+  'status.absent': 'অনুপস্থিত',
+  'status.on_leave': 'ছুটিতে',
+  'status.holiday': 'ছুটির দিন',
+  'status.weekend': 'সাপ্তাহিক ছুটি',
+  'status.missing_punch': 'পাঞ্চ বাকি',
+  'status.notYet': 'এখনো পাঞ্চ হয়নি',
+  'att.title': 'হাজিরা',
+  'att.in': 'প্রবেশ',
+  'att.out': 'প্রস্থান',
+  'att.late': '{m} মিনিট দেরি',
+  'att.punch': 'এখন পাঞ্চ করুন',
+  'att.punchOffice': 'অফিসের কম্পিউটার থেকে পাঞ্চ',
+  'att.punched': '{time}-এ পাঞ্চ হয়েছে।',
+  'att.locating': 'আপনার অবস্থান খোঁজা হচ্ছে…',
+  'att.locationDenied': 'ফোন থেকে পাঞ্চ করতে অবস্থান (লোকেশন) লাগবে। এই সাইটের জন্য লোকেশন চালু করে আবার চেষ্টা করুন।',
+  'att.registerPhone': 'এই ফোন নিবন্ধন করুন',
+  'att.phoneName': 'ফোনের নাম, যেমন Samsung A15',
+  'att.phonePending': 'এই ফোনটি মানবসম্পদ বিভাগের অনুমোদনের অপেক্ষায়। অনুমোদনের পর পাঞ্চ করতে পারবেন।',
+  'att.phoneRevoked': 'মানবসম্পদ বিভাগ এই ফোনটি বাতিল করেছে।',
+  'att.phoneNotRegistered': 'এই ফোন দিয়ে পাঞ্চ করতে একবার নিবন্ধন করুন। মানবসম্পদ বিভাগ অনুমোদন দেবে।',
+  'att.month': 'মাস',
+  'att.summary': 'উপস্থিত {p} · দেরি {l} · অনুপস্থিত {a} · ছুটি {lv}',
+  'leave.title': 'ছুটি',
+  'leave.balances': 'ব্যালান্স',
+  'leave.available': '{n} দিন বাকি',
+  'leave.pending': '{n} দিন অপেক্ষমাণ',
+  'leave.apply': 'ছুটির আবেদন',
+  'leave.myRequests': 'আমার আবেদন',
+  'leave.type': 'ছুটির ধরন',
+  'leave.from': 'শুরু',
+  'leave.to': 'শেষ',
+  'leave.halfDay': 'অর্ধদিবস',
+  'leave.fullDay': 'পূর্ণদিবস',
+  'leave.firstHalf': 'প্রথমার্ধ',
+  'leave.secondHalf': 'দ্বিতীয়ার্ধ',
+  'leave.reason': 'কারণ (ঐচ্ছিক)',
+  'leave.check': 'দিন হিসাব দেখুন',
+  'leave.preview': '{n} দিন গণনা হবে।',
+  'leave.previewAvailable': 'আগের ব্যালান্স: {n} দিন।',
+  'leave.teamWarning': '{date}: আপনার দলের {total} জনের মধ্যে {count} জন ছুটিতে থাকবেন।',
+  'leave.applied': 'আপনার ছুটির আবেদন অনুমোদনের জন্য পাঠানো হয়েছে।',
+  'leave.cancel': 'আবেদন বাতিল',
+  'leave.cancelReason': 'কেন বাতিল করছেন?',
+  'leave.cancelled': 'আবেদন বাতিল হয়েছে।',
+  'leave.state.pending': 'অপেক্ষমাণ',
+  'leave.state.approved': 'অনুমোদিত',
+  'leave.state.rejected': 'প্রত্যাখ্যাত',
+  'leave.state.returned': 'ফেরত',
+  'leave.state.cancelled': 'বাতিল',
+  'pay.title': 'বেতন বিবরণী',
+  'pay.net': 'নিট বেতন',
+  'pay.gross': 'মোট আয়',
+  'pay.deductions': 'কর্তন',
+  'pay.earnings': 'আয়',
+  'pay.employer': 'নিয়োগকর্তার প্রদেয়',
+  'pay.download': 'PDF ডাউনলোড',
+  'pay.downloadBn': 'বাংলা PDF',
+  'pay.downloadEn': 'English PDF',
+  'pay.protect': 'পাসওয়ার্ড দিয়ে PDF সুরক্ষিত করুন',
+  'pay.passwordHint': 'পাসওয়ার্ড: আপনার {hint}।',
+  'pay.hint.date of birth as DDMMYYYY': 'জন্মতারিখ (DDMMYYYY)',
+  'pay.hint.employee code': 'কর্মী কোড',
+  'pay.type.regular': 'বেতন',
+  'pay.type.bonus': 'উৎসব ভাতা',
+  'pay.type.final_settlement': 'চূড়ান্ত নিষ্পত্তি',
+  'appr.title': 'অনুমোদন',
+  'appr.empty': 'আপনার জন্য কিছু অপেক্ষায় নেই।',
+  'appr.step': 'ধাপ {n}',
+  'appr.submitted': 'জমা: {date}',
+  'appr.escalates': 'এসকেলেশন: {date}',
+  'appr.onBehalf': 'সহকর্মীর পক্ষে',
+  'appr.approve': 'অনুমোদন',
+  'appr.reject': 'প্রত্যাখ্যান',
+  'appr.return': 'সংশোধনের জন্য ফেরত',
+  'appr.comment': 'মন্তব্য',
+  'appr.commentRequired': 'প্রত্যাখ্যান বা ফেরত দিতে মন্তব্য লাগবে।',
+  'appr.done': 'সম্পন্ন।',
+  'appr.details': 'বিস্তারিত',
+  'appr.history': 'ইতিহাস',
+  'appr.type.leave_request': 'ছুটি',
+  'appr.type.attendance_correction': 'হাজিরা সংশোধন',
+  'appr.type.overtime_request': 'ওভারটাইম',
+  'appr.type.bank_account_change': 'বেতন হিসাব পরিবর্তন',
+  'appr.type.salary_advance': 'অগ্রিম বেতন',
+  'appr.type.payroll_run': 'বেতন প্রক্রিয়া',
+  'appr.type.disbursement_file_cancel': 'ব্যাংক ফাইল বাতিল',
+  'me.title': 'আমার প্রোফাইল',
+  'me.code': 'কর্মী কোড',
+  'me.joined': 'যোগদান',
+  'me.contact': 'যোগাযোগের তথ্য',
+  'me.phone': 'মোবাইল',
+  'me.email': 'ব্যক্তিগত ই-মেইল',
+  'me.address': 'বর্তমান ঠিকানা',
+  'me.emergencyName': 'জরুরি যোগাযোগের নাম',
+  'me.emergencyPhone': 'জরুরি যোগাযোগের মোবাইল',
+  'me.language': 'ভাষা',
+  'me.signOut': 'সাইন আউট',
+  'me.mfa': 'দুই ধাপের যাচাই',
+  'me.mfaSetup': 'আপনার দায়িত্বে দুই ধাপের যাচাই বাধ্যতামূলক। এই কী একটি অথেনটিকেটর অ্যাপে (যেমন Google Authenticator) যোগ করুন, তারপর ৬ অঙ্কের কোড দিন।',
+  'me.mfaStart': 'দুই ধাপের যাচাই চালু করুন',
+  'me.mfaDone': 'দুই ধাপের যাচাই চালু আছে।',
+  'me.install': 'পরামর্শ: ব্রাউজারের মেনু থেকে "Add to Home screen" দিলে এটি অ্যাপের মতো খুলবে।',
+};
+
+const DICT: Record<Lang, Record<MessageKey, string>> = { en, bn };
+
+/** Pure lookup (also used in tests). Unknown keys fall back to English, then to the key. */
+export function translate(lang: Lang, key: string, vars: Record<string, string | number> = {}): string {
+  const text = (DICT[lang] as Record<string, string>)[key] ?? (DICT.en as Record<string, string>)[key] ?? key;
+  return text.replace(/\{(\w+)\}/g, (_, name: string) => (vars[name] !== undefined ? String(vars[name]) : `{${name}}`));
+}
+
+interface I18n {
+  lang: Lang;
+  setLang: (lang: Lang) => void;
+  t: (key: MessageKey | string, vars?: Record<string, string | number>) => string;
+}
+
+const I18nContext = createContext<I18n | null>(null);
+const STORAGE_KEY = 'erp-lang';
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>('bn');
+
+  // the saved choice (read after mount, so server and first client render agree)
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of the saved language
+    if (saved === 'bn' || saved === 'en') setLangState(saved);
+  }, []);
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  const setLang = useCallback((next: Lang) => {
+    localStorage.setItem(STORAGE_KEY, next);
+    setLangState(next);
+  }, []);
+  const value = useMemo<I18n>(() => ({ lang, setLang, t: (key, vars) => translate(lang, key, vars) }), [lang, setLang]);
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n(): I18n {
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error('useI18n outside I18nProvider');
+  return ctx;
+}
+
+/** The language currently chosen (for code outside React, e.g. the API client). */
+export function currentLang(): Lang {
+  if (typeof window === 'undefined') return 'bn';
+  const saved = localStorage.getItem(STORAGE_KEY);
+  return saved === 'en' ? 'en' : 'bn';
+}

@@ -1,0 +1,47 @@
+# CI (guide §22): lint -> type-check -> unit -> integration (real PostgreSQL) -> build -> audit.
+# Assumes the git repository root is E:\SaaS (see backend/README.md "Git").
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 10
+    env:
+      PG_HOST: localhost
+      PG_DATABASE: erp_dev
+      PG_TEST_DATABASE: erp_test
+      PG_ADMIN_USER: postgres
+      PG_ADMIN_PASSWORD: postgres
+      PG_OWNER_PASSWORD: ci-owner
+      PG_APP_PASSWORD: ci-app
+      PG_WORKER_PASSWORD: ci-worker
+      JWT_SECRET: ci-only-jwt-secret-at-least-32-characters-long
+      FIELD_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run db:setup
+      - run: npm run test:int
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high

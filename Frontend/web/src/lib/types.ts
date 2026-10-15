@@ -1,0 +1,141 @@
+/**
+ * Shapes of the ERP API answers the app uses (see backend controllers / services).
+ */
+export interface Me {
+  id: string;
+  email: string;
+  phone: string | null;
+  preferredLanguage: 'bn' | 'en';
+  mfaEnabled: boolean;
+  employeeId: string | null;
+  roles: string[]; // e.g. ["employee:own", "dept_head:department"]
+}
+
+export interface Profile {
+  id: string;
+  companyId: string;
+  employeeCode: string;
+  fullNameEn: string;
+  fullNameBn: string | null;
+  status: string;
+  joinDate: string;
+  phone: string | null;
+  personalEmail: string | null;
+  presentAddress: string | null;
+  emergencyContact: { name: string | null; phone: string | null };
+  version: number;
+}
+
+export type DayStatus = 'present' | 'late' | 'half_day' | 'absent' | 'on_leave' | 'holiday' | 'weekend' | 'missing_punch';
+
+export interface AttendanceDay {
+  date: string;
+  status: DayStatus;
+  firstIn: string | null;
+  lastOut: string | null;
+  workedMinutes: number;
+  lateMinutes: number;
+  holidayName: string | null;
+}
+
+export interface AttendanceDays {
+  days: AttendanceDay[];
+  totals: Record<DayStatus, number>;
+}
+
+export interface Device {
+  id: string;
+  deviceId: string;
+  name: string;
+  status: 'pending' | 'active' | 'revoked';
+}
+
+export interface Balance {
+  leaveTypeId: string;
+  code: string;
+  nameEn: string;
+  nameBn: string | null;
+  usesBalance: boolean;
+  balance: number;
+  pending: number;
+  available: number;
+}
+
+export interface LeaveType {
+  id: string;
+  code: string;
+  nameEn: string;
+  nameBn: string | null;
+  allowHalfDay: boolean;
+  isActive: boolean;
+}
+
+export interface LeaveRequest {
+  id: string;
+  from: string;
+  to: string;
+  halfDay: 'first_half' | 'second_half' | null;
+  days: number;
+  reason: string | null;
+  state: 'pending' | 'approved' | 'rejected' | 'returned' | 'cancelled';
+  leaveType: { code: string; nameEn: string; nameBn: string | null };
+}
+
+export interface LeavePreview {
+  days: number;
+  available: number | null;
+  teamWarnings: Array<{ date: string; onLeave: number; headcount: number; percent: number }>;
+}
+
+export interface PayslipSummary {
+  runId: string;
+  period: string;
+  runType: 'regular' | 'bonus' | 'final_settlement';
+  bonusName: string | null;
+  gross: string;
+  deductions: string;
+  net: string;
+}
+
+export interface PayslipLine {
+  head: string;
+  amount: string;
+  forPeriod?: string;
+}
+
+export interface Payslip {
+  runId: string;
+  period: string;
+  runType: PayslipSummary['runType'];
+  bonusName: string | null;
+  employee: { code: string; fullNameEn: string; fullNameBn: string | null };
+  earnings: PayslipLine[];
+  deductions: PayslipLine[];
+  employerContributions: PayslipLine[];
+  gross: string;
+  totalDeductions: string;
+  net: string;
+}
+
+export interface InboxItem {
+  requestId: string;
+  requestType: string;
+  summary: string;
+  amount: string | null;
+  days: string | null;
+  step: number;
+  submittedAt: string;
+  onBehalfOf: string | null;
+  escalationAt: string;
+}
+
+export interface ApprovalRequest {
+  id: string;
+  requestType: string;
+  summary: string;
+  state: string;
+  currentStep: number;
+  submittedAt: string;
+  snapshot: Record<string, unknown>;
+  history: Array<{ action: string; step: number | null; comment: string | null; at: string }>;
+}

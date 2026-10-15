@@ -1,0 +1,24 @@
+# Local development stack (guide §22), for machines with Docker.
+# Without Docker, a locally installed PostgreSQL 16+ works the same way (see backend/README.md).
+#
+#   docker compose -f infra/docker-compose.yml up -d
+#   then in backend/.env: PG_ADMIN_USER=postgres  PG_ADMIN_PASSWORD=postgres
+#   then: npm run db:setup && npm run db:migrate && npm run db:migrate:test && npm run db:seed
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: postgres # local only
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+
+  # Needed from WP4 (BullMQ jobs). Not used by WP0 yet.
+  redis:
+    image: redis:8
+    ports: ["6379:6379"]
+
+volumes:
+  pgdata:
