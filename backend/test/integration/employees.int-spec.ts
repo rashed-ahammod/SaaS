@@ -4,6 +4,10 @@
  *   - overlapping assignments are impossible.
  */
 import type { INestApplication } from '@nestjs/common';
+import {
+  addDays,
+  todayInDhaka,
+} from '../../src/platform/dates/business-date.js';
 import { apiFor, startApp, type Api } from './api-client.js';
 import { appDb, createTenant, type TestTenant } from './helpers.js';
 
@@ -623,9 +627,11 @@ describe('documents', () => {
     const emp = (
       await newEmployee({ fullNameEn: 'Contract Ends Soon' }).expect(201)
     ).body;
-    const today = new Date();
-    const on = (days: number) =>
-      new Date(today.getTime() + days * 86_400_000).toISOString().slice(0, 10);
+    // The API reports daysLeft against today in Dhaka, so build these dates in
+    // Dhaka too. toISOString() would give the UTC date, which is still
+    // yesterday between midnight and 06:00 Dhaka, and shifted daysLeft by one.
+    const today = todayInDhaka();
+    const on = (days: number) => addDays(today, days);
     await api
       .upload(
         `/employees/${emp.id}/documents`,
