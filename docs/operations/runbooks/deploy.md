@@ -10,6 +10,7 @@
 | Worker | Exactly **one** `node dist/worker.js`. Jobs run in its process, so two workers would run each job twice. The jobs are idempotent, but two workers double the load. |
 | Employee app | `npm run build && npm run start` behind the same TLS, at `PUBLIC_APP_URL`. |
 | PostgreSQL 18 | On encrypted disks, with WAL archiving on (see [backup and restore](backup-and-restore.md)). The roles come from `npm run db:setup`: `erp_owner` runs migrations, `erp_app` serves the API, `erp_worker` runs jobs, `erp_backup` takes backups. Use 20+ random characters for each password. |
+| Uploaded files | `FILE_STORAGE_DRIVER=s3` with a **private** S3-compatible bucket (AWS S3, Cloudflare R2, MinIO on-premise): these are NID scans, contracts and expense receipts. Give the key only `PutObject` and `GetObject` on that bucket, and turn on the provider's encryption at rest. `local` keeps files in `FILE_STORAGE_DIR` and works only with a mounted volume **and a single API instance** — two instances cannot share the folder, and a container without a volume loses every document on the next deploy. |
 | n8n | Docker, own database, private network only, never on the internet. `NODES_INCLUDE` / `NODES_EXCLUDE` as in `n8n/scripts/env.mjs`. |
 | Monitoring | Prometheus with `infra/monitoring/prometheus.yml` and `alerts.yml`, Alertmanager (phone for `page`, channel for `ticket`), a blackbox exporter, plus postgres_exporter and node_exporter on the database host. |
 

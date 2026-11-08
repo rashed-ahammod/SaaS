@@ -1,6 +1,11 @@
 # ---------------------------------------------------------------------------
 # Repo-wide ignores. Each package (backend/, Frontend/web/, n8n/) also has its
-# own .gitignore; these rules are the safety net for the whole monorepo.
+# own .gitignore; this file is the safety net for the whole monorepo.
+#
+# Patterns for build output and local runtime data are ANCHORED to the path
+# they belong to ("/backend/storage/", not "storage/"). An unanchored pattern
+# matches at every depth, so a plain "storage/" would also hide the source
+# directory backend/src/platform/storage/.
 # ---------------------------------------------------------------------------
 
 # Dependencies
@@ -11,33 +16,30 @@ node_modules/
 .env.*
 !.env.example
 *.pem
-*.key
-!**/*.key.ts
 secrets/
 *credentials*.json
 
 # Build output
-dist/
-build/
-.next/
-out/
+/backend/dist/
+/Frontend/web/.next/
+/Frontend/web/out/
 *.tsbuildinfo
 
-# Test / tool output
-coverage/
-.nyc_output/
-test-results/
-playwright-report/
+# Test and tool output
+/backend/coverage/
+/backend/test-results/
+/Frontend/web/coverage/
+/Frontend/web/test-results/
+/Frontend/web/playwright-report/
 
 # Local runtime data
-storage/
-backups/
-.n8n/
-logs/
+/backend/storage/
+/backend/backups/
+/n8n/.n8n/
 *.log
 *.pid
 
-# OS / editor
+# OS and editor
 .DS_Store
 Thumbs.db
 .idea/

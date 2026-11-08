@@ -16,7 +16,11 @@ import { HealthController } from './http/health.controller.js';
 import { MetricsTokenGuard } from './monitoring/metrics-token.guard.js';
 import { MonitoringService } from './monitoring/monitoring.service.js';
 import { OutboxService } from './outbox/outbox.service.js';
-import { FileStorage, LocalFileStorage } from './storage/file-storage.js';
+import {
+  FileStorage,
+  LocalFileStorage,
+  S3FileStorage,
+} from './storage/file-storage.js';
 
 @Global()
 @Module({
@@ -44,8 +48,10 @@ import { FileStorage, LocalFileStorage } from './storage/file-storage.js';
     },
     {
       provide: FileStorage,
-      useFactory: (config: AppConfig) =>
-        new LocalFileStorage(config.fileStorageDir),
+      useFactory: (config: AppConfig): FileStorage =>
+        config.storage.driver === 's3'
+          ? new S3FileStorage(config.storage)
+          : new LocalFileStorage(config.storage.dir),
       inject: [APP_CONFIG],
     },
     AuditService,
@@ -70,5 +76,6 @@ export class PlatformModule implements OnApplicationShutdown {
   async onApplicationShutdown() {
     await this.moduleRef.get(DatabaseService).close();
     await this.moduleRef.get<DatabaseService>(WORKER_DB).close();
+    await this.moduleRef.get(FileStorage).close();
   }
 }

@@ -39,8 +39,23 @@ const envSchema = z.object({
   // to make manual testing easier.
   SECURITY_MFA_ENFORCED: z.enum(['true', 'false']).default('true'),
 
-  // Where uploaded files are kept (local disk until S3/MinIO is set up).
+  // Where uploaded files are kept.
+  //   local  a folder on disk (FILE_STORAGE_DIR). One API instance only: two
+  //          instances cannot share it, and a container without a mounted
+  //          volume loses every file on the next deploy.
+  //   s3     any S3-compatible bucket (AWS S3, Cloudflare R2, MinIO). Required
+  //          as soon as more than one API instance runs.
+  FILE_STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
   FILE_STORAGE_DIR: z.string().default('storage'),
+  S3_BUCKET: z.string().optional(),
+  // R2 uses "auto"; AWS wants the bucket's region.
+  S3_REGION: z.string().default('auto'),
+  // Empty for AWS S3; the account endpoint for R2, the server for MinIO.
+  S3_ENDPOINT: z.url().optional().or(z.literal('')),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  // MinIO and some proxies need path-style addressing.
+  S3_FORCE_PATH_STYLE: z.enum(['true', 'false']).default('false'),
 
   // AI gateway (WP11). "off": the app runs without AI (every screen still works).
   // "fake": a deterministic stand-in for tests and demos (never in production).
@@ -82,6 +97,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
       );
   }
 
+  if (e.FILE_STORAGE_DRIVER === 's3') {
+    const missing = (
+      ['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'] as const
+    ).filter((name) => !e[name]);
+    if (missing.length)
+      throw new Error(
+        `FILE_STORAGE_DRIVER=s3 needs ${missing.join(', ')}. See backend/.env.example.`,
+      );
+  }
+
   const passwords: Record<DbRole, string> = {
     erp_owner: e.PG_OWNER_PASSWORD,
     erp_app: e.PG_APP_PASSWORD,
@@ -118,6 +143,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     },
     fieldEncryptionKey: Buffer.from(e.FIELD_ENCRYPTION_KEY, 'base64'),
     fileStorageDir: e.FILE_STORAGE_DIR,
+    /** Which FileStorage to build. See platform.module.ts. */
+    storage:
+      e.FILE_STORAGE_DRIVER === 's3'
+        ? ({
+            driver: 's3',
+            bucket: e.S3_BUCKET as string,
+            region: e.S3_REGION,
+            endpoint: e.S3_ENDPOINT || undefined,
+            accessKeyId: e.S3_ACCESS_KEY_ID as string,
+            secretAccessKey: e.S3_SECRET_ACCESS_KEY as string,
+            forcePathStyle: e.S3_FORCE_PATH_STYLE === 'true',
+          } as const)
+        : ({ driver: 'local', dir: e.FILE_STORAGE_DIR } as const),
     outbox: {
       webhookBaseUrl: e.OUTBOX_WEBHOOK_BASE_URL || undefined,
       webhookSecret: e.OUTBOX_WEBHOOK_SECRET || undefined,
