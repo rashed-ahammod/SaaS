@@ -1,0 +1,224 @@
+{
+  "id": "erpBankStatements01",
+  "name": "ERP bank statements",
+  "active": false,
+  "isArchived": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": false
+  },
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "description": "A bank statement file arrives here (POST <base>/bank-statement), pushed by the bank's host-to-host channel or the company's SFTP / e-mail fetcher, signed with the feed secret. The workflow only checks the signature and freshness and hands the file to the ERP with a service key that can do nothing but import statements (bank.import). The ERP reads the file, refuses a bad or repeated one, and matches what it can. It answers the sender at once and never returns workflow data (a refused push must not learn the expected signature); the result shows in the ERP's Statements tab."
+  },
+  "nodes": [
+    {
+      "id": "c4a1e2b0-0001-4000-8000-000000000001",
+      "name": "Statement file",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "9d2e4c1a-7b3f-4e8d-a5c6-1f0b2e3d4c5a",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bank-statement",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "c4a1e2b0-0002-4000-8000-000000000002",
+      "name": "Signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.headers['x-timestamp'] + '.' + JSON.stringify($json.body) }}",
+        "dataPropertyName": "expectedSignature",
+        "encoding": "hex"
+      },
+      "credentials": {
+        "crypto": {
+          "id": "bankFeedSecret",
+          "name": "Bank statement feed secret"
+        }
+      }
+    },
+    {
+      "id": "c4a1e2b0-0003-4000-8000-000000000003",
+      "name": "Signed, fresh and complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.expectedSignature === $json.headers['x-signature'] && Math.abs($now.toUnixInteger() - Number($json.headers['x-timestamp'])) <= 300 && /^[0-9a-f-]{36}$/.test($json.body.bankAccountId ?? '') && !!$json.body.fileName && !!$json.body.content }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c4a1e2b0-0004-4000-8000-000000000004",
+      "name": "Rejected (bad signature)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        660,
+        480
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "c4a1e2b0-0005-4000-8000-000000000005",
+      "name": "Import into the ERP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ERP_API_URL }}/bank-accounts/{{ $('Statement file').item.json.body.bankAccountId }}/statements/n8n",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.expectedSignature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ fileName: $('Statement file').item.json.body.fileName, content: $('Statement file').item.json.body.content }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "erpBankImportKey",
+          "name": "ERP bank import service key"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "c4a1e2b0-0006-4000-8000-000000000006",
+      "name": "Imported",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "c4a1e2b0-0007-4000-8000-000000000007",
+      "name": "Refused by the ERP (bad file, same file again)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        900,
+        380
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Statement file": {
+      "main": [
+        [
+          {
+            "node": "Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature": {
+      "main": [
+        [
+          {
+            "node": "Signed, fresh and complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signed, fresh and complete?": {
+      "main": [
+        [
+          {
+            "node": "Import into the ERP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejected (bad signature)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Import into the ERP": {
+      "main": [
+        [
+          {
+            "node": "Imported",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refused by the ERP (bad file, same file again)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node scripts/start.mjs",
     "import": "node scripts/import.mjs",
-    "mocks": "node scripts/mock-gateways.mjs"
+    "mocks": "node scripts/mock-gateways.mjs",
+    "push-statement": "node scripts/push-statement.mjs"
   },
   "dependencies": {
     "n8n": "2.43.6"

@@ -1,0 +1,38 @@
+# Release-gate test set for the AI bill and receipt reader (WP22, spec §8 "receipt and bill
+# reader"). Sample files in samples/documents (node scripts/make-sample-documents.mjs). The
+# answer is graded on the fields read, as JSON text: the document number, date, vendor and
+# total must be there; nothing is invented for an unreadable photo. With AI_PROVIDER=fake
+# this checks the plumbing; run it with the real provider on real scans before a pilot.
+
+- id: bill-png-karim
+  language: en
+  document: samples/documents/bill-karim-traders-kt5590.png
+  kind: bill
+  allOf: ['kt-5590', '2026-10-24', '000345678-0103', '83375.00', '65000.00']
+
+- id: bill-pdf-link3
+  language: en
+  document: samples/documents/bill-link3-internet-oct-2026.pdf
+  kind: bill
+  allOf: ['l3/2026/10/4471', '2026-10-05', 'link3', '24150.00']
+  anyOf: ['"vatpercent":"5.00"']
+
+- id: receipt-bus-no-vat
+  language: en
+  document: samples/documents/receipt-shohag-bus-ctg.png
+  kind: receipt
+  allOf: ['shohag', '1400.00', '2026-10-18']
+  noneOf: ['"vat":"']
+
+- id: receipt-hotel
+  language: bn
+  document: samples/documents/receipt-hotel-agrabad.png
+  kind: receipt
+  allOf: ['hotel agrabad', '6950.00', '2026-10-19']
+
+- id: unreadable-photo
+  language: en
+  document: samples/documents/blurred-photo.png
+  kind: receipt
+  allOf: ['unreadable']
+  noneOf: ['total']

@@ -7,18 +7,32 @@
  * another site cannot make a signed-in browser act (CSRF). Status, JSON errors
  * and file downloads (payslip PDF) come back unchanged.
  */
-import { cookies } from 'next/headers';
-import { NextResponse, type NextRequest } from 'next/server';
-import { backendDown, backendUrl, CLIENT_HEADER, forwardRequestHeaders, forwardResponseHeaders, SESSION_COOKIE } from '@/lib/server/backend';
+import { cookies } from "next/headers";
+import { NextResponse, type NextRequest } from "next/server";
+import {
+  backendDown,
+  backendUrl,
+  CLIENT_HEADER,
+  forwardRequestHeaders,
+  forwardResponseHeaders,
+  SESSION_COOKIE,
+} from "@/lib/server/backend";
 
-async function forward(request: NextRequest, ctx: RouteContext<'/api/erp/[...path]'>) {
-  if (request.headers.get(CLIENT_HEADER) !== 'pwa') return NextResponse.json({ code: 'FORBIDDEN' }, { status: 403 });
+async function forward(
+  request: NextRequest,
+  ctx: RouteContext<"/api/erp/[...path]">,
+) {
+  if (request.headers.get(CLIENT_HEADER) !== "pwa")
+    return NextResponse.json({ code: "FORBIDDEN" }, { status: 403 });
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  if (!token) return NextResponse.json({ code: 'AUTH_REQUIRED' }, { status: 401 });
+  if (!token)
+    return NextResponse.json({ code: "AUTH_REQUIRED" }, { status: 401 });
 
   const { path } = await ctx.params;
-  const target = backendUrl(`/${path.map(encodeURIComponent).join('/')}${request.nextUrl.search}`);
-  const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
+  const target = backendUrl(
+    `/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`,
+  );
+  const hasBody = request.method !== "GET" && request.method !== "HEAD";
 
   let res: Response;
   try {
@@ -26,14 +40,17 @@ async function forward(request: NextRequest, ctx: RouteContext<'/api/erp/[...pat
       method: request.method,
       headers: forwardRequestHeaders(request.headers, token),
       body: hasBody ? await request.arrayBuffer() : undefined,
-      cache: 'no-store',
-      redirect: 'manual',
+      cache: "no-store",
+      redirect: "manual",
     });
   } catch {
     return backendDown();
   }
 
-  const response = new NextResponse(res.body, { status: res.status, headers: forwardResponseHeaders(res.headers) });
+  const response = new NextResponse(res.body, {
+    status: res.status,
+    headers: forwardResponseHeaders(res.headers),
+  });
   // the session ended on the server (expired): drop the cookie too
   if (res.status === 401) response.cookies.delete(SESSION_COOKIE);
   return response;

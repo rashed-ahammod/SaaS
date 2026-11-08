@@ -1,0 +1,14 @@
+case: Joiner mid-month
+status: ILLUSTRATIVE
+kind: monthly
+# Gross 30,000 = BASIC 18,000 + HOUSE_RENT 9,000 + MEDICAL 1,800 + OTHER 1,200.
+# Joined 16 Nov: 15 of 30 days -> half of each head.
+# Tax: 15,000 + 7 more months x 30,000 = 225,000; less 1/3 = 150,000 -> below 375,000 -> 0.
+input:
+  period: "2026-11"
+  employee: { joinDate: "2026-11-16" }
+  salary: [{ from: "2026-11-16", to: null, gross: "30000" }]
+expected:
+  lines: { BASIC: "9000.00", HOUSE_RENT: "4500.00", MEDICAL: "900.00", OTHER_ALLOWANCE: "600.00" }
+  net: "15000.00"
+  flags: []

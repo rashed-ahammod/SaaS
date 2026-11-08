@@ -1,0 +1,102 @@
+# Release-gate test set for AI bank match suggestions (WP20, spec §8 "AI bank
+# reconciliation matching"). Synthetic Bangladeshi bank lines and the options the
+# rules would offer (each option totals the bank amount). The answer is graded as
+# "choice: <key or none>": the right option, or none when nothing is clearly it.
+# A wrong choice is worse than none, so every case names the wrong keys in noneOf.
+
+- id: en-npsb-party-name
+  language: en
+  bankFacts:
+    bankLine: { date: '2026-10-20', amount: '5000.00', description: 'NPSB CREDIT KARIM STORES UTTARA', reference: null }
+    options:
+      - { key: A, lines: [{ date: '2026-10-20', amount: '5000.00', voucherNumber: 'RV/2026-27/00041', narration: 'Rahim Traders, Mirpur', reference: null }] }
+      - { key: B, lines: [{ date: '2026-10-20', amount: '5000.00', voucherNumber: 'RV/2026-27/00042', narration: 'Karim Stores, Uttara', reference: null }] }
+  allOf: ['choice: b']
+  noneOf: ['choice: a']
+
+- id: en-cheque-vendor
+  language: en
+  bankFacts:
+    bankLine: { date: '2026-10-09', amount: '-28750.00', description: 'CLG CHQ PAID BASHUNDHARA PAPER MILLS', reference: '0458812' }
+    options:
+      - { key: A, lines: [{ date: '2026-10-02', amount: '-28750.00', voucherNumber: 'PV/2026-27/00118', narration: 'Bashundhara Paper Mills, A4 paper, cheque 0458812', reference: '0458812' }] }
+      - { key: B, lines: [{ date: '2026-10-07', amount: '-28750.00', voucherNumber: 'PV/2026-27/00121', narration: 'Nitol Motors, microbus service', reference: '0458815' }] }
+  allOf: ['choice: a']
+  noneOf: ['choice: b']
+
+- id: en-two-dealers-one-deposit
+  language: en
+  bankFacts:
+    bankLine: { date: '2026-10-06', amount: '50000.00', description: 'CASH DEP BY SYLHET AGRO AND BOGURA TRADERS', reference: null }
+    options:
+      - { key: A, lines: [{ date: '2026-10-05', amount: '30000.00', voucherNumber: 'RV/2026-27/00031', narration: 'Sylhet Agro dealer, cash sale', reference: null }, { date: '2026-10-05', amount: '20000.00', voucherNumber: 'RV/2026-27/00032', narration: 'Bogura Traders dealer, cash sale', reference: null }] }
+      - { key: B, lines: [{ date: '2026-10-05', amount: '50000.00', voucherNumber: 'RV/2026-27/00030', narration: 'Comilla dealer advance', reference: null }] }
+  allOf: ['choice: a']
+  noneOf: ['choice: b']
+
+- id: en-beftn-salary-return
+  language: en
+  bankFacts:
+    bankLine: { date: '2026-10-03', amount: '31500.00', description: 'BEFTN RETURN SALARY SHARMIN SULTANA ACCOUNT CLOSED', reference: 'RTN2610030045' }
+    options:
+      - { key: A, lines: [{ date: '2026-10-03', amount: '31500.00', voucherNumber: 'RV/2026-27/00019', narration: 'Salary returned by bank: Sharmin Sultana Mitu, September', reference: null }] }
+      - { key: B, lines: [{ date: '2026-10-01', amount: '31500.00', voucherNumber: 'RV/2026-27/00015', narration: 'Office space sublet, October', reference: null }] }
+  allOf: ['choice: a']
+  noneOf: ['choice: b']
+
+- id: en-bkash-settlement
+  language: en
+  bankFacts:
+    bankLine: { date: '2026-10-11', amount: '18640.00', description: 'BKASH MERCHANT SETTLEMENT DEMOTRADING', reference: 'BKS1011' }
+    options:
+      - { key: A, lines: [{ date: '2026-10-10', amount: '18640.00', voucherNumber: 'CV/2026-27/00007', narration: 'bKash merchant collections 10 October to bank', reference: null }] }
+      - { key: B, lines: [{ date: '2026-10-10', amount: '18640.00', voucherNumber: 'RV/2026-27/00051', narration: 'Uttara dealer cash sale', reference: null }] }
+  allOf: ['choice: a']
+  noneOf: ['choice: b']
+
+- id: en-nothing-alike
+  language: en
+  bankFacts:
+    bankLine: { date: '2026-10-14', amount: '10000.00', description: 'CASH DEPOSIT GULSHAN BR', reference: null }
+    options:
+      - { key: A, lines: [{ date: '2026-10-13', amount: '10000.00', voucherNumber: 'RV/2026-27/00060', narration: 'Narayanganj dealer, cash sale', reference: null }] }
+      - { key: B, lines: [{ date: '2026-10-14', amount: '10000.00', voucherNumber: 'RV/2026-27/00061', narration: 'Gazipur dealer, cash sale', reference: null }] }
+  allOf: ['choice: none']
+
+- id: en-utility-autodebit
+  language: en
+  bankFacts:
+    bankLine: { date: '2026-10-18', amount: '-14320.00', description: 'AUTO DEBIT DESCO ELECTRICITY BILL', reference: 'DESCO-0918' }
+    options:
+      - { key: A, lines: [{ date: '2026-10-18', amount: '-14320.00', voucherNumber: 'PV/2026-27/00133', narration: 'Titas gas bill, September', reference: null }] }
+      - { key: B, lines: [{ date: '2026-10-17', amount: '-14320.00', voucherNumber: 'PV/2026-27/00132', narration: 'DESCO electricity bill, September', reference: null }] }
+  allOf: ['choice: b']
+  noneOf: ['choice: a']
+
+- id: bn-npsb-party-name
+  language: bn
+  bankFacts:
+    bankLine: { date: '2026-10-21', amount: '7500.00', description: 'NPSB CREDIT MOMIN ENTERPRISE', reference: null }
+    options:
+      - { key: A, lines: [{ date: '2026-10-21', amount: '7500.00', voucherNumber: 'RV/2026-27/00070', narration: 'Momin Enterprise, Khulna', reference: null }] }
+      - { key: B, lines: [{ date: '2026-10-21', amount: '7500.00', voucherNumber: 'RV/2026-27/00071', narration: 'Hasan Brothers, Rajshahi', reference: null }] }
+  allOf: ['choice: a']
+  noneOf: ['choice: b']
+
+- id: bn-cheque-rent
+  language: bn
+  bankFacts:
+    bankLine: { date: '2026-11-02', amount: '-45000.00', description: 'CHQ PAID HAQUE PROPERTIES', reference: '4522001' }
+    options:
+      - { key: A, lines: [{ date: '2026-10-29', amount: '-45000.00', voucherNumber: 'PV/2026-27/00140', narration: 'November office rent, Haque Properties, cheque 4522001', reference: '4522001' }] }
+      - { key: B, lines: [{ date: '2026-10-30', amount: '-45000.00', voucherNumber: 'PV/2026-27/00141', narration: 'Advance to Mahmudul Hasan Rafi, Chattogram visit', reference: null }] }
+  allOf: ['choice: a']
+  noneOf: ['choice: b']
+
+- id: bn-nothing-alike
+  language: bn
+  bankFacts:
+    bankLine: { date: '2026-10-25', amount: '-2300.00', description: 'ATM WITHDRAWAL', reference: null }
+    options:
+      - { key: A, lines: [{ date: '2026-10-25', amount: '-2300.00', voucherNumber: 'PV/2026-27/00150', narration: 'Tea and snacks, board meeting', reference: null }] }
+  allOf: ['choice: none']

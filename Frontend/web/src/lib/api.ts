@@ -1,4 +1,4 @@
-'use client';
+"use client";
 /**
  * Calling the ERP API from the pages (through /api/erp, see src/app/api/erp).
  *
@@ -9,8 +9,8 @@
  * tap or a retry after a lost answer never does the same thing twice.
  * A 401 means the session ended: go to the login page.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { currentLang } from './i18n';
+import { useCallback, useEffect, useState } from "react";
+import { currentLang } from "./i18n";
 
 export class ApiError extends Error {
   constructor(
@@ -23,27 +23,82 @@ export class ApiError extends Error {
   }
 }
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
-async function call<T>(method: Method, path: string, body?: unknown, o: { idempotencyKey?: string; raw?: boolean } = {}): Promise<T> {
-  const headers: Record<string, string> = { 'x-erp-client': 'pwa', 'x-language': currentLang() };
-  if (body !== undefined) headers['content-type'] = 'application/json';
-  if (method !== 'GET') headers['idempotency-key'] = o.idempotencyKey ?? crypto.randomUUID();
+/**
+ * High-risk actions (bank account change, bank file, role grants) need a fresh 2FA
+ * code (step-up). The HR portal registers a handler that asks for the code; the
+ * request is then sent again with X-OTP-Code. Without a handler the error is shown.
+ */
+let stepUpHandler: (() => Promise<string | null>) | null = null;
+export function setStepUpHandler(
+  handler: (() => Promise<string | null>) | null,
+) {
+  stepUpHandler = handler;
+}
+
+interface CallOptions {
+  idempotencyKey?: string;
+  raw?: boolean;
+  otpCode?: string;
+}
+
+async function call<T>(
+  method: Method,
+  path: string,
+  body?: unknown,
+  o: CallOptions = {},
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "x-erp-client": "pwa",
+    "x-language": currentLang(),
+  };
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  if (body !== undefined && !isForm)
+    headers["content-type"] = "application/json";
+  // the same key on a retry (e.g. after the step-up code), so the action can never happen twice
+  const idempotencyKey = o.idempotencyKey ?? crypto.randomUUID();
+  if (method !== "GET") headers["idempotency-key"] = idempotencyKey;
+  if (o.otpCode) headers["x-otp-code"] = o.otpCode;
 
   let res: Response;
   try {
-    res = await fetch(`/api/erp${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
+    res = await fetch(`/api/erp${path}`, {
+      method,
+      headers,
+      body:
+        body === undefined ? undefined : isForm ? body : JSON.stringify(body),
+      cache: "no-store",
+    });
   } catch {
-    throw new ApiError(0, 'OFFLINE', currentLang() === 'bn' ? 'ইন্টারনেট সংযোগ নেই।' : 'No internet connection.');
+    throw new ApiError(
+      0,
+      "OFFLINE",
+      currentLang() === "bn"
+        ? "ইন্টারনেট সংযোগ নেই।"
+        : "No internet connection.",
+    );
   }
 
   if (res.status === 401) {
     const next = encodeURIComponent(window.location.pathname);
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload on purpose: clears personal data held in memory
     window.location.assign(`/login?next=${next}`);
-    throw new ApiError(401, 'AUTH_REQUIRED', 'Signed out');
+    throw new ApiError(401, "AUTH_REQUIRED", "Signed out");
   }
-  if (!res.ok) throw await toError(res);
+  if (!res.ok) {
+    const error = await toError(res);
+    if (error.code === "AUTH_STEP_UP_REQUIRED" && stepUpHandler && !o.otpCode) {
+      const code = await stepUpHandler();
+      if (code)
+        return call<T>(method, path, body, {
+          ...o,
+          idempotencyKey,
+          otpCode: code,
+        });
+    }
+    throw error;
+  }
   if (o.raw) return res as T;
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -51,16 +106,31 @@ async function call<T>(method: Method, path: string, body?: unknown, o: { idempo
 
 export async function toError(res: Response): Promise<ApiError> {
   const body = await res.json().catch(() => ({}));
-  const message = Array.isArray(body.message) ? body.message.join(' ') : (body.message ?? res.statusText);
-  return new ApiError(res.status, body.code ?? 'ERROR', message, body.details);
+  const message = Array.isArray(body.message)
+    ? body.message.join(" ")
+    : (body.message ?? res.statusText);
+  return new ApiError(res.status, body.code ?? "ERROR", message, body.details);
 }
 
 export const api = {
-  get: <T>(path: string) => call<T>('GET', path),
-  post: <T>(path: string, body?: unknown, idempotencyKey?: string) => call<T>('POST', path, body ?? {}, { idempotencyKey }),
-  patch: <T>(path: string, body: unknown) => call<T>('PATCH', path, body),
+  get: <T>(path: string) => call<T>("GET", path),
+  /** `otpCode`: a step-up code the screen asked for itself (the app has no step-up handler) */
+  post: <T>(
+    path: string,
+    body?: unknown,
+    idempotencyKey?: string,
+    otpCode?: string,
+  ) => call<T>("POST", path, body ?? {}, { idempotencyKey, otpCode }),
+  patch: <T>(path: string, body: unknown) => call<T>("PATCH", path, body),
+  put: <T>(path: string, body: unknown) => call<T>("PUT", path, body),
+  delete: <T>(path: string) => call<T>("DELETE", path),
+  /** multipart/form-data upload (spreadsheets, documents) */
+  upload: <T>(path: string, form: FormData) => call<T>("POST", path, form),
+  /** a file produced by a write (e.g. a bank file): the raw response */
+  postFile: (path: string, body?: unknown) =>
+    call<Response>("POST", path, body ?? {}, { raw: true }),
   /** A file (e.g. payslip PDF): the raw response, to read as a blob. */
-  file: (path: string) => call<Response>('GET', path, undefined, { raw: true }),
+  file: (path: string) => call<Response>("GET", path, undefined, { raw: true }),
 };
 
 /**
@@ -68,7 +138,11 @@ export const api = {
  *   const { data, error, loading, reload } = useApi<Profile>('/me/profile');
  */
 export function useApi<T>(path: string | null) {
-  const [state, setState] = useState<{ data?: T; error?: ApiError; loading: boolean }>({ loading: path !== null });
+  const [state, setState] = useState<{
+    data?: T;
+    error?: ApiError;
+    loading: boolean;
+  }>({ loading: path !== null });
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -90,12 +164,15 @@ export function useApi<T>(path: string | null) {
 }
 
 /** Save a downloaded file (blob) on the phone. */
-export async function saveDownload(res: Response, fallbackName: string): Promise<void> {
+export async function saveDownload(
+  res: Response,
+  fallbackName: string,
+): Promise<void> {
   const blob = await res.blob();
-  const disposition = res.headers.get('content-disposition') ?? '';
+  const disposition = res.headers.get("content-disposition") ?? "";
   const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? fallbackName;
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = name;
   document.body.appendChild(a);

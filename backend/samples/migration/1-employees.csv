@@ -1,0 +1,5 @@
+employee_code,full_name_en,full_name_bn,gender,date_of_birth,nid,tin,phone,personal_email,join_date,branch_code,department_code,designation_code,grade_code,line_manager_code,festival_group,status,probation_end_date
+DTL-00201,Shahidul Islam,শহিদুল ইসলাম,male,1988-03-12,1988123456791,123456789012,01811223344,shahidul.ctg@gmail.com,2021-06-01,CTG,SALES-CTG,SE,G2,DTL-00004,eid,active,
+DTL-00202,Nasrin Akter,নাসরিন আক্তার,female,1995-07-21,1995123456792,,01911223344,,2024-02-01,CTG,SALES-CTG,EXE,G1,DTL-00201,eid,active,
+DTL-00203,Pradip Barua,প্রদীপ বড়ুয়া,male,1999-11-02,1999123456793,,01711223355,,2026-06-01,CTG,SALES-CTG,EXE,G1,DTL-00201,puja,probation,2026-11-30
+DTL-00204,Joins Later,,,,12345,,,,2026-11-01,CTG,SALES-XYZ,EXE,G1,,,,

@@ -1,0 +1,19 @@
+case: Mid-year salary change and its effect on the tax projection
+status: ILLUSTRATIVE
+kind: monthly
+# Was 100,000 (tax 48,750 a year = 4,062.50 a month; 3 months withheld = 12,187.50).
+# From 1 Oct 120,000 = 72,000 / 36,000 / 7,200 / 4,800.
+# Projection: 300,000 + 120,000 + 8 x 120,000 = 1,380,000; exemption capped at 450,000 -> 930,000
+# Tax: 30,000 (10% of 375k-675k) + 15% of 255,000 = 38,250 -> 68,250
+# Withholding: (68,250 - 12,187.50) / 9 = 6,229.17
+input:
+  period: "2026-10"
+  salary:
+    - { from: "2024-01-01", to: "2026-09-30", gross: "100000" }
+    - { from: "2026-10-01", to: null, gross: "120000" }
+  ytd: { taxableIncome: "300000", taxWithheld: "12187.50" }
+  previousNet: "95937.50"
+expected:
+  lines: { BASIC: "72000.00", HOUSE_RENT: "36000.00", MEDICAL: "7200.00", OTHER_ALLOWANCE: "4800.00", TAX: "6229.17" }
+  net: "113770.83"
+  flags: []

@@ -1,0 +1,3 @@
+employee_code,kind,account_name,bank_name,branch_name,routing_number,account_number,wallet_provider,wallet_number
+DTL-00201,bank,Shahidul Islam,Islami Bank Bangladesh PLC,Agrabad,125150201,20501234567,,
+DTL-00202,wallet,Nasrin Akter,,,,,bkash,01911223344

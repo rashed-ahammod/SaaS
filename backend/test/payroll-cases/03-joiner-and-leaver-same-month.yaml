@@ -1,0 +1,12 @@
+case: Joiner and leaver in the same month
+status: ILLUSTRATIVE
+kind: monthly
+# 5 Nov to 24 Nov = 20 of 30 days = two thirds.
+input:
+  period: "2026-11"
+  employee: { joinDate: "2026-11-05", lastWorkingDay: "2026-11-24" }
+  salary: [{ from: "2026-11-05", to: null, gross: "30000" }]
+expected:
+  lines: { BASIC: "12000.00", HOUSE_RENT: "6000.00", MEDICAL: "1200.00", OTHER_ALLOWANCE: "800.00" }
+  net: "20000.00"
+  flags: []

@@ -1,0 +1,12 @@
+Tally ERP 9: Meghna Agro Industries Ltd, trial balance as at 31-10-2026 (rent voucher corrected)
+old_code,old_name,debit,credit
+BNK-DBBL,Dutch-Bangla Bank,"10,10,000.00",
+CASH-HO,Cash in hand,"25,000.00",
+SDR-001,Sundry debtors,"1,20,000.00",
+FA-FURN,Furniture and fixtures,"3,00,000.00",
+ACC-DEP,Accumulated depreciation,,"60,000.00"
+SCR-001,Sundry creditors,,"85,000.00"
+CAP,Share capital,,"10,00,000.00"
+PL-BF,Profit and loss b/f,,"1,95,000.00"
+EXP-RENT,Office rent,"85,000.00",
+INC-SALES,Sales - local,,"2,00,000.00"

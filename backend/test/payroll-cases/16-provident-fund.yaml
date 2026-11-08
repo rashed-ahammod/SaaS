@@ -1,0 +1,15 @@
+case: Provident fund 10% employee + 10% employer
+status: ILLUSTRATIVE
+kind: monthly
+# BASIC 36,000 -> PF 3,600 on each side.
+# Tax: 240,000 + 60,000 + 7 x 60,000 = 720,000; less 240,000 = 480,000; 10% of 105,000 = 10,500;
+#      3,500 withheld so far -> 7,000 / 8 = 875.
+input:
+  period: "2026-11"
+  salary: [{ from: "2024-01-01", to: null, gross: "60000" }]
+  ytd: { taxableIncome: "240000", taxWithheld: "3500" }
+  settings: { pfEmployeePercent: "10", pfEmployerPercent: "10" }
+expected:
+  lines: { BASIC: "36000.00", HOUSE_RENT: "18000.00", MEDICAL: "3600.00", OTHER_ALLOWANCE: "2400.00", PF_EMPLOYEE: "3600.00", TAX: "875.00", PF_EMPLOYER: "3600.00" }
+  net: "55525.00"
+  employerCost: "3600.00"

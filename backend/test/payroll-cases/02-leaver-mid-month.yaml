@@ -1,0 +1,14 @@
+case: Leaver mid-month
+status: ILLUSTRATIVE
+kind: monthly
+# Last working day 10 Nov: 10 of 30 days = one third. No months left, so tax is on
+# 120,000 (Jul-Oct) + 10,000 = 130,000 -> 0.
+input:
+  period: "2026-11"
+  employee: { lastWorkingDay: "2026-11-10" }
+  salary: [{ from: "2024-01-01", to: null, gross: "30000" }]
+  ytd: { taxableIncome: "120000", taxWithheld: "0" }
+expected:
+  lines: { BASIC: "6000.00", HOUSE_RENT: "3000.00", MEDICAL: "600.00", OTHER_ALLOWANCE: "400.00" }
+  net: "10000.00"
+  flags: []

@@ -1,0 +1,16 @@
+case: Maternity leave crossing months (monthly wage / 26 per day)
+status: ILLUSTRATIVE
+kind: monthly
+# Gross 52,000 = 31,200 / 15,600 / 3,120 / 2,080. Maternity from 21 Nov: 10 days in November.
+# Salary for 20 of 30 days: 20,800 / 10,400 / 2,080 / 1,386.67
+# Maternity pay: 52,000 / 26 x 10 = 20,000
+# Tax: 208,000 + 54,666.67 + 7 x 52,000 = 626,666.67; less 1/3 (208,888.89) = 417,777.78;
+#      10% of 42,777.78 = 4,277.78 -> minimum tax 5,000; 2,000 withheld so far; 3,000 / 8 months = 375.
+input:
+  period: "2026-11"
+  salary: [{ from: "2024-01-01", to: null, gross: "52000" }]
+  maternityDates: ["2026-11-21", "2026-11-22", "2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30"]
+  ytd: { taxableIncome: "208000", taxWithheld: "2000" }
+expected:
+  lines: { BASIC: "20800.00", HOUSE_RENT: "10400.00", MEDICAL: "2080.00", OTHER_ALLOWANCE: "1386.67", MATERNITY_PAY: "20000.00", TAX: "375.00" }
+  net: "54291.67"

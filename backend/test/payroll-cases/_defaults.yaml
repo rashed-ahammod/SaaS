@@ -1,0 +1,59 @@
+# Defaults merged into every payroll acceptance case (objects merge, lists replace).
+#
+# STATUS: ILLUSTRATIVE. Tax slabs, exemption and minimum tax below are the
+# development placeholders of rule pack BD-LABOUR 2026.2 (FY 2026-27), NOT verified.
+# The payroll accountant replaces these cases with signed ones (guide §12.6).
+
+structure:                       # a common Bangladeshi split
+  - { head: BASIC, of: GROSS, percent: "60" }
+  - { head: HOUSE_RENT, of: BASIC, percent: "50" }
+  - { head: MEDICAL, of: BASIC, percent: "10" }
+  - { head: OTHER_ALLOWANCE, remainder: true }
+
+input:
+  employee: { id: emp-1, code: DTL-00001, joinDate: "2024-01-01", lastWorkingDay: null, status: active }
+  heads:
+    - { code: BASIC, kind: earning, taxable: true }
+    - { code: HOUSE_RENT, kind: earning, taxable: true }
+    - { code: MEDICAL, kind: earning, taxable: true }
+    - { code: OTHER_ALLOWANCE, kind: earning, taxable: true }
+    - { code: COMMISSION, kind: earning, taxable: true }
+    - { code: OTHER_DEDUCTION, kind: deduction, taxable: false }
+  unpaidDates: []
+  latePenaltyDays: 0
+  maternityDates: []
+  overtime: { approvedMinutes: 0, multiplier: "2" }
+  attendanceAdjustments: []
+  arrears: []
+  variables: []
+  encashmentDays: "0"
+  loans: []
+  ytd: { taxableIncome: "0", taxWithheld: "0" }
+  expectedFutureBonuses: "0"
+  previousNet: null
+  bankAccount: { hasApproved: true, changedInPeriod: false }
+  missingPunchDays: 0
+  rules:
+    maternityDivisor: 26
+    gratuityDaysPerYear: 30
+    tax:
+      exemptionDivisor: 3
+      exemptionCap: "450000"
+      minimumTax: "5000"
+      slabs:
+        - { upTo: "375000", rate: "0" }
+        - { upTo: "675000", rate: "0.10" }
+        - { upTo: "1075000", rate: "0.15" }
+        - { upTo: "1575000", rate: "0.20" }
+        - { upTo: "3575000", rate: "0.25" }
+        - { upTo: null, rate: "0.30" }
+  settings:
+    rounding: { mode: HALF_UP, increment: "0.01" }
+    unpaidDayBasis: calendar
+    otHoursBasis: 208
+    otMonthlyLimitHours: 60
+    pfEmployeePercent: "0"
+    pfEmployerPercent: "0"
+    gratuityProvision: false
+    netChangeFlagPercent: 20
+    encashmentDivisor: 30

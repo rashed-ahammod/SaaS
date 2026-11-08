@@ -23,6 +23,9 @@ const backend = parse(path.join(root, '..', 'backend', '.env'));
 export const settings = {
   root,
   webhookSecret: local.ERP_WEBHOOK_SECRET || backend.OUTBOX_WEBHOOK_SECRET,
+  // WP20: the secret the bank feed signs statement pushes with, and the ERP service key
+  // (permission bank.import only) the workflow imports them with
+  bankFeedSecret: local.BANK_FEED_SECRET ?? 'local-bank-feed-secret',
   env: {
     // where n8n keeps its own database, credentials and encryption key (git-ignored)
     N8N_USER_FOLDER: path.join(root, '.n8n'),
@@ -34,7 +37,14 @@ export const settings = {
     EMAIL_API_URL: local.EMAIL_API_URL ?? 'http://localhost:5680/email',
     SMS_PRIMARY_URL: local.SMS_PRIMARY_URL ?? 'http://localhost:5680/sms/primary',
     SMS_FALLBACK_URL: local.SMS_FALLBACK_URL ?? 'http://localhost:5680/sms/fallback',
-    // guide §15 / spec §11: no code execution or shell in workflows
+    // WP12: load ONLY the node types the reviewed workflow uses. n8n's own dependency tree
+    // has advisories in nodes we never use (AI / LangChain, expression evaluator, XML, git);
+    // nodes that are not loaded cannot be reached. Add a type here only with a reviewed workflow.
+    NODES_INCLUDE: JSON.stringify([
+      'n8n-nodes-base.webhook', 'n8n-nodes-base.crypto', 'n8n-nodes-base.if', 'n8n-nodes-base.noOp',
+      'n8n-nodes-base.httpRequest', 'n8n-nodes-base.splitOut', 'n8n-nodes-base.switch',
+    ]),
+    // guide §15 / spec §11: no code execution or shell in workflows (kept as a second fence)
     NODES_EXCLUDE: JSON.stringify(['n8n-nodes-base.code', 'n8n-nodes-base.function', 'n8n-nodes-base.functionItem', 'n8n-nodes-base.executeCommand', 'n8n-nodes-base.ssh', 'n8n-nodes-base.localFileTrigger', 'n8n-nodes-base.readWriteFile']),
     N8N_DIAGNOSTICS_ENABLED: 'false',
     N8N_PERSONALIZATION_ENABLED: 'false',
@@ -48,5 +58,7 @@ export const settings = {
     emailApiKey: local.EMAIL_API_KEY ?? 'local-test-key',
     smsPrimaryKey: local.SMS_PRIMARY_KEY ?? 'local-test-key',
     smsFallbackKey: local.SMS_FALLBACK_KEY ?? 'local-test-key',
+    // "ServiceKey <id>.<secret>" from POST /service-keys (permissions: ["bank.import"])
+    erpBankImportKey: local.ERP_BANK_IMPORT_KEY ?? '',
   },
 };

@@ -1,0 +1,45 @@
+# Release-gate test set for payroll flag explanations (guide §16 feature 2).
+# Synthetic facts, one case per rule-based flag. The explanation must name what
+# the flag is about (anyOf) and must not decide for the reviewer (noneOf).
+# Grading as in assistant.yaml.
+
+- id: en-net-change
+  language: en
+  facts: { flag: { code: NET_CHANGE, message: "Net pay changed 38% (from 52000.00 to 71760.00)" }, seesSalary: true }
+  anyOf: [net pay, net salary]
+  noneOf: [i have cleared, i cleared, approved the]
+
+- id: en-bank-changed
+  language: en
+  facts: { flag: { code: BANK_ACCOUNT_CHANGED, message: "Salary bank / wallet account was changed this month" }, seesSalary: true }
+  anyOf: [account]
+
+- id: en-missing-bank
+  language: en
+  facts: { flag: { code: MISSING_BANK_ACCOUNT, message: "No approved salary bank / wallet account" }, seesSalary: true }
+  anyOf: [account]
+
+- id: en-zero-tax
+  language: en
+  facts: { flag: { code: ZERO_TAX_ON_TAXABLE, message: "Annual tax 18500.00 is due but no tax is withheld" }, seesSalary: true }
+  anyOf: [tax]
+
+- id: en-negative-net
+  language: en
+  facts: { flag: { code: NEGATIVE_NET, message: "Net pay is negative (-3250.00)" }, seesSalary: true }
+  anyOf: [deduction, negative]
+
+- id: en-overtime-hidden-amounts
+  language: en
+  facts: { flag: { code: OT_ABOVE_LIMIT, message: null }, seesSalary: false }
+  anyOf: [overtime]
+
+- id: bn-net-change
+  language: bn
+  facts: { flag: { code: NET_CHANGE, message: "Net pay changed 38% (from 52000.00 to 71760.00)" }, seesSalary: true }
+  anyOf: [নিট, net, বেতন]
+
+- id: bn-missing-punches
+  language: bn
+  facts: { flag: { code: MISSING_PUNCHES, message: "2 day(s) with a missing punch were paid as worked" }, seesSalary: true }
+  anyOf: [পাঞ্চ, হাজিরা, punch]

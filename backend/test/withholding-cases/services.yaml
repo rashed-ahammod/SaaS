@@ -1,0 +1,31 @@
+# Tax at source on vendor bills: services. STATUS: ILLUSTRATIVE until the tax adviser
+# signs real cases (rates are rule pack placeholders, BD-LABOUR 2026.3).
+case: Office cleaning, Gulshan (registered vendor; the company is a VAT withholding entity)
+status: ILLUSTRATIVE
+input: { categoryCode: SERVICE, base: "120000", vat: "18000", vendorHasTin: true, vendorHasBin: true, companyIsVdsEntity: true }
+expected: { tdsPercent: "7.5", tds: "9000.00", vdsPercent: "100", vds: "18000.00", inputVat: "18000.00", vatInCost: "0.00", netPayable: "111000.00" }
+---
+case: IT consultant without TIN or BIN (surcharge; VAT is cost; VAT withheld in full)
+status: ILLUSTRATIVE
+input: { categoryCode: PROFESSIONAL, base: "80000", vat: "12000", vendorHasTin: false, vendorHasBin: false, companyIsVdsEntity: true }
+expected: { tdsPercent: "15", tds: "12000.00", vdsPercent: "100", vds: "12000.00", inputVat: "0.00", vatInCost: "12000.00", netPayable: "68000.00" }
+---
+case: Head office rent, Gulshan-2 (Rahman Properties)
+status: ILLUSTRATIVE
+input: { categoryCode: RENT, base: "85000", vat: "12750", vendorHasTin: true, vendorHasBin: true, companyIsVdsEntity: true }
+expected: { tdsPercent: "5", tds: "4250.00", vds: "12750.00", inputVat: "12750.00", netPayable: "80750.00" }
+---
+case: Newspaper advertisement; VAT withheld cannot exceed the VAT charged (rounding)
+status: ILLUSTRATIVE
+input: { categoryCode: ADVERTISING, base: "12350", vat: "1852.50", vendorHasTin: true, vendorHasBin: true, companyIsVdsEntity: true }
+expected: { tdsPercent: "5", tds: "618.00", vds: "1852.50", netPayable: "11732.00" }
+---
+case: Covered van, Dhaka to Chattogram (rounded to the taka; no VAT)
+status: ILLUSTRATIVE
+input: { categoryCode: TRANSPORT, base: "12345", vat: "0", vendorHasTin: true, vendorHasBin: false, companyIsVdsEntity: true }
+expected: { tdsPercent: "3", tds: "370.00", vdsPercent: "0", vds: "0.00", netPayable: "11975.00" }
+---
+case: Not subject to deduction
+status: ILLUSTRATIVE
+input: { categoryCode: EXEMPT, base: "50000", vat: "7500", vendorHasTin: true, vendorHasBin: true, companyIsVdsEntity: true }
+expected: { tdsPercent: "0", tds: "0.00", vdsPercent: "0", vds: "0.00", netPayable: "57500.00" }

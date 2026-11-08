@@ -1,0 +1,13 @@
+case: Attendance corrected after the monthly lock
+status: ILLUSTRATIVE
+kind: monthly
+# 14 Oct was locked as absent (deducted in October); a correction approved later
+# makes it a working day. Refund in November: 31,000 / 31 (October days) = 1,000.
+input:
+  period: "2026-11"
+  salary: [{ from: "2024-01-01", to: null, gross: "31000" }]
+  attendanceAdjustments: [{ date: "2026-10-14", unpaidDelta: -1, otMinutesDelta: 0, reason: correction_approved }]
+  ytd: { taxableIncome: "124000", taxWithheld: "0" }
+expected:
+  lines: { BASIC: "18600.00", HOUSE_RENT: "9300.00", MEDICAL: "1860.00", OTHER_ALLOWANCE: "1240.00", ATTENDANCE_ADJUSTMENT: "1000.00" }
+  net: "32000.00"

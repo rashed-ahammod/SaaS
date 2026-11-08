@@ -1,0 +1,22 @@
+case: Back-dated increment spanning a fiscal-year boundary (arrears)
+status: ILLUSTRATIVE
+kind: arrears
+# Paid 50,000 for June (FY 2025-26) and July-September (FY 2026-27).
+# In October an increment to 55,000 is recorded effective 1 June.
+# Each month is re-computed under the current salary history: 5,000 more per month.
+# The June arrear belongs to FY 2025-26 (forPeriod tells payroll and tax which year).
+input:
+  salary:
+    - { from: "2024-01-01", to: "2026-05-31", gross: "50000" }
+    - { from: "2026-06-01", to: null, gross: "55000" }
+  paidMonths:
+    - { period: "2026-06", paid: "50000.00" }
+    - { period: "2026-07", paid: "50000.00" }
+    - { period: "2026-08", paid: "50000.00" }
+    - { period: "2026-09", paid: "50000.00" }
+expected:
+  arrears:
+    - { forPeriod: "2026-06", amount: "5000.00" }
+    - { forPeriod: "2026-07", amount: "5000.00" }
+    - { forPeriod: "2026-08", amount: "5000.00" }
+    - { forPeriod: "2026-09", amount: "5000.00" }

@@ -1,4 +1,6 @@
 # CI (guide §22): lint -> type-check -> unit -> integration (real PostgreSQL) -> build -> audit.
+# Security scans (guide §20, WP12): dependency audit (no high-severity findings) in each job,
+# CodeQL static analysis (security-and-quality queries) and a secret scan of the full history.
 # Assumes the git repository root is E:\SaaS (see backend/README.md "Git").
 name: ci
 on:
@@ -44,4 +46,48 @@ jobs:
       - run: npm run db:setup
       - run: npm run test:int
       - run: npm run build
+      # no high-severity advisories, in production or development dependencies
+      - run: npm audit --audit-level=high
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: Frontend/web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # production dependencies; the dev-only eslint braces advisory is an accepted risk (docs/security/checklist.md)
       - run: npm audit --omit=dev --audit-level=high
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@v3
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

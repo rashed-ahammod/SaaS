@@ -1,0 +1,113 @@
+# Alerts (guide §22, spec §11; WP12). Every alert names the runbook to follow
+# (docs/operations/runbooks). Severity: page = wake someone; ticket = next working day.
+groups:
+  - name: erp
+    rules:
+      # ---------------------------------------------------------------- availability
+      - alert: ApiDown
+        expr: up{job="erp-api"} == 0 or probe_success{job="erp-uptime"} == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "ERP API or app not reachable ({{ $labels.instance }})"
+          runbook: docs/operations/runbooks/incident-response.md
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(erp_http_requests_total{status="5xx"}[5m]))
+            / clamp_min(sum(rate(erp_http_requests_total[5m])), 1e-9) > 0.02
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: "More than 2% of API requests fail with 5xx"
+          runbook: docs/operations/runbooks/incident-response.md
+
+      - alert: SlowApi
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(erp_http_request_duration_seconds_bucket[10m]))) > 2
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: "95% of API requests take longer than 2 s"
+          runbook: docs/operations/runbooks/incident-response.md
+
+      # ---------------------------------------------------------------- integrity
+      - alert: AuditChainBroken
+        expr: max(erp_audit_chain_broken_tenants) > 0
+        labels: { severity: page }
+        annotations:
+          summary: "The audit hash chain of {{ $value }} tenant(s) does not verify: possible tampering"
+          runbook: docs/operations/runbooks/incident-response.md#suspected-tampering-or-data-leak
+
+      # ---------------------------------------------------------------- jobs and integrations
+      - alert: BackgroundJobFailing
+        expr: max by (job) (erp_job_consecutive_failures) >= 3
+        labels: { severity: page }
+        annotations:
+          summary: "Background job {{ $labels.job }} failed 3 times in a row"
+          runbook: docs/operations/runbooks/background-jobs.md
+
+      - alert: BackgroundJobStale
+        expr: |
+          time() - max by (job) (erp_job_last_success_timestamp_seconds{job=~"outbox|approval-sla|notifications"}) > 900
+          or time() - max by (job) (erp_job_last_success_timestamp_seconds{job=~"attendance-close-day|idempotency-cleanup"}) > 3 * 3600
+          or time() - max by (job) (erp_job_last_success_timestamp_seconds{job=~"audit-verify|retention|leave-accruals"}) > 26 * 3600
+        labels: { severity: page }
+        annotations:
+          summary: "Background job {{ $labels.job }} has not succeeded for too long (is the worker running?)"
+          runbook: docs/operations/runbooks/background-jobs.md
+
+      - alert: OutboxDeadLetters
+        expr: max(erp_outbox_events{status="dead"}) > 0
+        for: 5m
+        labels: { severity: ticket }
+        annotations:
+          summary: "{{ $value }} outgoing event(s) gave up after all retries"
+          runbook: docs/operations/runbooks/background-jobs.md#outbox-dead-letters
+
+      - alert: OutboxBacklog
+        expr: max(erp_outbox_oldest_pending_seconds) > 1800
+        labels: { severity: ticket }
+        annotations:
+          summary: "The oldest pending outgoing event is over 30 minutes old (n8n down?)"
+          runbook: docs/operations/runbooks/background-jobs.md#outbox-dead-letters
+
+      - alert: MessagesNotDelivered
+        expr: max(erp_notifications_failed) > 20
+        for: 30m
+        labels: { severity: ticket }
+        annotations:
+          summary: "{{ $value }} e-mail / SMS messages failed at every gateway"
+          runbook: docs/operations/runbooks/background-jobs.md#e-mail-and-sms
+
+      - alert: AiFailing
+        expr: |
+          max(erp_ai_failures_last_hour) / clamp_min(max(erp_ai_calls_last_hour), 1) > 0.2 and max(erp_ai_calls_last_hour) >= 10
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: "More than 20% of AI calls time out or fail (the app keeps working without AI)"
+          runbook: docs/operations/runbooks/background-jobs.md#ai-provider
+
+      # ---------------------------------------------------------------- database host (postgres_exporter / node_exporter)
+      - alert: DiskFilling
+        expr: node_filesystem_avail_bytes{mountpoint=~"/var/lib/postgresql.*"} / node_filesystem_size_bytes < 0.15
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: "Less than 15% disk left for the database"
+          runbook: docs/operations/runbooks/backup-and-restore.md
+
+      - alert: WalArchivingFailing
+        expr: increase(pg_stat_archiver_failed_count[15m]) > 0
+        labels: { severity: page }
+        annotations:
+          summary: "WAL archiving fails: point-in-time recovery is at risk"
+          runbook: docs/operations/runbooks/backup-and-restore.md
+
+      - alert: BackupMissing
+        expr: time() - max(erp_job_last_success_timestamp_seconds{job="backup"}) > 26 * 3600
+        labels: { severity: page }
+        annotations:
+          summary: "No successful daily backup for more than 26 hours"
+          runbook: docs/operations/runbooks/backup-and-restore.md

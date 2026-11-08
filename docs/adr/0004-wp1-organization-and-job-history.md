@@ -57,3 +57,44 @@ foreign keys above are the safety net.
 | Bank accounts | Deferred to WP2: changes need step-up OTP and HR approval (approval engine). |
 | Permissions | Deferred to WP2. Until then, any signed-in user of the tenant can use WP1 routes. |
 | `db:seed` | Runs the compiled app (`dist/dev/seed.js`), because Nest dependency injection needs decorator metadata, which `tsx` does not emit. |
+
+## Update 2026-10-21: role-by-role check, lifecycle gaps closed
+
+A check of the employee lifecycle for every role (spec §3, §4, §6.1) found records, onboarding,
+job history and access correct, but the lifecycle stopping half-way. Recruitment and the
+onboarding / offboarding kits are Phase 3 and stay out. These gaps were closed (migration
+`0026_employee_lifecycle.sql`, `src/modules/employees/lifecycle.*`):
+
+1. **Probation never ended.** Every demo employee was still "probation" years after it ended.
+   - `GET /companies/:id/probation-reviews` lists probations ending within 30 days or already over.
+   - The Dept Head recommends confirm / extend / end (new permission `employee.lifecycle.review`,
+     department scope); HR decides. Confirm → active (`confirmed_at`); extend → new end date;
+     end → a separation of kind "end of probation". Nobody reviews their own probation.
+   - Worker job `probation-reminders` (every 6 h): event `employee.probation_ending` once per end
+     date, 15 days before; notifications send the Dept Head an in-app and e-mail message.
+   - Table `probation_reviews` keeps reminder, recommendation and decision per end date.
+2. **Separation stopped at "notice".**
+   - The notice records the kind (resignation, termination, retirement, contract end), the notice
+     date, the required notice (company setting) and the shortfall (table `separations`).
+   - Clearance (table `separation_clearances`): IT (`users.manage`), Admin assets
+     (`org.structure.manage`), Accounts advances (`payroll.disburse`, shown what is still owed),
+     Dept Head handover (`employee.lifecycle.review`); HR may clear any; the leaver never clears
+     themself. The final settlement run is refused (`SEPARATION_NOT_CLEARED`) until all four are
+     done; a resignation's shortfall becomes the run's default notice shortfall. A termination's
+     shortfall is the employer's: shown, to be paid in lieu as a payroll item.
+   - HR can withdraw a notice while no final settlement run exists (status goes back).
+   - Employees put on notice before this change have no separation record and are not blocked.
+   - The approved final settlement marks the separation "separated"; HR then prints the
+     experience certificate (Bangla / English PDF; wording is a placeholder).
+3. **Documents had no screens.** Portal → employee → Documents (upload with type and expiry,
+   download, remove with a reason); the app's profile lists the employee's own documents.
+4. **Company settings.** Notice for resignation (60 days) and termination (120 days) and the
+   retirement age (60) are company settings next to the probation length, editable on the
+   Organization page. Defaults are Bangladesh Labour Act placeholders (verify).
+5. **Job changes.** The Job tab lists the recorded changes and cancels a wrong one.
+6. **The app.** The profile shows designation, department, office, line manager and the
+   probation / notice status.
+
+Not done: the functional manager (only used by performance, Phase 3); a list of upcoming
+retirements; an employee submitting their own resignation from the app (HR records it).
+`pdf-canvas.ts` moved to `src/platform/pdf` (payslip, tax and experience certificates).

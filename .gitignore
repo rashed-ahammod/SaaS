@@ -1,0 +1,43 @@
+# ---------------------------------------------------------------------------
+# Repo-wide ignores. Each package (backend/, Frontend/web/, n8n/) also has its
+# own .gitignore; these rules are the safety net for the whole monorepo.
+# ---------------------------------------------------------------------------
+
+# Dependencies
+node_modules/
+
+# Secrets: never commit a real environment file. Only *.env.example is tracked.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!**/*.key.ts
+secrets/
+*credentials*.json
+
+# Build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Test / tool output
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Local runtime data
+storage/
+backups/
+.n8n/
+logs/
+*.log
+*.pid
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/

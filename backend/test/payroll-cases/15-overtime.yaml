@@ -1,0 +1,14 @@
+case: Overtime approved by the Dept Head
+status: ILLUSTRATIVE
+kind: monthly
+# BASIC 31,200 / 208 = 150 per hour; 10 h x 150 x 2 = 3,000.
+# Tax: 208,000 + 55,000 + 7 x 52,000 = 627,000; less 209,000 = 418,000;
+#      10% of 43,000 = 4,300 -> minimum 5,000; (5,000 - 2,000) / 8 = 375.
+input:
+  period: "2026-11"
+  salary: [{ from: "2024-01-01", to: null, gross: "52000" }]
+  overtime: { approvedMinutes: 600, multiplier: "2" }
+  ytd: { taxableIncome: "208000", taxWithheld: "2000" }
+expected:
+  lines: { BASIC: "31200.00", HOUSE_RENT: "15600.00", MEDICAL: "3120.00", OTHER_ALLOWANCE: "2080.00", OVERTIME: "3000.00", TAX: "375.00" }
+  net: "54625.00"

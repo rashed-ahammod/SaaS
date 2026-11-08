@@ -1,0 +1,406 @@
+{
+  "code": "BD-LABOUR",
+  "version": "2026.2",
+  "title": "Bangladesh Labour & Salary Tax Rule Pack 2026.2",
+  "notes": "Seeded from Business Logic Specification v0.2 section 7. EVERY value is 'verify': the sources below are law-firm summaries, not authority. The compliance owner must check each value against the gazetted Bangladesh Labour Act / Rules (as amended 2025-2026) and the Finance Act / NBR orders, then run `npm run rules:verify`. Effective dates of the 2025 amendments are taken as 10 April 2026 (date reported for the Labour (Amendment) Act 2026) and must be confirmed; the Ordinance 2025 may have applied earlier. 2026.2 adds the salary tax exemption, exemption cap and minimum tax used by payroll (WP6), and placeholder slabs for FY 2025-26; all PLACEHOLDERS to verify against the Finance Act / NBR.",
+  "values": [
+    {
+      "key": "leave.maternity.days",
+      "type": "integer",
+      "unit": "days",
+      "value": 112,
+      "effectiveFrom": "2006-10-11",
+      "effectiveTo": "2026-04-10",
+      "descriptionEn": "Paid maternity leave (before the 2025 amendment: 8 weeks before + 8 weeks after delivery)",
+      "descriptionBn": "সবেতন মাতৃত্বকালীন ছুটি (২০২৫ সংশোধনের আগে: প্রসবের আগে ৮ সপ্তাহ + পরে ৮ সপ্তাহ)",
+      "sourceNote": "Bangladesh Labour Act 2006, s.46 (verify)"
+    },
+    {
+      "key": "leave.maternity.days",
+      "type": "integer",
+      "unit": "days",
+      "value": 120,
+      "effectiveFrom": "2026-04-10",
+      "descriptionEn": "Paid maternity leave",
+      "descriptionBn": "সবেতন মাতৃত্বকালীন ছুটি",
+      "sourceNote": "Changed by Labour (Amendment) Ordinance 2025; summary: https://mahbub-law.com/bangladesh-labour-law-amendment-2025-a-new-era-of-compliance-challenges-for-employers/ (law-firm summary, verify against gazette; confirm effective date)"
+    },
+    {
+      "key": "leave.maternity.min_service_months",
+      "type": "integer",
+      "unit": "months",
+      "value": 6,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Service needed before maternity benefit is payable",
+      "descriptionBn": "মাতৃত্বকালীন সুবিধা পেতে প্রয়োজনীয় চাকরিকাল",
+      "sourceNote": "Spec section 7 (verify)"
+    },
+    {
+      "key": "leave.maternity.daily_pay_divisor",
+      "type": "integer",
+      "unit": "days",
+      "value": 26,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Maternity pay per day = monthly wage divided by this number",
+      "descriptionBn": "মাতৃত্বকালীন দৈনিক ভাতা = মাসিক মজুরি ÷ এই সংখ্যা",
+      "sourceNote": "Spec section 7: monthly wage ÷ 26 per day (verify)"
+    },
+    {
+      "key": "holidays.festival.days_per_year",
+      "type": "integer",
+      "unit": "days",
+      "value": 11,
+      "effectiveFrom": "2006-10-11",
+      "effectiveTo": "2026-04-10",
+      "descriptionEn": "Paid festival holidays per calendar year (dates fixed by the employer)",
+      "descriptionBn": "প্রতি পঞ্জিকাবর্ষে সবেতন উৎসব ছুটি (তারিখ নিয়োগকর্তা নির্ধারণ করবেন)",
+      "sourceNote": "Bangladesh Labour Act 2006, s.118 (verify)"
+    },
+    {
+      "key": "holidays.festival.days_per_year",
+      "type": "integer",
+      "unit": "days",
+      "value": 13,
+      "effectiveFrom": "2026-04-10",
+      "descriptionEn": "Paid festival holidays per calendar year (dates fixed by the employer)",
+      "descriptionBn": "প্রতি পঞ্জিকাবর্ষে সবেতন উৎসব ছুটি (তারিখ নিয়োগকর্তা নির্ধারণ করবেন)",
+      "sourceNote": "Changed from 11 by the 2025 amendment; summary: https://juralacuity.com/labour-law-ordinance/ (verify; confirm effective date)"
+    },
+    {
+      "key": "leave.casual.days_per_year",
+      "type": "integer",
+      "unit": "days",
+      "value": 10,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Casual leave with full pay per calendar year",
+      "descriptionBn": "প্রতি পঞ্জিকাবর্ষে পূর্ণ বেতনে নৈমিত্তিক ছুটি",
+      "sourceNote": "Spec section 7 (verify)"
+    },
+    {
+      "key": "leave.casual.carry_forward",
+      "type": "boolean",
+      "value": false,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Unused casual leave can be carried to the next year",
+      "descriptionBn": "অব্যবহৃত নৈমিত্তিক ছুটি পরের বছরে নেওয়া যায়",
+      "sourceNote": "Spec section 7: no carry forward (verify)"
+    },
+    {
+      "key": "leave.sick.days_per_year",
+      "type": "integer",
+      "unit": "days",
+      "value": 14,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Sick leave with full pay per calendar year",
+      "descriptionBn": "প্রতি পঞ্জিকাবর্ষে পূর্ণ বেতনে অসুস্থতা ছুটি",
+      "sourceNote": "Spec section 7 (verify)"
+    },
+    {
+      "key": "leave.earned.worked_days_per_leave_day",
+      "type": "integer",
+      "unit": "days",
+      "value": 18,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Earned (annual) leave: one day for every this many days worked (shops, commercial and industrial establishments)",
+      "descriptionBn": "অর্জিত (বার্ষিক) ছুটি: প্রতি এত দিন কাজের জন্য এক দিন (দোকান, বাণিজ্যিক ও শিল্প প্রতিষ্ঠান)",
+      "sourceNote": "Spec section 7: rate differs by establishment type and may have changed (verify)"
+    },
+    {
+      "key": "work.hours.daily_max",
+      "type": "integer",
+      "unit": "hours",
+      "value": 8,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Normal working hours per day",
+      "descriptionBn": "দৈনিক স্বাভাবিক কর্মঘণ্টা",
+      "sourceNote": "Spec section 7 (verify)"
+    },
+    {
+      "key": "work.hours.weekly_max",
+      "type": "integer",
+      "unit": "hours",
+      "value": 48,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Normal working hours per week",
+      "descriptionBn": "সাপ্তাহিক স্বাভাবিক কর্মঘণ্টা",
+      "sourceNote": "Spec section 7 (verify)"
+    },
+    {
+      "key": "overtime.rate_multiplier",
+      "type": "decimal",
+      "unit": "multiplier",
+      "value": "2",
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Overtime pay = hourly ordinary rate of basic (and dearness allowance) times this",
+      "descriptionBn": "ওভারটাইম = মূল বেতনের (ও মহার্ঘ ভাতার) ঘণ্টাপ্রতি সাধারণ হার × এই সংখ্যা",
+      "sourceNote": "Spec section 7: twice the ordinary rate of basic (verify)"
+    },
+    {
+      "key": "bonus.festival.per_year",
+      "type": "integer",
+      "unit": "bonuses",
+      "value": 2,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Festival bonuses per year",
+      "descriptionBn": "বছরে উৎসব ভাতার সংখ্যা",
+      "sourceNote": "Bangladesh Labour Rules 2015 (verify)"
+    },
+    {
+      "key": "bonus.festival.cap_months_of_basic",
+      "type": "decimal",
+      "unit": "months of basic",
+      "value": "1",
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Each festival bonus is at most this many months of basic pay",
+      "descriptionBn": "প্রতিটি উৎসব ভাতা সর্বোচ্চ এত মাসের মূল বেতন",
+      "sourceNote": "Bangladesh Labour Rules 2015 (verify)"
+    },
+    {
+      "key": "bonus.festival.min_service_months",
+      "type": "integer",
+      "unit": "months",
+      "value": 12,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Continuous service needed for a festival bonus",
+      "descriptionBn": "উৎসব ভাতার জন্য প্রয়োজনীয় একটানা চাকরিকাল",
+      "sourceNote": "Bangladesh Labour Rules 2015 (verify)"
+    },
+    {
+      "key": "benefit.resignation.wage_days_per_year",
+      "type": "json",
+      "unit": "days of wages per completed year",
+      "value": [
+        {
+          "minYears": 5,
+          "maxYears": 10,
+          "days": 14
+        },
+        {
+          "minYears": 10,
+          "maxYears": null,
+          "days": 30
+        }
+      ],
+      "effectiveFrom": "2006-10-11",
+      "effectiveTo": "2026-04-10",
+      "descriptionEn": "Resignation benefit by length of service (before the 2025 amendment)",
+      "descriptionBn": "চাকরিকাল অনুযায়ী পদত্যাগ সুবিধা (২০২৫ সংশোধনের আগে)",
+      "sourceNote": "Bangladesh Labour Act 2006, s.27 (verify)"
+    },
+    {
+      "key": "benefit.resignation.wage_days_per_year",
+      "type": "json",
+      "unit": "days of wages per completed year",
+      "value": [
+        {
+          "minYears": 1,
+          "maxYears": 3,
+          "days": 7
+        },
+        {
+          "minYears": 3,
+          "maxYears": 10,
+          "days": 15
+        },
+        {
+          "minYears": 10,
+          "maxYears": null,
+          "days": 30
+        }
+      ],
+      "effectiveFrom": "2026-04-10",
+      "descriptionEn": "Resignation benefit by length of service (above 10 years: 30 days or gratuity, whichever the scheme gives)",
+      "descriptionBn": "চাকরিকাল অনুযায়ী পদত্যাগ সুবিধা (১০ বছরের বেশি: ৩০ দিন অথবা গ্র্যাচুইটি)",
+      "sourceNote": "Changed by the 2025 amendment; summary: https://juralacuity.com/labour-law-ordinance/ (verify; confirm effective date)"
+    },
+    {
+      "key": "pf.mandatory_min_permanent_employees",
+      "type": "integer",
+      "unit": "employees",
+      "value": 100,
+      "effectiveFrom": "2026-04-10",
+      "descriptionEn": "Provident fund (or an approved pension scheme) is mandatory from this many permanent employees",
+      "descriptionBn": "এত বা বেশি স্থায়ী কর্মী থাকলে ভবিষ্য তহবিল (বা অনুমোদিত পেনশন) বাধ্যতামূলক",
+      "sourceNote": "New in the 2025 amendment; summary: https://juralacuity.com/labour-law-ordinance/ (verify)"
+    },
+    {
+      "key": "layoff.compensation.min_service_months",
+      "type": "integer",
+      "unit": "months",
+      "value": 12,
+      "effectiveFrom": "2006-10-11",
+      "effectiveTo": "2026-04-10",
+      "descriptionEn": "Continuous service needed for lay-off compensation",
+      "descriptionBn": "লে-অফ ক্ষতিপূরণের জন্য প্রয়োজনীয় একটানা চাকরিকাল",
+      "sourceNote": "Bangladesh Labour Act 2006, s.16 (verify)"
+    },
+    {
+      "key": "layoff.compensation.min_service_months",
+      "type": "integer",
+      "unit": "months",
+      "value": 3,
+      "effectiveFrom": "2026-04-10",
+      "descriptionEn": "Continuous service needed for lay-off compensation",
+      "descriptionBn": "লে-অফ ক্ষতিপূরণের জন্য প্রয়োজনীয় একটানা চাকরিকাল",
+      "sourceNote": "Changed from 1 year by the 2025 amendment; summary: https://juralacuity.com/labour-law-ordinance/ (verify)"
+    },
+    {
+      "key": "gratuity.wage_days_per_completed_year",
+      "type": "integer",
+      "unit": "days of wages",
+      "value": 30,
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Gratuity per completed year of service (company scheme may give more)",
+      "descriptionBn": "প্রতি পূর্ণ চাকরিবছরে গ্র্যাচুইটি (প্রতিষ্ঠানের স্কিম বেশি দিতে পারে)",
+      "sourceNote": "Spec section 7: per company scheme and the Act (verify)"
+    },
+    {
+      "key": "wppf.percent_of_net_profit",
+      "type": "decimal",
+      "unit": "percent",
+      "value": "5",
+      "effectiveFrom": "2006-10-11",
+      "descriptionEn": "Workers' profit participation fund, share of net profit (qualifying companies only)",
+      "descriptionBn": "শ্রমিক মুনাফা অংশগ্রহণ তহবিল, নিট মুনাফার অংশ (যোগ্য প্রতিষ্ঠান)",
+      "sourceNote": "Spec section 7: verify applicability"
+    },
+    {
+      "key": "tax.salary.slabs",
+      "type": "json",
+      "unit": "BDT per fiscal year",
+      "value": [
+        {
+          "upTo": "375000.00",
+          "rate": "0"
+        },
+        {
+          "upTo": "675000.00",
+          "rate": "0.10"
+        },
+        {
+          "upTo": "1075000.00",
+          "rate": "0.15"
+        },
+        {
+          "upTo": "1575000.00",
+          "rate": "0.20"
+        },
+        {
+          "upTo": "3575000.00",
+          "rate": "0.25"
+        },
+        {
+          "upTo": null,
+          "rate": "0.30"
+        }
+      ],
+      "effectiveFrom": "2026-07-01",
+      "effectiveTo": "2027-07-01",
+      "descriptionEn": "Income tax slabs on salary income, general individual taxpayers, fiscal year 2026-27 (cumulative upper limits)",
+      "descriptionBn": "বেতন আয়ের উপর আয়কর স্তর, সাধারণ করদাতা, অর্থবছর ২০২৬-২৭ (ক্রমপুঞ্জিত সীমা)",
+      "sourceNote": "PLACEHOLDER for development only, from budget summaries: copy the exact slabs, thresholds for women / senior / disabled taxpayers, exemptions and rebates from the Finance Act and NBR orders for FY 2026-27 before verifying"
+    },
+    {
+      "key": "tax.salary.slabs",
+      "type": "json",
+      "unit": "BDT per fiscal year",
+      "value": [
+        {
+          "upTo": "375000.00",
+          "rate": "0"
+        },
+        {
+          "upTo": "675000.00",
+          "rate": "0.10"
+        },
+        {
+          "upTo": "1075000.00",
+          "rate": "0.15"
+        },
+        {
+          "upTo": "1575000.00",
+          "rate": "0.20"
+        },
+        {
+          "upTo": "3575000.00",
+          "rate": "0.25"
+        },
+        {
+          "upTo": null,
+          "rate": "0.30"
+        }
+      ],
+      "effectiveFrom": "2025-07-01",
+      "effectiveTo": "2026-07-01",
+      "descriptionEn": "Income tax slabs on salary income, general individual taxpayers, fiscal year 2025-26 (cumulative upper limits)",
+      "descriptionBn": "বেতন আয়ের উপর আয়কর স্তর, সাধারণ করদাতা, অর্থবছর ২০২৫-২৬ (ক্রমপুঞ্জিত সীমা)",
+      "sourceNote": "PLACEHOLDER for development only: copy the exact value from the Finance Act and NBR orders for the fiscal year before verifying"
+    },
+    {
+      "key": "tax.salary.exemption_divisor",
+      "type": "integer",
+      "unit": "divisor",
+      "value": 3,
+      "effectiveFrom": "2025-07-01",
+      "effectiveTo": "2026-07-01",
+      "descriptionEn": "Salary income exemption = income / this number (3 = one third), fiscal year 2025-26",
+      "descriptionBn": "বেতন আয়ের অব্যাহতি = আয় ÷ এই সংখ্যা (৩ = এক-তৃতীয়াংশ), অর্থবছর ২০২৫-২৬",
+      "sourceNote": "PLACEHOLDER for development only: copy the exact value from the Finance Act and NBR orders for the fiscal year before verifying"
+    },
+    {
+      "key": "tax.salary.exemption_cap",
+      "type": "money",
+      "unit": "BDT per fiscal year",
+      "value": "450000.00",
+      "effectiveFrom": "2025-07-01",
+      "effectiveTo": "2026-07-01",
+      "descriptionEn": "Upper limit of the salary income exemption, fiscal year 2025-26",
+      "descriptionBn": "বেতন আয়ের অব্যাহতির সর্বোচ্চ সীমা, অর্থবছর ২০২৫-২৬",
+      "sourceNote": "PLACEHOLDER for development only: copy the exact value from the Finance Act and NBR orders for the fiscal year before verifying"
+    },
+    {
+      "key": "tax.salary.minimum_tax",
+      "type": "money",
+      "unit": "BDT per fiscal year",
+      "value": "5000.00",
+      "effectiveFrom": "2025-07-01",
+      "effectiveTo": "2026-07-01",
+      "descriptionEn": "Minimum tax when any tax is payable, fiscal year 2025-26",
+      "descriptionBn": "কর প্রদেয় হলে ন্যূনতম কর, অর্থবছর ২০২৫-২৬",
+      "sourceNote": "PLACEHOLDER for development only: copy the exact value from the Finance Act and NBR orders for the fiscal year before verifying"
+    },
+    {
+      "key": "tax.salary.exemption_divisor",
+      "type": "integer",
+      "unit": "divisor",
+      "value": 3,
+      "effectiveFrom": "2026-07-01",
+      "effectiveTo": "2027-07-01",
+      "descriptionEn": "Salary income exemption = income / this number (3 = one third), fiscal year 2026-27",
+      "descriptionBn": "বেতন আয়ের অব্যাহতি = আয় ÷ এই সংখ্যা (৩ = এক-তৃতীয়াংশ), অর্থবছর ২০২৬-২৭",
+      "sourceNote": "PLACEHOLDER for development only: copy the exact value from the Finance Act and NBR orders for the fiscal year before verifying"
+    },
+    {
+      "key": "tax.salary.exemption_cap",
+      "type": "money",
+      "unit": "BDT per fiscal year",
+      "value": "450000.00",
+      "effectiveFrom": "2026-07-01",
+      "effectiveTo": "2027-07-01",
+      "descriptionEn": "Upper limit of the salary income exemption, fiscal year 2026-27",
+      "descriptionBn": "বেতন আয়ের অব্যাহতির সর্বোচ্চ সীমা, অর্থবছর ২০২৬-২৭",
+      "sourceNote": "PLACEHOLDER for development only: copy the exact value from the Finance Act and NBR orders for the fiscal year before verifying"
+    },
+    {
+      "key": "tax.salary.minimum_tax",
+      "type": "money",
+      "unit": "BDT per fiscal year",
+      "value": "5000.00",
+      "effectiveFrom": "2026-07-01",
+      "effectiveTo": "2027-07-01",
+      "descriptionEn": "Minimum tax when any tax is payable, fiscal year 2026-27",
+      "descriptionBn": "কর প্রদেয় হলে ন্যূনতম কর, অর্থবছর ২০২৬-২৭",
+      "sourceNote": "PLACEHOLDER for development only: copy the exact value from the Finance Act and NBR orders for the fiscal year before verifying"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+case: Final settlement where deductions exceed dues (negative net)
+status: ILLUSTRATIVE
+kind: monthly
+# Last working day 10 Nov: salary 10,000 (one third of 30,000).
+# + earned leave encashment 10 days x 30,000 / 30 = 10,000
+# + gratuity 1 year x 30 days of BASIC (18,000 / 30 x 30) = 18,000 (not taxable here)
+# - notice not served 30 days x 30,000 / 30 = 30,000
+# - salary advance outstanding 25,000 (fully recovered at settlement)
+# Net = 38,000 - 55,000 = -17,000 -> flagged
+input:
+  period: "2026-11"
+  employee: { joinDate: "2025-06-01", lastWorkingDay: "2026-11-10" }
+  salary: [{ from: "2025-06-01", to: null, gross: "30000" }]
+  encashmentDays: "10"
+  loans: [{ loanId: loan-1, installment: "5000", outstanding: "25000" }]
+  ytd: { taxableIncome: "120000", taxWithheld: "0" }
+  finalSettlement: { noticeShortfallDays: 30, gratuityYears: 1 }
+expected:
+  lines:
+    BASIC: "6000.00"
+    HOUSE_RENT: "3000.00"
+    MEDICAL: "600.00"
+    OTHER_ALLOWANCE: "400.00"
+    LEAVE_ENCASHMENT: "10000.00"
+    GRATUITY: "18000.00"
+    NOTICE_SHORTFALL: "30000.00"
+    LOAN_RECOVERY: "25000.00"
+  net: "-17000.00"
+  flags: [NEGATIVE_NET]

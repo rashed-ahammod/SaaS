@@ -87,3 +87,33 @@ adjustments, as defined in ADR 0007.
 - **Encashment:** paying it out is WP6. The `leave_encashments` rows are waiting with status
   `pending_payroll`.
 - **Partial cancellation** (coming back early) needs a cancel and re-apply for now.
+
+## Update 2026-10-21: role-by-role check, gaps closed
+
+A check of leave for every role (spec §4, §5, §6.3), against the screens and the running API,
+found the rules and permissions complete. These gaps were closed:
+
+1. **Supporting document (bug).** Sick leave over 2 days needs a certificate, but only HR
+   could upload documents, so an employee could not apply.
+   - New: `POST /employees/:id/leave-documents` (multipart `file`, photo or PDF), for the
+     employee themself or HR. It is stored as an ordinary employee document ("Leave
+     supporting document") and sent as `documentId`.
+   - The app's apply screen asks for it when the leave type has a document rule.
+2. **Returned requests (bug).** A request sent back for correction could not be edited or
+   cancelled.
+   - The app now has "Change and send again", which uses the resubmit route.
+   - Cancel now also accepts a returned request.
+3. **Leave types.** HR can create company types (e.g. study leave) and edit names, half days,
+   the document rule, the carry-forward cap, encashment and active.
+4. **Leave ledger.** On the employee page, HR sees every ledger entry with the running balance,
+   and can enter an opening balance or an adjustment (+ / −) with a reason.
+5. **An employee's requests.** The employee page lists their requests with the approver's
+   comment, and HR can apply on their behalf, with the certificate.
+6. **Team calendar.** In Portal → Leave: who is off on each day of a month, per department.
+   Days where more of the team is off than the policy's warning percentage are marked.
+   A Dept Head sees their own department; HR and Admin see any.
+7. **Year end.** The encashment list, and running year end by hand (normally automatic).
+8. **Admin view.** The portal Leave page is available with `leave.view`; types and policy are
+   read-only without `leave.manage`.
+9. **Approver comment.** Requests carry `decisionComment`, the last approver comment, shown in
+   the app for returned and rejected requests.

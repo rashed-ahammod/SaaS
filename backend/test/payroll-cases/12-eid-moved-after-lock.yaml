@@ -1,0 +1,14 @@
+case: An Eid holiday moved after attendance was locked
+status: ILLUSTRATIVE
+kind: monthly
+# 21 Oct was locked as absent; the holiday was then moved onto it (moon sighting).
+# November refunds one October day: 46,500 / 31 = 1,500.
+# Tax: 186,000 + 48,000 + 7 x 46,500 = 559,500; less 186,500 = 373,000 -> below 375,000 -> 0.
+input:
+  period: "2026-11"
+  salary: [{ from: "2024-01-01", to: null, gross: "46500" }]
+  attendanceAdjustments: [{ date: "2026-10-21", unpaidDelta: -1, otMinutesDelta: 0, reason: holiday_changed }]
+  ytd: { taxableIncome: "186000", taxWithheld: "0" }
+expected:
+  lines: { BASIC: "27900.00", HOUSE_RENT: "13950.00", MEDICAL: "2790.00", OTHER_ALLOWANCE: "1860.00", ATTENDANCE_ADJUSTMENT: "1500.00" }
+  net: "48000.00"

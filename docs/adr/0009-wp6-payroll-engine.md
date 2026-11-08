@@ -174,3 +174,48 @@ The engine is built so that each item below is a setting or a rule pack value, n
 8. **Half days** are not deducted as unpaid. Missing-punch days are paid and flagged.
 9. **Expected future bonuses** are not projected in monthly tax. The bonus run withholds the
    extra tax the bonus causes, so the year still balances.
+
+## Update 2026-10-21: role-by-role check, gaps closed
+
+A check of payroll for every role (spec §4, §5, §6.4), against the screens and the running API,
+found the monthly cycle complete (runs, flags, Accounts → Admin approval, bank files, payslips
+by e-mail). These gaps were closed:
+
+1. **Salary account change had no screen.**
+   - The app's profile shows where salary goes and lets the employee ask for a new bank account
+     or wallet; the portal's Bank tab lets HR ask on an employee's behalf. HR approves either way.
+   - Step-up (2FA code) stays required for privileged users. An employee who has not set up 2FA
+     may send the request without a code (`@RequireStepUp({ employeesWithout2fa: 'allow' })`):
+     most employees have no authenticator, HR approval is the control, and the employee is told
+     on their contact on file once it is approved. An employee who has 2FA types the code in the form.
+2. **Salary advances had no screens.**
+   - New permission `payroll.loan.request_own` (Employee role): the employee asks for an advance
+     from the app (`POST /employees/:id/loans`, own) and sees what is still owed.
+   - The portal employee page has a Salary advances tab (HR adds one).
+   - `GET /companies/:id/loans?state=approved&unpaid=true` lists advances waiting for their payout;
+     Accounts pays them out from Portal → Expenses → "Salary advances to pay out" (WP16 payout route).
+3. **Earlier income this year (YTD openings) had no screen.** Portal → employee → PF & tax:
+   HR enters income and tax from the previous employer or from before the system.
+4. **Returned salary could not be paid again from the screen.** The run's Payments tab has
+   "Pay again" for a returned payment (`POST /payments/:id/reissue`, WP7).
+5. **Annual tax certificate per employee (spec §6.4) did not exist.**
+   - Read from approved payroll lines for an income year (July to June): salary by head
+     (taxable / exempt), tax deducted each month with its challan, tax deducted earlier (YTD
+     openings), totals. "Provisional" while the year is running.
+   - PDF in Bangla or English (`tax-certificate-pdf.ts`; the payslip and the certificate share
+     `pdf-canvas.ts`). The legal wording and section reference are placeholders (verify).
+   - `GET /me/tax-certificate[/pdf]?fiscalYear=` for the employee; `/employees/:id/...` for HR,
+     Accounts and the Admin.
+   - Salary tax deposits: new table `salary_tax_challans`. Accounts records the challan for a month
+     (Portal → Tax → Salary tax shows withheld vs deposited vs still to deposit); cancel, never delete.
+6. **PF ledger per member with the company match (spec §6.4) did not exist.**
+   - Read from approved payroll lines (`PF_EMPLOYEE`, `PF_EMPLOYER`) with a running balance.
+   - New table `pf_openings`: the balance brought from the old system; months on or before its
+     date are inside it.
+   - Not yet: PF interest, withdrawals and the final PF settlement (needs the PF trust rules).
+7. **The MD could approve a run but not see per-employee lines (decision 2026-10-21).** The Admin
+   role now has the `salary` field group: run lines, payslips, salary history and the parallel-run
+   comparison. Bank and identity fields stay hidden; payments (bank details) stay closed to the Admin.
+   This changes the default of spec §4 ("salary hidden from Admin unless granted").
+
+Migration `0025_payroll_statements.sql`.

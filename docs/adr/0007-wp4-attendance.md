@@ -85,3 +85,90 @@ after an outage. Device user numbers map to employees through `attendance_profil
   in there.
 - **Performance** is fine for pilots (one employee-day at a time). Batch computation for
   1,000+ employees is part of the WP12 load test (guide §21).
+
+## Update 2026-10-17: role-by-role check, gaps closed
+
+A check of attendance for every role, comparing the spec (§4, §6.2) with what each role can do
+on screen, found these gaps. The backend rules were complete; most gaps were missing screens.
+
+1. **Employee: correction request.** Each day in the app's attendance list can be fixed: the
+   employee asks for a correction (in and/or out time, reason). "My corrections and overtime"
+   shows each request's status.
+2. **Employee and HR: overtime claim.** Shown on a day where more overtime was worked than
+   approved. The Dept Head approves it in the inbox. The approval label for request type
+   `overtime` was also missing and has been added.
+3. **Dept Head: month view (permission bug).** The month summary, the after-lock adjustments and
+   the locks list checked `attendance.view` at company scope, so a Dept Head got 403. A
+   department-scoped grant now works, and the summary and adjustments are filtered to the
+   departments in scope. Covered in `attendance.int-spec.ts`.
+4. **HR: holidays.** A holiday can be changed (moved, e.g. Eid after moon sighting) or removed
+   with a reason. Affected unlocked days are recalculated, and locked days become adjustments.
+5. **HR: shifts per employee and temporary hours.**
+   - A shift can be assigned to an employee from a date (employee → Attendance & consent tab).
+   - Temporary hours for a date range and branch, e.g. Ramadan, are added on the Shifts tab.
+6. **HR: shift edit.** Name, hours, grace, half-day threshold, default and active.
+7. **HR: one employee's month, and changes after the lock.**
+   - The employee page shows the month day by day; HR can file a correction or overtime claim
+     on the employee's behalf.
+   - The Month tab lists the changes made after the lock, and which payroll took each one.
+8. **Admin: company attendance rules.** The Organization page (Company tab) now edits:
+   - corrections allowed per employee per month;
+   - the late penalty, with the number of late days that count as one deducted day. Keep it
+     off until legal review.
+
+The overtime "more than was worked" error now uses a translated message
+(`ATTENDANCE_OVERTIME_TOO_MUCH`) with details.
+
+**Geo-fence follow-up (same day):**
+- Branches can now be edited in the portal (Organization → Branches → Edit): name, address, weekly
+  holidays, and the geo-fence. You can switch it off, enter latitude, longitude and radius, or
+  press "Use my current location" while standing in the office.
+- When a phone punch is outside the area, the message now says how far away the phone is, from
+  which branch, and the allowed distance, for example "You are 245 km from Chattogram Office
+  (allowed within 200 m)". The API returns `details.branch` with the distance.
+
+**Still open (low priority):**
+- Admin cannot see the list of phones waiting for approval; this needs `attendance.manage`.
+- An optional selfie with a mobile punch is not built; only the consent for it exists.
+
+## Update 2026-10-17: phone punch misuse review (migration 0024)
+
+**Finding.** The geo-fence is checked on the server, but the location comes from the phone.
+A browser app (PWA) cannot detect fake GPS or mock locations, and cannot use Play Integrity.
+Someone can also send a hand-made request with office coordinates. So a phone punch is
+evidence, not proof. The office biometric device remains the reliable source; phone punches
+suit field staff and are reviewed.
+
+**Implemented:**
+1. **GPS accuracy.** The app sends `accuracy` (required).
+   - A reading worse than 100 m is refused ("step near a window"): `ATTENDANCE_WEAK_GPS`.
+   - The allowance outside the fence follows the reported accuracy, at most 50 m: a punch is
+     accepted when `distance ≤ radius + min(accuracy, 50)`. It used to be a flat +50 m.
+   - Accuracy is stored with the punch.
+2. **Evidence on punches.** Phone and web punches now store the IP and the browser (user
+   agent).
+3. **Refused attempts are recorded.** Every refused phone punch (outside the area, weak GPS,
+   unknown phone, no geo-fence) goes into `punch_attempts`, which is append-only. It is
+   written in its own short transaction, so it is kept although the request fails.
+4. **Retention.** Coordinates, accuracy, IP and browser on punches and attempts are blanked
+   after the location retention period (`retention_apply`); the times stay.
+5. **Punch review.** `GET /attendance/punch-review?companyId&from&to` and the portal tab
+   Attendance → Punch review show four rules. They are reasons to look, not proof.
+   - **Same coordinates** to the last decimal on two or more days.
+   - **Impossible travel:** over 120 km/h and at least 1 km between two locations of a person
+     within 2 hours, counting refused attempts.
+   - **Three or more refused attempts** in the period.
+   - **One IP, several employees** within 10 minutes. This is normal on office Wi-Fi.
+
+   HR and Admin see the whole company; a Dept Head sees their department.
+6. **Geo-fence guardrails (portal).** Warnings appear for a radius over 300 m and for a point
+   outside Bangladesh (latitude and longitude swapped). An "Open in Google Maps" link shows
+   the centre. Saving a doubtful fence needs "I checked the location on the map". Fence
+   changes are already in the tamper-evident audit log (`branch.updated`).
+
+**Not done, and why:**
+- **Mock-location detection and Play Integrity** need a native Android app; rooted phones can
+  still hide a mock location.
+- **Device-bound signed punches and a selfie at punch:** optional, if misuse is actually
+  seen.
+- **Office IP allowlist for web punches:** optional.

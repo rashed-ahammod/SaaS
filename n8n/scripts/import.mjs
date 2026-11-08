@@ -24,6 +24,8 @@ writeFileSync(
     header('erpEmailApi', 'E-mail API', settings.credentials.emailApiKey),
     header('erpSmsPrimary', 'SMS gateway (primary)', settings.credentials.smsPrimaryKey),
     header('erpSmsFallback', 'SMS gateway (fallback)', settings.credentials.smsFallbackKey),
+    { id: 'bankFeedSecret', name: 'Bank statement feed secret', type: 'crypto', data: { hmacSecret: settings.bankFeedSecret } },
+    { id: 'erpBankImportKey', name: 'ERP bank import service key', type: 'httpHeaderAuth', data: { name: 'Authorization', value: settings.credentials.erpBankImportKey || 'ServiceKey not-configured' } },
   ]),
 );
 try {
@@ -37,4 +39,6 @@ for (const file of readdirSync(path.join(settings.root, 'workflows')).filter((f)
   run('import:workflow', `--input=${path.join(settings.root, 'workflows', file)}`);
 }
 run('publish:workflow', '--id=erpNotifications01');
+run('publish:workflow', '--id=erpBankStatements01');
+if (!settings.credentials.erpBankImportKey) console.log('No ERP_BANK_IMPORT_KEY in n8n/.env: bank statement pushes will be refused by the ERP (401) until you add one.');
 console.log('Imported and published. Start (or restart) n8n: npm start');

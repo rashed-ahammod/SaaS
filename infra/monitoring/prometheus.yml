@@ -1,0 +1,40 @@
+# Prometheus for the ERP (guide §22, WP12). Scrapes every API instance's /metrics
+# with the METRICS_TOKEN, and checks the public liveness / readiness URLs.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: erp-api
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/metrics-token   # same value as METRICS_TOKEN
+    static_configs:
+      - targets: ["api-1:3000", "api-2:3000"]
+
+  # uptime from outside: the public health URLs through the load balancer (blackbox exporter)
+  - job_name: erp-uptime
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://api.example.com.bd/health
+          - https://api.example.com.bd/health/ready
+          - https://office.example.com.bd/login
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

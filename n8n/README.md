@@ -1,4 +1,4 @@
-# n8n: ERP notifications (WP10)
+# n8n: ERP notifications (WP10) and bank statements (WP20)
 
 n8n carries the ERP's messages to the outside world: e-mail and SMS. It **does not decide**
 anything (spec §9: the core owns every decision). The ERP core decides:
@@ -44,6 +44,27 @@ Every other event is answered with "nothing to send".
 The workflow answers the webhook at once, so the dispatcher never waits for a long payroll
 mailing. The callback token (`X-Callback-Token`, 7 days) is the only credential n8n needs for
 the ERP. It is valid for **that one event only**, so n8n holds no tenant secrets.
+
+## Bank statements (WP20)
+
+The second workflow, **ERP bank statements**, brings statement files into bank reconciliation.
+
+```
+bank host-to-host / SFTP or e-mail fetcher ──signed POST──► n8n "ERP bank statements"
+   { bankAccountId, fileName, content (CSV) }              1. check HMAC signature + timestamp (≤ 5 min)
+   X-Signature, X-Timestamp (feed secret)                  2. POST /bank-accounts/<id>/statements/n8n
+                                                              (ServiceKey with bank.import only)
+```
+
+- **What n8n holds:** a service key that can do nothing but import statements. Create it as
+  the workspace owner: `POST /service-keys` with `{ "permissions": ["bank.import"], "companyId": ... }`.
+  Put its `authorizationHeader` in `n8n/.env` as `ERP_BANK_IMPORT_KEY`, then run `npm run import`.
+- **What the ERP decides:** it reads the file in the bank's layout. It refuses a file it
+  cannot read, or one whose balances do not add up. The same file sent twice is refused too.
+  Lines already imported from an overlapping file are skipped. The rules then match what is
+  certain.
+- **The bank layouts are illustrative** until the pilot's banks are confirmed (see ADR 0023).
+- **Try it:** `npm run push-statement -- <bank account id> ../backend/samples/bank/dbbl-sample-26-27-oct-2026.csv`.
 
 ## Run it locally
 

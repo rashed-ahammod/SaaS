@@ -1,0 +1,14 @@
+case: Rounding to the taka; totals agree exactly
+status: ILLUSTRATIVE
+kind: monthly
+# The company rounds every line to the taka. One unpaid day: 31,000 / 30 = 1,033.33 -> 1,033.
+# Net = sum of lines exactly (payslip, bank file and journal use the same numbers).
+input:
+  period: "2026-11"
+  salary: [{ from: "2024-01-01", to: null, gross: "31000" }]
+  unpaidDates: ["2026-11-18"]
+  ytd: { taxableIncome: "124000", taxWithheld: "0" }
+  settings: { rounding: { mode: HALF_UP, increment: "1" } }
+expected:
+  lines: { BASIC: "18600.00", HOUSE_RENT: "9300.00", MEDICAL: "1860.00", OTHER_ALLOWANCE: "1240.00", UNPAID_DAYS: "-1033.00" }
+  net: "29967.00"

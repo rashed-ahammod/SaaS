@@ -1,0 +1,36 @@
+case: Festival bonus at exactly one year of service
+status: ILLUSTRATIVE
+kind: bonus
+# Bonus date 20 Oct 2026. Joined 20 Oct 2025 -> 12 completed months -> eligible.
+# Bonus = 1 x BASIC = 18,000 (gross 30,000). Tax with and without the bonus is 0.
+input:
+  period: "2026-10"
+  employee: { joinDate: "2025-10-20" }
+  bonusDate: "2026-10-20"
+  salary: [{ from: "2025-10-20", to: null, gross: "30000" }]
+  minServiceMonths: 12
+  capMonthsOfBasic: "1"
+  ytd: { taxableIncome: "90000", taxWithheld: "0" }
+  otherExpectedBonuses: "0"
+expected:
+  eligible: true
+  lines: { FESTIVAL_BONUS: "18000.00" }
+  net: "18000.00"
+---
+case: Festival bonus one day short of one year
+status: ILLUSTRATIVE
+kind: bonus
+# Joined 21 Oct 2025 -> 11 completed months on 20 Oct 2026 -> not eligible.
+input:
+  period: "2026-10"
+  employee: { joinDate: "2025-10-21" }
+  bonusDate: "2026-10-20"
+  salary: [{ from: "2025-10-21", to: null, gross: "30000" }]
+  minServiceMonths: 12
+  capMonthsOfBasic: "1"
+  ytd: { taxableIncome: "90000", taxWithheld: "0" }
+  otherExpectedBonuses: "0"
+expected:
+  eligible: false
+  lines: {}
+  net: "0.00"

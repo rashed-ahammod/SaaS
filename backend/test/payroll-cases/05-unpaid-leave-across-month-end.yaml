@@ -1,0 +1,13 @@
+case: Unpaid leave crossing a month end
+status: ILLUSTRATIVE
+kind: monthly
+# Leave without pay 29 Oct - 3 Nov; in November the unpaid working days are 1, 2 and 3 Nov.
+# 3 x 30,000 / 30 = 3,000.
+input:
+  period: "2026-11"
+  salary: [{ from: "2024-01-01", to: null, gross: "30000" }]
+  unpaidDates: ["2026-11-01", "2026-11-02", "2026-11-03"]
+  ytd: { taxableIncome: "120000", taxWithheld: "0" }
+expected:
+  lines: { BASIC: "18000.00", HOUSE_RENT: "9000.00", MEDICAL: "1800.00", OTHER_ALLOWANCE: "1200.00", UNPAID_DAYS: "-3000.00" }
+  net: "27000.00"

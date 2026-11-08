@@ -1,0 +1,6 @@
+name,kind,customer_type,name_bn,old_code,bin,tin,phone,email,address,district,account_manager_email,credit_limit,payment_terms_days
+Padma Oil Traders,company,dealer,পদ্মা অয়েল ট্রেডার্স,D-0108,000512345-0101,,01711-405060,padmaoil.rajshahi@gmail.com,"Shaheb Bazar, Rajshahi",Rajshahi,mitu@demo.test,400000,30
+Jamuna Super Shop,company,retail,যমুনা সুপার শপ,R-0231,,,01912-778899,,"Mirpur 10, Dhaka",Dhaka,rafi@demo.test,80000,15
+Rangpur Agro Distribution,company,distributor,রংপুর এগ্রো ডিস্ট্রিবিউশন,DS-0012,000623456-0201,,0521-62233,accounts@rangpuragro.com.bd,"Station Road, Rangpur",Rangpur,mitu@demo.test,750000,45
+Hotel Sea Pearl (Cox's Bazar),company,corporate,,C-0044,000734567-0101,,01819-224466,purchase@seapearlbd.com,"Kolatoli, Cox's Bazar",Cox's Bazar,rafi@demo.test,300000,30
+Md. Habibur Rahman (Habib Store),person,retail,মোঃ হাবিবুর রহমান (হাবিব স্টোর),R-0389,,,01556-301122,,"Kandirpar, Cumilla",Comilla,rafi@demo.test,25000,7

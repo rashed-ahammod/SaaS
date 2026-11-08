@@ -1,0 +1,20 @@
+# Tax at source on vendor bills: supply of goods (slab rates). STATUS: ILLUSTRATIVE.
+case: Stationery, Tk 3.5 lakh (first slab; the company is not a VAT withholding entity)
+status: ILLUSTRATIVE
+input: { categoryCode: SUPPLY, base: "350000", vat: "26250", vendorHasTin: true, vendorHasBin: true, companyIsVdsEntity: false }
+expected: { tdsPercent: "1", tds: "3500.00", vdsPercent: "0", vds: "0.00", inputVat: "26250.00", netPayable: "372750.00" }
+---
+case: Exactly Tk 5 lakh stays in the first slab
+status: ILLUSTRATIVE
+input: { categoryCode: SUPPLY, base: "500000", vat: "0", vendorHasTin: true, vendorHasBin: true, companyIsVdsEntity: false }
+expected: { tdsPercent: "1", tds: "5000.00", netPayable: "495000.00" }
+---
+case: Rice and lentils for the canteen, Tk 18 lakh (second slab, VAT-exempt goods)
+status: ILLUSTRATIVE
+input: { categoryCode: SUPPLY, base: "1800000", vat: "0", vendorHasTin: true, vendorHasBin: true, companyIsVdsEntity: true }
+expected: { tdsPercent: "2.5", tds: "45000.00", vds: "0.00", netPayable: "1755000.00" }
+---
+case: Packaging machine, Tk 60 lakh (top slab)
+status: ILLUSTRATIVE
+input: { categoryCode: SUPPLY, base: "6000000", vat: "900000", vendorHasTin: true, vendorHasBin: true, companyIsVdsEntity: true }
+expected: { tdsPercent: "5", tds: "300000.00", vds: "900000.00", netPayable: "5700000.00" }

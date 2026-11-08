@@ -1,0 +1,14 @@
+Tally ERP 9: Meghna Agro Industries Ltd, trial balance as at 30-09-2026
+Exported for cut-over to the new ERP on 1 October 2026
+
+account_code,old_code,old_name,debit,credit,party,reference,date,due_date,department_code
+1130,BNK-DBBL,Dutch-Bangla Bank A/C 1101100045678,"8,50,000.00",,,,,,
+1110,CASH-HO,Cash in hand (Tejgaon office),"25,000.00",,,,,,
+1150,SDR-001,Sundry debtors,"1,20,000.00",,Sylhet Agro Ltd,SA-0912,12/09/2026,12/10/2026,
+1150,SDR-001,Sundry debtors,"45,000.00",,Bogura Traders,BT-0920,20/09/2026,20/11/2026,
+1210,FA-FURN,Furniture and fixtures,"3,00,000.00",,,,,,
+1290,ACC-DEP,Accumulated depreciation,,"60,000.00",,,,,
+2110,SCR-001,Sundry creditors,,"85,000.00",KARIM,KT-5498,20/09/2026,20/10/2026,
+3100,CAP,Share capital,,"10,00,000.00",,,,,
+3200,PL-BF,Profit and loss brought forward,,"1,95,000.00",,,,,
+Total,,,"13,40,000.00","13,40,000.00",,,,,

@@ -1,0 +1,187 @@
+# Release-gate test set for the AI assistant (guide §16, spec §8 guardrail 10).
+#
+# Asked as an ordinary employee (Rafi) of a company whose policy documents are the
+# illustrative handbook in samples/policies (English and Bangla). Grading, after
+# Bangla digits are turned into ASCII and everything is lower-cased:
+#   tool     the assistant must have used this tool
+#   allOf    every item must appear in the answer
+#   anyOf    at least one item must appear
+#   noneOf   no item may appear
+# An item is a text, or {data: ...} for a value read from the system at run time:
+#   myLeaveAvailable:<code>   the asking user's available days of that leave type
+#
+# Changing the cases or the expected facts does not need a new prompt version, but
+# the gate must be run again (npm run ai:eval) before the result counts.
+
+# ---------------------------------------------------------------- policy, English
+- id: en-office-hours
+  language: en
+  question: What are the office hours?
+  tool: search_policy
+  allOf: ["9", "6"]
+
+- id: en-weekly-holiday-dhaka
+  language: en
+  question: Which days are the weekly holidays at Dhaka HQ?
+  tool: search_policy
+  allOf: [friday, saturday]
+
+- id: en-late-three-times
+  language: en
+  question: What happens if I come late three times in a month?
+  tool: search_policy
+  allOf: [casual leave]
+  anyOf: [one day, 1 day]
+
+- id: en-casual-leave-days
+  language: en
+  question: How many days of casual leave do I get in a year?
+  tool: search_policy
+  allOf: ["10"]
+
+- id: en-casual-carry-forward
+  language: en
+  question: Can unused casual leave be carried forward to next year?
+  tool: search_policy
+  anyOf: [cannot, can't, "not ", "no,"]
+
+- id: en-sick-certificate
+  language: en
+  question: When do I need a medical certificate for sick leave?
+  tool: search_policy
+  allOf: ["2", certificate]
+
+- id: en-earned-leave-max
+  language: en
+  question: What is the maximum earned leave balance I can carry forward?
+  tool: search_policy
+  allOf: ["40"]
+
+- id: en-maternity
+  language: en
+  question: How long is maternity leave?
+  tool: search_policy
+  anyOf: [16 weeks, "112"]
+
+- id: en-salary-date
+  language: en
+  question: By which day is the salary paid?
+  tool: search_policy
+  allOf: ["7"]
+
+- id: en-festival-bonus
+  language: en
+  question: How much is each festival bonus?
+  tool: search_policy
+  allOf: [basic]
+
+- id: en-provident-fund
+  language: en
+  question: How much do I contribute to the provident fund?
+  tool: search_policy
+  allOf: ["10%"]
+
+- id: en-overtime-rate
+  language: en
+  question: At what rate is overtime paid?
+  tool: search_policy
+  anyOf: [twice, double, "2x", "2 times", two times]
+
+- id: en-notice-period
+  language: en
+  question: How many days of notice must I give if I resign?
+  tool: search_policy
+  allOf: ["60"]
+
+- id: en-missing-punch
+  language: en
+  question: How long do I have to correct a missing punch?
+  tool: search_policy
+  allOf: ["3"]
+
+# ----------------------------------------------------------------- policy, Bangla
+- id: bn-office-hours
+  language: bn
+  question: অফিস সময় কখন থেকে কখন?
+  tool: search_policy
+  allOf: ["9", "6"]
+
+- id: bn-casual-leave-days
+  language: bn
+  question: নৈমিত্তিক ছুটি বছরে কত দিন পাওয়া যায়?
+  tool: search_policy
+  allOf: ["10"]
+
+- id: bn-sick-leave-days
+  language: bn
+  question: অসুস্থতাজনিত ছুটি বছরে কত দিন?
+  tool: search_policy
+  allOf: ["14"]
+
+- id: bn-maternity
+  language: bn
+  question: মাতৃত্বকালীন ছুটি কত দিনের?
+  tool: search_policy
+  anyOf: ["16", "112"]
+
+- id: bn-salary-date
+  language: bn
+  question: বেতন কবে দেওয়া হয়?
+  tool: search_policy
+  allOf: ["7"]
+
+- id: bn-festival-bonus
+  language: bn
+  question: উৎসব ভাতা কত টাকা?
+  tool: search_policy
+  allOf: [মূল বেতন]
+
+- id: bn-notice-period
+  language: bn
+  question: পদত্যাগ করতে কত দিনের নোটিশ দিতে হয়?
+  tool: search_policy
+  allOf: ["60"]
+
+- id: bn-overtime-rate
+  language: bn
+  question: ওভারটাইম কোন হারে দেওয়া হয়?
+  tool: search_policy
+  anyOf: [দ্বিগুণ, দুই গুণ, "2"]
+
+- id: bn-late-three-times
+  language: bn
+  question: এক মাসে তিনবার দেরিতে এলে কী হয়?
+  tool: search_policy
+  allOf: [নৈমিত্তিক ছুটি]
+
+- id: bn-earned-leave-max
+  language: bn
+  question: অর্জিত ছুটি সর্বোচ্চ কত দিন জমা রাখা যায়?
+  tool: search_policy
+  allOf: ["40"]
+
+# --------------------------------------------------- not in the policy: say so
+- id: en-not-in-policy
+  language: en
+  question: Does the company give a transport allowance?
+  tool: search_policy
+  anyOf: [could not find, couldn't find, not find, no information, not mention, doesn't mention, does not mention, not covered, not in the, hr]
+
+- id: bn-not-in-policy
+  language: bn
+  question: অফিসে কি জিম ব্যবহারের সুবিধা আছে?
+  tool: search_policy
+  anyOf: [পাইনি, পাওয়া যায়নি, উল্লেখ নেই, তথ্য নেই, hr]
+
+# ------------------------------------------------------------ own data (tools)
+- id: en-my-casual-balance
+  language: en
+  question: How many casual leave days do I have left?
+  tool: get_my_leave_balances
+  allOf: [{ data: "myLeaveAvailable:CL" }]
+
+- id: bn-my-casual-balance
+  language: bn
+  question: আমার নৈমিত্তিক ছুটি কত দিন বাকি আছে?
+  tool: get_my_leave_balances
+  allOf: [{ data: "myLeaveAvailable:CL" }]
