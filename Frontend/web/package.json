@@ -11,6 +11,9 @@
     "test": "vitest run",
     "e2e": "playwright test"
   },
+  "overrides": {
+    "minimatch": "^11.0.1"
+  },
   "dependencies": {
     "next": "16.4.1",
     "qrcode": "^1.5.4",

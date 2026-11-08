@@ -34,6 +34,9 @@
     "backup": "tsx scripts/backup.ts",
     "restore:drill": "tsx scripts/restore-drill.ts"
   },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.134.0",
     "@aws-sdk/client-s3": "^3.1164.0",
@@ -66,7 +69,7 @@
     "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "^4.1.12",
     "oxlint": "^1.58.0",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
@@ -74,7 +77,7 @@
     "tsx": "^4.23.15",
     "typescript": "^6.0.2",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.1.2",
+    "vitest": "^4.1.12",
     "yaml": "^2.9.1"
   }
 }
