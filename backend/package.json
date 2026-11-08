@@ -27,6 +27,7 @@
     "start:worker:dev": "nest start --watch --entryFile worker",
     "typecheck": "tsc --noEmit",
     "db:seed": "nest build && node dist/dev/seed.js",
+    "bootstrap:tenant": "node dist/cli/bootstrap-tenant.js",
     "db:reset": "tsx scripts/db-reset.ts",
     "rules": "tsx scripts/rules.ts",
     "ai:eval": "nest build && node dist/dev/ai-eval.js",

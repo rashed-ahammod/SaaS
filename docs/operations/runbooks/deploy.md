@@ -34,6 +34,22 @@ The error lists every problem. The checks include:
 - short passwords;
 - no metrics token.
 
+**The first workspace.** `npm run db:seed` refuses to run in production (it creates fake
+workspaces with a published password), so the first real customer workspace and its login come
+from:
+
+```
+npm run build
+BOOTSTRAP_OWNER_PASSWORD='<one-time password>'   npm run bootstrap:tenant -- --slug=acme --name="Acme Trading Ltd" --email=admin@acme.com.bd
+```
+
+The owner gets System Admin, Admin and HR with group scope, so they can set up the company and
+its first employees (nobody may grant roles to themselves). Pass the password through
+`BOOTSTRAP_OWNER_PASSWORD`, not `--password`: command-line arguments are visible to other
+processes on the host. The script refuses a slug that exists, and refuses to add a second
+workspace unless `--force-second-workspace` is given. Then sign in, set up 2FA at once
+(mandatory for System Admin/Admin/HR/Accounts) and change the password.
+
 ## Every release
 
 1. **CI is green on the commit:**

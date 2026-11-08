@@ -1,0 +1,33 @@
+# ---------------------------------------------------------------------------
+# Line endings. Everything is stored with LF in the repository and checked out
+# with LF, so the same file never looks modified just because it was opened on
+# Windows. Without this, core.autocrlf decides per machine and the whole tree
+# can show up as changed.
+# ---------------------------------------------------------------------------
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF or the shell mis-reads them.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary: never convert, never try to diff as text.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.eot   binary
+*.xlsx  binary
+*.docx  binary
+
+# Generated: keep them out of diffs and reviews.
+package-lock.json  -diff linguist-generated
