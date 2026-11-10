@@ -7,10 +7,6 @@ import type { NextConfig } from 'next';
  */
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // Emit .next/standalone: a server with only the modules it actually uses, so
-  // the Docker image needs no node_modules of its own (Frontend/web/Dockerfile).
-  // `next dev` and `next start` are unaffected.
-  output: 'standalone',
   turbopack: {
     rules: {
       '*.css': {
