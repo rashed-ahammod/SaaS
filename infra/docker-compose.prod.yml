@@ -93,8 +93,12 @@ services:
       - backups:/app/backups
     # FILE_STORAGE_DRIVER=local means one API instance only: a volume cannot be
     # shared. For more than one, move to FILE_STORAGE_DRIVER=s3.
-    expose:
-      - "3000"
+    #
+    # Bound to the loopback address, so `curl localhost:3000/health/ready` works
+    # on this machine and nothing else on the network can reach the API. The
+    # employee app talks to it over the compose network, not through this.
+    ports:
+      - "127.0.0.1:3000:3000"
 
   # Exactly one. The jobs are idempotent, but two workers would run each twice.
   worker:
@@ -125,8 +129,13 @@ services:
       # directly. Reached over this private network, so plain http is fine.
       BACKEND_URL: http://api:3000
       ENQUIRY_FORMS: ${ENQUIRY_FORMS:-}
-    expose:
-      - "3001"
+    # Loopback only. Open http://localhost:3001 on this machine to try the app
+    # before any tunnel exists; browsers treat localhost as a secure origin, so
+    # the session cookie works even without https. Everyone else comes in
+    # through cloudflared below. Change this to "3001:3001" only if you really
+    # mean to serve the local network in the clear.
+    ports:
+      - "127.0.0.1:3001:3001"
 
   # Publishes `web` on the internet over HTTPS without opening a single inbound
   # port, and without a public IP address. Create the tunnel in the Cloudflare
