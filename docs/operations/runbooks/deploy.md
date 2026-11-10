@@ -51,6 +51,41 @@ processes on the host. The script refuses a slug that exists, and refuses to add
 workspace unless `--force-second-workspace` is given. Then sign in, set up 2FA at once
 (mandatory for System Admin/Admin/HR/Accounts) and change the password.
 
+## Self-hosted, with Docker Compose
+
+For a pilot, a customer that needs the data to stay in Bangladesh, or any machine
+you own, `infra/docker-compose.prod.yml` runs the whole stack — PostgreSQL 18, the
+API, the worker and the employee app — on one host. The images are built for
+amd64 and arm64.
+
+```
+cd infra
+cp .env.production.example .env        # then fill in every secret
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+The `init` service creates the four roles and the database on the first run and
+applies pending migrations on every run; both steps are idempotent, and the API
+waits for it to finish. Then create the first workspace:
+
+```
+docker compose -f docker-compose.prod.yml run --rm   -e BOOTSTRAP_OWNER_PASSWORD='<one-time password>' api   npm run bootstrap:tenant -- --slug=acme --name="Acme Trading Ltd"     --email=admin@acme.com.bd
+```
+
+**Reaching it from the internet.** `PUBLIC_APP_URL` must be `https://`, so a plain
+LAN address will not do. The `tunnel` profile runs `cloudflared`, which publishes
+the employee app over HTTPS with **no inbound port open and no public IP**: create
+a tunnel in Cloudflare Zero Trust, point its hostname at `http://web:3001`, put
+the token in `infra/.env`, then
+`docker compose -f docker-compose.prod.yml --profile tunnel up -d`.
+
+**What this setup does not give you.** One host is a single point of failure, and
+`FILE_STORAGE_DRIVER=local` keeps uploads on a volume, which means **one API
+instance only** — for more, switch to `s3`. Nothing scrapes `/metrics` yet, so job
+failures are silent. And backups are entirely yours: schedule
+`docker compose -f docker-compose.prod.yml exec api npm run backup` on the host,
+copy the files off the machine, and run the restore drill before you need it.
+
 ## Every release
 
 1. **CI is green on the commit:**

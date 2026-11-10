@@ -1,0 +1,22 @@
+# Everything the image must not carry. Keep this in step with the COPY lines in
+# the Dockerfile: anything not listed there is not in the image anyway, but a
+# smaller build context makes every build faster.
+node_modules
+dist
+.env
+.env.*
+!.env.example
+storage
+backups
+coverage
+test-results
+*.log
+*.tsbuildinfo
+.node-version
+
+# not needed to run the server
+test
+postman
+samples
+Dockerfile
+.dockerignore
