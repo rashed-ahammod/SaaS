@@ -21,7 +21,10 @@ services:
     plan: free
     region: singapore # nearest to Bangladesh of Render's regions
     rootDir: backend
-    buildCommand: npm ci && npm run build
+    # --include=dev: NODE_ENV is production below, and npm then skips
+    # devDependencies by default — which is where the Nest CLI that runs the
+    # build lives (`nest build`). Without it the build fails on "nest: not found".
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: node dist/main
     # Render restarts the service if this stops answering. It checks the
     # database too, so a paused Supabase project shows up here (WP12).
