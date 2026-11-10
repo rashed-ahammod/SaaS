@@ -620,6 +620,11 @@ async function seedDemoAttendance(get: Get) {
   for (const e of employees) {
     const no = String(1000 + Number(e.employee_code.slice(-5)));
     userNo.set(e.full_name_en, no);
+    // Someone still a draft has not joined, so nobody took their consent
+    // (seedDemoConsents skips drafts) and enrolling them on the biometric
+    // device is refused by the rule in shifts.service.updateProfile. The
+    // punches below skip drafts for the same reason.
+    if (e.status === 'draft') continue;
     await shifts.updateProfile(e.id, {
       deviceUserId: no,
       webPunchAllowed: e.full_name_en === 'Nusrat Jahan',

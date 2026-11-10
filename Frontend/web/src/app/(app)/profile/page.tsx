@@ -236,7 +236,15 @@ function TwoFactorSetup() {
     setError(null);
     const res = await fetch("/api/session/mfa-enable", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-erp-client": "pwa" },
+      headers: {
+        "content-type": "application/json",
+        "x-erp-client": "pwa",
+        // The API requires a key on every write, and this call does not go
+        // through lib/api.ts, which adds one. Without it the only answer is
+        // "Idempotency-Key header is required", and 2FA cannot be turned on at
+        // all — which locks every privileged role out of the portal.
+        "idempotency-key": crypto.randomUUID(),
+      },
       body: JSON.stringify({ code: code.trim() }),
     });
     setBusy(false);
