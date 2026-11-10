@@ -107,10 +107,13 @@ describe('S3FileStorage', () => {
   let seen: Array<{ method: string; url: string; headers: IncomingMessage['headers'] }>;
   /** What the next request should answer with. */
   let reply: { status: number; body?: Buffer };
+  /** What a HEAD (the "is this key taken?" check) should answer: 404 = free. */
+  let headStatus: number;
 
   beforeAll(async () => {
     seen = [];
     reply = { status: 200 };
+    headStatus = 404;
     server = createServer((req, res) => {
       // the AWS client appends ?x-id=PutObject / ?x-id=GetObject; keep the path only
       seen.push({
@@ -118,6 +121,11 @@ describe('S3FileStorage', () => {
         url: (req.url ?? '').split('?')[0],
         headers: req.headers,
       });
+      if (req.method === 'HEAD') {
+        res.writeHead(headStatus, { ETag: '"abc"' });
+        res.end();
+        return;
+      }
       req.resume(); // drain the body
       req.on('end', () => {
         res.writeHead(reply.status, {
@@ -147,10 +155,12 @@ describe('S3FileStorage', () => {
   it('puts the file at bucket/key, refusing to overwrite', async () => {
     seen.length = 0;
     reply = { status: 200 };
+    headStatus = 404; // the key is free
     await storage.put(KEY, Buffer.from('%PDF-1.7 contract'));
 
-    expect(seen).toHaveLength(1);
-    expect(seen[0].method).toBe('PUT');
+    // first it asks whether the key is taken, then it writes
+    expect(seen.map((r) => r.method)).toEqual(['HEAD', 'PUT']);
+    seen = seen.filter((r) => r.method === 'PUT');
     expect(seen[0].url).toBe(`/erp-docs/${KEY}`);
     // the conditional write that stands in for the local "wx" flag
     expect(seen[0].headers['if-none-match']).toBe('*');
@@ -161,14 +171,28 @@ describe('S3FileStorage', () => {
   });
 
   it('turns the bucket’s 412 into FileAlreadyExistsError', async () => {
+    headStatus = 404;
     reply = { status: 412 };
     await expect(storage.put(KEY, Buffer.from('%PDF-1.7'))).rejects.toThrow(
       FileAlreadyExistsError,
     );
   });
 
+  it('refuses a key the bucket already holds, without writing', async () => {
+    // Supabase Storage accepts If-None-Match and overwrites anyway, so the
+    // HEAD is what keeps the promise there. No PUT may leave the process.
+    seen.length = 0;
+    headStatus = 200; // the key is taken
+    reply = { status: 200 };
+    await expect(storage.put(KEY, Buffer.from('%PDF-1.7'))).rejects.toThrow(
+      FileAlreadyExistsError,
+    );
+    expect(seen.map((r) => r.method)).toEqual(['HEAD']);
+  });
+
   it('returns the stored bytes', async () => {
     seen.length = 0;
+    headStatus = 404;
     reply = { status: 200, body: Buffer.from('%PDF-1.7 payslip') };
     expect(await storage.get(KEY)).toEqual(Buffer.from('%PDF-1.7 payslip'));
     expect(seen[0].method).toBe('GET');

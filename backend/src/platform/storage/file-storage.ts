@@ -19,6 +19,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -107,6 +108,15 @@ export class S3FileStorage extends FileStorage {
 
   async put(key: string, content: Buffer): Promise<void> {
     assertStorageKey(key);
+    // Ask whether the key is taken before writing. The conditional write below
+    // is not enough everywhere: Supabase Storage's S3 API accepts
+    // If-None-Match and overwrites the object anyway (checked against a live
+    // bucket on 2026-11-11), so there the guarantee would silently be no
+    // guarantee at all. On S3, R2 and MinIO the header still makes the write
+    // atomic, and this call only costs one HEAD; here it leaves a window
+    // between the two requests, which no caller can reach because every key
+    // ends in a randomUUID() generated for that one upload.
+    if (await this.exists(key)) throw new FileAlreadyExistsError(key);
     try {
       await this.client.send(
         new PutObjectCommand({
@@ -126,6 +136,19 @@ export class S3FileStorage extends FileStorage {
     }
   }
 
+  /** Whether the bucket already holds this key. */
+  private async exists(key: string): Promise<boolean> {
+    try {
+      await this.client.send(
+        new HeadObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      return true;
+    } catch (err) {
+      if (isNotFound(err)) return false;
+      throw err;
+    }
+  }
+
   async get(key: string): Promise<Buffer> {
     assertStorageKey(key);
     const result = await this.client.send(
@@ -138,6 +161,15 @@ export class S3FileStorage extends FileStorage {
   override async close(): Promise<void> {
     this.client.destroy();
   }
+}
+
+/** The bucket holds no such key (HTTP 404). */
+function isNotFound(err: unknown): boolean {
+  const e = err as {
+    name?: string;
+    $metadata?: { httpStatusCode?: number };
+  };
+  return e?.name === 'NotFound' || e?.$metadata?.httpStatusCode === 404;
 }
 
 /** The bucket refused the write because the key already exists (HTTP 412). */

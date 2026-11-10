@@ -150,7 +150,7 @@ health check `/health`.
 | `PG_USER_SUFFIX` | `.<project-ref>` |
 | `PG_OWNER_PASSWORD`, `PG_APP_PASSWORD`, `PG_WORKER_PASSWORD` | from 2.2 |
 | `FIELD_ENCRYPTION_KEY` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` — **keep a copy offline; encrypted fields are unreadable without it** |
-| `PUBLIC_APP_URL` | the Vercel address from Phase 4. Leave it until then |
+| `PUBLIC_APP_URL` | the Vercel address from Phase 4, which does not exist yet. Put `https://example.com` here for now and change it in 4.3 — it may not be left empty: an empty value is not a URL, and the API refuses to start |
 | `S3_ENDPOINT` | `https://<project-ref>.storage.supabase.co/storage/v1/s3` |
 | `S3_REGION` | `ap-southeast-1` |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | from 2.5 |
