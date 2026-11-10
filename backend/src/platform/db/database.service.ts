@@ -45,7 +45,7 @@ export class DatabaseService {
     installPgTypeParsers();
     const pool = new pg.Pool({
       ...config.db.connectionFor(role),
-      max: role === 'erp_app' ? 20 : 5,
+      max: config.db.poolMaxFor(role),
       application_name: `erp-${role}`,
     });
     this.kysely = new Kysely<Database>({

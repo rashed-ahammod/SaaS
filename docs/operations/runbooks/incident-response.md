@@ -19,7 +19,7 @@
 
 | Check | Look for |
 | --- | --- |
-| API logs (`HttpExceptionFilter` lines) | The same error repeated: a bad release (roll back the code, see [deploy](deploy.md)) or the database |
+| API logs (`HttpExceptionFilter` lines) | The same error repeated: a bad release (roll back the code, see [deploy for free](deploy-free.md)) or the database |
 | `GET /health/ready` says migrations missing | A release started before `npm run db:migrate` finished: run it |
 | Database | Connections at the limit (the API pool is 20 per instance), locks, disk full, a failover in progress |
 | Only some tenants | One tenant's very large job (a payroll run, an import). These run inside the request, so wait or ask the tenant's HR to retry later |

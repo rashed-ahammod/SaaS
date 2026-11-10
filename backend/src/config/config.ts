@@ -20,6 +20,28 @@ const envSchema = z.object({
   PG_OWNER_PASSWORD: z.string().min(1),
   PG_APP_PASSWORD: z.string().min(1),
   PG_WORKER_PASSWORD: z.string().min(1),
+  // A managed PostgreSQL (Supabase, Neon, RDS) accepts TLS connections only; a
+  // server on the same private network, reachable through no published port,
+  // does not need it.
+  //   off          plain connection
+  //   require      TLS, without checking who the server is. What a pooler whose
+  //                CA is not published needs (Supabase Supavisor).
+  //   verify-full  TLS, and the server certificate must be signed by
+  //                PG_SSL_ROOT_CERT. Use this whenever the provider publishes
+  //                its CA certificate.
+  PG_SSL: z.enum(['off', 'require', 'verify-full']).default('off'),
+  // The CA certificate itself (PEM), not a path: it comes from the secret store.
+  PG_SSL_ROOT_CERT: z.string().optional(),
+  // Appended to every role name at login. Some connection poolers expect the
+  // project in the user name: Supabase's Supavisor wants `erp_app.<project-ref>`,
+  // so PG_USER_SUFFIX=.<project-ref>. Empty everywhere else.
+  PG_USER_SUFFIX: z.string().default(''),
+  // How many connections each pool may open. The defaults suit a PostgreSQL of
+  // your own. Behind a pooler in session mode every connection is held for as
+  // long as it is open, and a free plan's pooler allows few of them: 8 and 3
+  // fit inside Supavisor's default pool size of 15.
+  PG_POOL_MAX: z.coerce.number().int().min(1).max(100).default(20),
+  PG_POOL_MAX_WORKER: z.coerce.number().int().min(1).max(100).default(5),
 
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   FIELD_ENCRYPTION_KEY: z
@@ -71,6 +93,11 @@ const envSchema = z.object({
 
   // Prometheus scrapes GET /metrics with Authorization: Bearer <METRICS_TOKEN> (unset = route disabled)
   METRICS_TOKEN: z.string().optional(),
+
+  // Run the scheduled jobs (src/jobs.ts) inside the API process instead of a
+  // worker of its own. For a host whose free plan offers one web service only.
+  // ONE API instance only: two would run every job twice.
+  RUN_JOBS_IN_API: z.enum(['true', 'false']).default('false'),
 });
 
 export type AppConfig = ReturnType<typeof loadConfig>;
@@ -97,6 +124,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
       );
   }
 
+  if (e.PG_SSL === 'verify-full' && !e.PG_SSL_ROOT_CERT)
+    throw new Error(
+      'PG_SSL=verify-full needs PG_SSL_ROOT_CERT (the CA certificate in PEM form). See backend/.env.example.',
+    );
+
   if (e.FILE_STORAGE_DRIVER === 's3') {
     const missing = (
       ['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'] as const
@@ -106,6 +138,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
         `FILE_STORAGE_DRIVER=s3 needs ${missing.join(', ')}. See backend/.env.example.`,
       );
   }
+
+  /** What `pg` wants for the `ssl` option, built once. */
+  const ssl =
+    e.PG_SSL === 'off'
+      ? false
+      : e.PG_SSL === 'require'
+        ? { rejectUnauthorized: false }
+        : { rejectUnauthorized: true, ca: e.PG_SSL_ROOT_CERT as string };
 
   const passwords: Record<DbRole, string> = {
     erp_owner: e.PG_OWNER_PASSWORD,
@@ -121,14 +161,20 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
       host: e.PG_HOST,
       port: e.PG_PORT,
       database: e.PG_DATABASE,
+      /** How many connections the pool for this role may open. */
+      poolMaxFor(role: DbRole) {
+        return role === 'erp_worker' ? e.PG_POOL_MAX_WORKER : e.PG_POOL_MAX;
+      },
       /** Connection settings for one of the three database roles. */
       connectionFor(role: DbRole) {
         return {
           host: e.PG_HOST,
           port: e.PG_PORT,
           database: e.PG_DATABASE,
-          user: role,
+          // the role itself; PG_USER_SUFFIX only changes how it logs in
+          user: `${role}${e.PG_USER_SUFFIX}`,
           password: passwords[role],
+          ssl,
         };
       },
     },
@@ -169,6 +215,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     monitoring: {
       metricsToken: e.METRICS_TOKEN || undefined,
     },
+    /** Scheduled jobs run in this process, with no worker of its own. */
+    runJobsInApi: e.RUN_JOBS_IN_API === 'true',
     ai: {
       provider: e.AI_PROVIDER,
       /** Optional: without it the Anthropic SDK uses ANTHROPIC_AUTH_TOKEN or an `ant auth login` profile. */

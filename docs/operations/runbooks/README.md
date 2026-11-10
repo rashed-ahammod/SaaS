@@ -5,7 +5,7 @@ For the people who run the ERP in production and answer its alerts. Each alert i
 
 | Runbook | Use it when |
 | --- | --- |
-| [Deploy](deploy.md) | Setting up production, or releasing a new version |
+| [Deploy for free](deploy-free.md) | Setting up or re-deploying the pilot on Vercel + Render + Supabase, and what those free plans do not give you |
 | [Backup and restore](backup-and-restore.md) | Daily backups, the monthly restore drill, restoring after data loss, alerts `BackupMissing`, `WalArchivingFailing`, `DiskFilling` |
 | [Incident response](incident-response.md) | The API is down or failing (`ApiDown`, `HighErrorRate`, `SlowApi`), suspected tampering or data leak (`AuditChainBroken`), telling tenants |
 | [Background jobs](background-jobs.md) | `BackgroundJobFailing`, `BackgroundJobStale`, outbox dead letters, e-mail / SMS not delivered, AI failing |

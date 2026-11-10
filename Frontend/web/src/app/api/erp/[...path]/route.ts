@@ -61,3 +61,11 @@ export const POST = forward;
 export const PUT = forward;
 export const PATCH = forward;
 export const DELETE = forward;
+
+/**
+ * The API may be asleep: a free Render web service spins down after 15 minutes
+ * without traffic and takes about a minute to answer the first request again.
+ * Without this the function would be cut off before the API wakes up, and the
+ * user would see a login failure that is really a cold start.
+ */
+export const maxDuration = 60;

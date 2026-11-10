@@ -111,3 +111,11 @@ function backendProblems(problems: string[]): string[] {
   }
   return keys.size ? [...keys] : ["contact"];
 }
+
+/**
+ * The API may be asleep: a free Render web service spins down after 15 minutes
+ * without traffic and takes about a minute to answer the first request again.
+ * Without this the function would be cut off before the API wakes up, and the
+ * user would see a login failure that is really a cold start.
+ */
+export const maxDuration = 60;
