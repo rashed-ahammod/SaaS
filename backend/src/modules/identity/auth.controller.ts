@@ -12,8 +12,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
+  Param,
+  ParseUUIDPipe,
   Post,
   Req,
   UseGuards,
@@ -76,6 +79,31 @@ export class AuthController {
   @HttpCode(200)
   enableMfa(@Body() dto: EnableMfaDto) {
     return this.authService.enableMfa(dto);
+  }
+
+  // GET /auth/devices  — the devices this user chose to remember
+  @UseGuards(AuthGuard)
+  @AnyAuthenticated()
+  @Get('devices')
+  devices() {
+    return this.authService.myDevices();
+  }
+
+  // DELETE /auth/devices  — stop trusting every device of this user
+  // (after this the 2FA code is asked for again everywhere)
+  @UseGuards(AuthGuard)
+  @AnyAuthenticated()
+  @Delete('devices')
+  forgetAllDevices() {
+    return this.authService.forgetDevices();
+  }
+
+  // DELETE /auth/devices/:deviceId  — stop trusting one of them
+  @UseGuards(AuthGuard)
+  @AnyAuthenticated()
+  @Delete('devices/:deviceId')
+  forgetDevice(@Param('deviceId', ParseUUIDPipe) deviceId: string) {
+    return this.authService.forgetDevices(deviceId);
   }
 }
 

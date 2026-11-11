@@ -73,18 +73,28 @@ export async function allRoutes(): Promise<RouteInfo[]> {
           ...(Reflect.getMetadata(GUARDS_METADATA, exported) ?? []),
           ...(Reflect.getMetadata(GUARDS_METADATA, handler) ?? []),
         ];
+        // Compared by name, not by identity. The controllers above are loaded
+        // from a file URL, while the guards are imported normally, and the two
+        // ways can end up with separate copies of the same class once another
+        // test file has loaded src/ through its own specifier. Identity then
+        // fails for every route at once, which looked like "no route is
+        // guarded" instead of "this check cannot see the guard".
+        const guardNames = new Set(
+          guards.map((g) => (g as { name?: string } | null)?.name),
+        );
+        const uses = (guard: { name: string }) => guardNames.has(guard.name);
         // the metrics guard admits only the monitoring system's token: that is its declaration
         const declared =
           Reflect.getMetadata(PERMISSIONS_KEY, handler) !== undefined ||
           Reflect.getMetadata(ANY_AUTHENTICATED_KEY, handler) === true ||
-          guards.includes(MetricsTokenGuard);
+          uses(MetricsTokenGuard);
         routes.push({
           route,
           guarded:
-            guards.includes(AuthGuard) ||
-            guards.includes(ServiceKeyGuard) ||
-            guards.includes(EventTokenGuard) ||
-            guards.includes(MetricsTokenGuard),
+            uses(AuthGuard) ||
+            uses(ServiceKeyGuard) ||
+            uses(EventTokenGuard) ||
+            uses(MetricsTokenGuard),
           declared,
         });
       }

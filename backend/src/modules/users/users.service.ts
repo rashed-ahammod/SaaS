@@ -23,6 +23,7 @@ import { MSG } from '../../platform/i18n/messages.js';
 import { requestContext } from '../../platform/tenancy/request-context.js';
 import { EmployeeAccess } from '../employees/employee-access.js';
 import { AccessService } from '../identity/access/access.service.js';
+import { TrustedDevicesService } from '../identity/trusted-devices.service.js';
 import { hashPassword } from '../identity/password.js';
 import type {
   CreateUserDto,
@@ -37,6 +38,7 @@ export class UsersService {
     private readonly audit: AuditService,
     private readonly access: AccessService,
     private readonly employeeAccess: EmployeeAccess,
+    private readonly trustedDevices: TrustedDevicesService,
   ) {}
 
   async createUser(dto: CreateUserDto) {
@@ -169,12 +171,17 @@ export class UsersService {
       })
       .where('id', '=', id)
       .execute();
+    // A new password must cut off every device that was allowed to skip the
+    // 2FA code: otherwise a stolen laptop keeps its way in after the very
+    // change meant to lock it out (trusted-devices.service.ts).
+    const revoked = await this.trustedDevices.revoke(id);
     await this.audit.record({
       action: 'user.password_reset',
       entity: 'user',
       entityId: id,
+      after: { trustedDevicesRevoked: revoked },
     });
-    return { passwordReset: true };
+    return { passwordReset: true, trustedDevicesRevoked: revoked };
   }
 
   async findUser(id: string): Promise<User> {

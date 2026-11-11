@@ -3,8 +3,10 @@
  * before the controller runs.
  */
 import {
+  IsBoolean,
   IsJWT,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Length,
   Matches,
@@ -27,6 +29,16 @@ export class LoginDto {
   @IsNotEmpty()
   @MaxLength(200)
   password: string;
+
+  /**
+   * The token from the "remember this device" cookie, if the browser has one.
+   * A valid one skips the 2FA code step; the password above is still required.
+   * The employee app sends it server-side; it never reaches the page.
+   */
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z0-9_-]{43}$/)
+  deviceToken?: string;
 }
 
 export class VerifyMfaDto {
@@ -37,6 +49,11 @@ export class VerifyMfaDto {
   @IsString()
   @Length(6, 6)
   code: string;
+
+  /** Trust this device for 30 days, so only the password is asked next time. */
+  @IsOptional()
+  @IsBoolean()
+  rememberDevice?: boolean;
 }
 
 export class EnableMfaDto {

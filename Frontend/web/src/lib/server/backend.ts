@@ -7,6 +7,14 @@
  */
 export const SESSION_COOKIE = "erp_session";
 
+/**
+ * "Remember this device": set after someone ticks the box at the 2FA step, and
+ * sent back to the API on the next sign-in so the code step can be skipped.
+ * It outlives sign-out on purpose — that is what makes the device remembered.
+ * httpOnly, so the page itself can never read or copy it.
+ */
+export const DEVICE_COOKIE = "erp_device";
+
 /** Requests from our own pages carry this header; a cross-site form cannot set it (CSRF guard). */
 export const CLIENT_HEADER = "x-erp-client";
 
@@ -16,6 +24,10 @@ export function backendUrl(path: string): string {
     "",
   );
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+export function deviceCookieOptions(maxAgeSeconds: number) {
+  return { ...sessionCookieOptions(maxAgeSeconds) };
 }
 
 export function sessionCookieOptions(maxAgeSeconds: number) {

@@ -24,6 +24,7 @@ export const MSG = {
   AUTH_MFA_ALREADY_ENABLED: 'AUTH_MFA_ALREADY_ENABLED',
   AUTH_STEP_UP_REQUIRED: 'AUTH_STEP_UP_REQUIRED',
   USER_NOT_FOUND: 'USER_NOT_FOUND',
+  TRUSTED_DEVICE_NOT_FOUND: 'TRUSTED_DEVICE_NOT_FOUND',
   // data
   DUPLICATE_VALUE: 'DUPLICATE_VALUE',
   REFERENCE_NOT_FOUND: 'REFERENCE_NOT_FOUND',
@@ -636,6 +637,7 @@ const en: Record<MessageKey, string> = {
   AUTH_MFA_ALREADY_ENABLED: 'Two-factor authentication is already enabled.',
   AUTH_STEP_UP_REQUIRED: 'Enter your verification code to confirm this action.',
   USER_NOT_FOUND: 'User not found.',
+  TRUSTED_DEVICE_NOT_FOUND: 'That device is not on your list.',
   IDEMPOTENCY_KEY_REQUIRED:
     'Idempotency-Key header is required for this request.',
   IDEMPOTENCY_KEY_REUSED:
@@ -1027,6 +1029,7 @@ const bn: Record<MessageKey, string> = {
   AUTH_MFA_ALREADY_ENABLED: 'টু-ফ্যাক্টর যাচাইকরণ আগেই চালু আছে।',
   AUTH_STEP_UP_REQUIRED: 'এই কাজটি নিশ্চিত করতে আপনার যাচাইকরণ কোড দিন।',
   USER_NOT_FOUND: 'ব্যবহারকারী পাওয়া যায়নি।',
+  TRUSTED_DEVICE_NOT_FOUND: 'এই ডিভাইসটি আপনার তালিকায় নেই।',
   IDEMPOTENCY_KEY_REQUIRED: 'এই অনুরোধের জন্য Idempotency-Key হেডার প্রয়োজন।',
   IDEMPOTENCY_KEY_REUSED:
     'এই Idempotency-Key আগে অন্য একটি অনুরোধে ব্যবহার হয়েছে।',

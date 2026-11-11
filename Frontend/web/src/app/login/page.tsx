@@ -29,6 +29,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [code, setCode] = useState("");
+  const [rememberDevice, setRememberDevice] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -90,6 +91,7 @@ function LoginForm() {
     const result = await send("/api/session/mfa", {
       mfaToken,
       code: code.trim(),
+      rememberDevice,
     });
     if (result?.signedIn) goNext();
   }
@@ -127,6 +129,20 @@ function LoginForm() {
                 autoFocus
               />
             </Field>
+            <label className="mb-4 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 size-4 shrink-0 accent-green-800"
+                checked={rememberDevice}
+                onChange={(e) => setRememberDevice(e.target.checked)}
+              />
+              <span>
+                {t("login.rememberDevice")}
+                <span className="mt-0.5 block text-xs text-slate-500">
+                  {t("login.rememberDeviceHint")}
+                </span>
+              </span>
+            </label>
             <Button type="submit" busy={busy} className="w-full">
               {t("login.verify")}
             </Button>

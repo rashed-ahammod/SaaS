@@ -5,6 +5,7 @@ import { AccessService } from './access/access.service.js';
 import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
+import { TrustedDevicesService } from './trusted-devices.service.js';
 import { ServiceKeyGuard } from './service-key.guard.js';
 import { TokenService } from './token.service.js';
 import { UserDirectory } from './user-directory.service.js';
@@ -28,6 +29,7 @@ import { UserDirectory } from './user-directory.service.js';
   providers: [
     AuthService,
     TokenService,
+    TrustedDevicesService,
     AuthGuard,
     ServiceKeyGuard,
     AccessService,
@@ -36,6 +38,7 @@ import { UserDirectory } from './user-directory.service.js';
   // Other modules use AuthGuard in @UseGuards(AuthGuard) (it needs TokenService and
   // AccessService) and AccessService in their services.
   exports: [
+    TrustedDevicesService,
     AuthGuard,
     ServiceKeyGuard,
     TokenService,

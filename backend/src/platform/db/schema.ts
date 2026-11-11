@@ -54,6 +54,21 @@ export interface UsersTable {
   version: Generated<number>;
 }
 
+/** A device whose owner ticked "remember this device" at the 2FA step (0041). */
+export interface TrustedDevicesTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  user_id: string;
+  /** SHA-256 of the token, hex. The token itself is only ever in the cookie. */
+  token_hash: string;
+  label: string | null;
+  created_ip: string | null;
+  created_at: Generated<Date>;
+  last_used_at: Date | null;
+  expires_at: Date;
+  revoked_at: Date | null;
+}
+
 export interface AuditLogTable {
   tenant_id: Defaulted<string>;
   seq: number;
@@ -3104,6 +3119,7 @@ export interface AdvanceSettlementsTable {
 export interface Database {
   tenants: TenantsTable;
   users: UsersTable;
+  trusted_devices: TrustedDevicesTable;
   audit_log: AuditLogTable;
   outbox_events: OutboxEventsTable;
   idempotency_keys: IdempotencyKeysTable;
@@ -3343,6 +3359,7 @@ export type EmployeeDocument = Selectable<EmployeeDocumentsTable>;
 export type OnboardingItem = Selectable<OnboardingChecklistsTable>;
 
 export type User = Selectable<UsersTable>;
+export type TrustedDevice = Selectable<TrustedDevicesTable>;
 export type NewUser = Insertable<UsersTable>;
 export type UserUpdate = Updateable<UsersTable>;
 export type OutboxEvent = Selectable<OutboxEventsTable>;

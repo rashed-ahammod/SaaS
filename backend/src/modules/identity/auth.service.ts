@@ -38,6 +38,11 @@ import { burnPasswordCheckTime, verifyPassword } from './password.js';
 import { AccessService } from './access/access.service.js';
 import { TokenService } from './token.service.js';
 import { newTotpSecret, totpUri, verifyTotp } from './totp.js';
+import {
+  TRUSTED_DEVICE_DAYS,
+  TrustedDevicesService,
+  type DeviceTrust,
+} from './trusted-devices.service.js';
 
 /** Where the request came from, recorded in the audit log. */
 export interface ClientInfo {
@@ -46,12 +51,27 @@ export interface ClientInfo {
 }
 
 export type LoginResult =
-  | { accessToken: string; expiresIn: number; mfaSetupRequired?: true }
+  | {
+      accessToken: string;
+      expiresIn: number;
+      mfaSetupRequired?: true;
+      /** Set when the user asked for this device to be remembered (WP: 2FA). */
+      deviceToken?: string;
+      deviceTokenExpiresIn?: number;
+    }
   | { mfaRequired: true; mfaToken: string };
 
 /** Result of a check that must save its changes (failed count) even when it fails. */
 type CheckOutcome =
-  | { ok: true; user: User; privileged: boolean }
+  | {
+      ok: true;
+      user: User;
+      privileged: boolean;
+      /** The password step also recognised a remembered device (0041). */
+      deviceTrusted?: boolean;
+      /** A device trusted during this very sign-in; its token goes to the cookie. */
+      device?: DeviceTrust;
+    }
   | { ok: false; error: 'invalid' | 'locked' };
 
 @Injectable()
@@ -62,6 +82,7 @@ export class AuthService {
     private readonly tokens: TokenService,
     private readonly encryption: FieldEncryption,
     private readonly access: AccessService,
+    private readonly trustedDevices: TrustedDevicesService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -120,7 +141,11 @@ export class AuthService {
           entityId: user.id,
         });
         const { privileged } = await this.access.load(user.id);
-        return { ok: true, user, privileged };
+        // a device the user asked us to remember skips the code step below
+        const deviceTrusted =
+          user.mfa_enabled &&
+          (await this.trustedDevices.isTrusted(user.id, dto.deviceToken));
+        return { ok: true, user, privileged, deviceTrusted };
       },
     );
 
@@ -128,6 +153,21 @@ export class AuthService {
 
     // second step needed?
     if (outcome.user.mfa_enabled) {
+      // ... unless this device was remembered: the password was still checked,
+      // and high-risk actions still ask for a code of their own (auth.guard).
+      if (outcome.deviceTrusted) {
+        await this.db.withTenant(
+          { tenantId, userId: outcome.user.id, ...client },
+          () =>
+            this.audit.record({
+              action: 'auth.login',
+              entity: 'user',
+              entityId: outcome.user.id,
+              after: { mfa: true, trustedDevice: true },
+            }),
+        );
+        return this.tokens.issueAccessToken(outcome.user, true);
+      }
       return {
         mfaRequired: true,
         mfaToken: this.tokens.issueMfaToken(outcome.user),
@@ -182,7 +222,19 @@ export class AuthService {
           entityId: user.id,
           after: { mfa: true },
         });
-        return { ok: true, user, privileged: false };
+        // the user ticked "remember this device": trust it for 30 days, so the
+        // next sign-in from here needs the password only
+        const device = dto.rememberDevice
+          ? await this.trustedDevices.remember(user.id, client)
+          : undefined;
+        if (device)
+          await this.audit.record({
+            action: 'auth.device_trusted',
+            entity: 'user',
+            entityId: user.id,
+            after: { days: TRUSTED_DEVICE_DAYS },
+          });
+        return { ok: true, user, privileged: false, device };
       },
     );
 
@@ -191,7 +243,14 @@ export class AuthService {
         throw new ForbiddenException(MSG.AUTH_ACCOUNT_LOCKED);
       throw new UnauthorizedException(MSG.AUTH_MFA_INVALID_CODE);
     }
-    return this.tokens.issueAccessToken(outcome.user, true);
+    const tokens = this.tokens.issueAccessToken(outcome.user, true);
+    return outcome.device
+      ? {
+          ...tokens,
+          deviceToken: outcome.device.token,
+          deviceTokenExpiresIn: outcome.device.expiresInSeconds,
+        }
+      : tokens;
   }
 
   /** Runs inside the request's tenant transaction (route uses AuthGuard). */
@@ -288,6 +347,34 @@ export class AuthService {
     });
     // the code just proved the second factor: this session now counts as 2FA
     return { mfaEnabled: true, ...this.tokens.issueAccessToken(user, true) };
+  }
+
+  /** The devices this user asked us to remember (newest first). */
+  async myDevices() {
+    const { userId } = requestContext.get();
+    return { devices: await this.trustedDevices.list(userId!) };
+  }
+
+  /**
+   * Stop trusting one device, or all of them. The next sign-in from a forgotten
+   * device asks for the authenticator code again.
+   */
+  async forgetDevices(deviceId?: string) {
+    const { userId } = requestContext.get();
+    const forgotten = await this.trustedDevices.revoke(userId!, deviceId);
+    // An id that belongs to nobody here — another tenant's, another user's, or
+    // already forgotten — is refused rather than answered with "0 forgotten".
+    // Telling the two apart is what cross-tenant-sweep.int-spec checks for.
+    if (deviceId && !forgotten)
+      throw new NotFoundException(MSG.TRUSTED_DEVICE_NOT_FOUND);
+    if (forgotten)
+      await this.audit.record({
+        action: 'auth.devices_forgotten',
+        entity: 'user',
+        entityId: userId!,
+        after: { count: forgotten },
+      });
+    return { forgotten };
   }
 
   // ------------------------------------------------------------------ helpers

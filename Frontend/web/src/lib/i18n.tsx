@@ -70,6 +70,9 @@ const en = {
   "login.code": "6-digit code from your authenticator app",
   "login.verify": "Verify",
   "login.mfaTitle": "Two-step verification",
+  "login.rememberDevice": "Remember this device for 30 days",
+  "login.rememberDeviceHint":
+    "On this device only the password will be asked next time. High-risk actions still ask for a code. Do not tick this on a shared computer.",
   "home.hello": "Hello, {name}",
   "home.today": "Today",
   "home.punchNow": "Punch in / out",
@@ -340,6 +343,9 @@ const bn: Record<MessageKey, string> = {
   "login.code": "অথেনটিকেটর অ্যাপের ৬ অঙ্কের কোড",
   "login.verify": "যাচাই করুন",
   "login.mfaTitle": "দুই ধাপের যাচাই",
+  "login.rememberDevice": "এই ডিভাইসটি ৩০ দিন মনে রাখুন",
+  "login.rememberDeviceHint":
+    "এই ডিভাইসে পরেরবার শুধু পাসওয়ার্ড লাগবে। ঝুঁকিপূর্ণ কাজে তখনও কোড চাওয়া হবে। অন্যের বা সবার ব্যবহারের কম্পিউটারে এটি টিক দেবেন না।",
   "home.hello": "আসসালামু আলাইকুম, {name}",
   "home.today": "আজ",
   "home.punchNow": "পাঞ্চ ইন / আউট",

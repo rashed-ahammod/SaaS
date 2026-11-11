@@ -4,6 +4,7 @@
  *   GET    /api/session   the signed-in user (ERP API /auth/me), 401 when signed out
  *   POST   /api/session   { workspace, login, password }  -> sets the session cookie
  *                         or { mfaRequired: true, mfaToken } when 2FA is on
+ *                         (a remembered device skips that second step)
  *   DELETE /api/session   sign out (clears the cookie)
  */
 import { cookies } from "next/headers";
@@ -42,7 +43,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (request.headers.get(CLIENT_HEADER) !== "pwa")
     return NextResponse.json({ code: "FORBIDDEN" }, { status: 403 });
-  return signIn(request, "/auth/login");
+  // sendDeviceToken: a device the user asked us to remember skips the 2FA step
+  return signIn(request, "/auth/login", { sendDeviceToken: true });
 }
 
 // DELETE /api/session
