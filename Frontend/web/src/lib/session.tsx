@@ -12,7 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api, ApiError } from "./api";
+import { api, ApiError, isMfaSetupRequired } from "./api";
 import { useI18n } from "./i18n";
 import type { Me, Profile } from "./types";
 
@@ -41,7 +41,18 @@ export function SessionProvider({
   const { setLang } = useI18n();
 
   const loadProfile = async (user: Me) => {
-    setProfile(user.employeeId ? await api.get<Profile>("/me/profile") : null);
+    if (!user.employeeId) {
+      setProfile(null);
+      return;
+    }
+    try {
+      setProfile(await api.get<Profile>("/me/profile"));
+    } catch (e) {
+      // Not a failure to show: this user has to set 2FA up first, and the card
+      // that does it is on /profile — the page we are about to render.
+      if (!isMfaSetupRequired(e)) throw e;
+      setProfile(null);
+    }
   };
 
   useEffect(() => {

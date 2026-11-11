@@ -23,6 +23,18 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * "Your role requires two-factor authentication. Set it up and sign in again."
+ *
+ * A privileged role that has not set 2FA up yet is refused every business
+ * route with this, and the only way out is the 2FA card on /profile. So the
+ * pages that load data while signing in must treat it as "no data yet", never
+ * as a dead end, or the user is locked out of the one page that unlocks them.
+ */
+export function isMfaSetupRequired(error: unknown): boolean {
+  return error instanceof ApiError && error.code === "AUTH_MFA_REQUIRED";
+}
+
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 /**
