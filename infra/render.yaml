@@ -30,6 +30,23 @@ services:
     # database too, so a paused Supabase project shows up here (WP12).
     healthCheckPath: /health
     autoDeployTrigger: commit
+    # Only rebuild when the API itself changes. Without this, a commit that
+    # touches nothing but the Next.js app redeploys the API too — and a free
+    # service has no zero-downtime deploy, so the whole site answers "the server
+    # cannot be reached" for a few minutes for no reason.
+    #
+    # Paths are globs relative to the REPOSITORY root, not to rootDir, and an
+    # ignored path wins over an included one. This file is a Blueprint, so a
+    # change to it is always processed whatever the filter says.
+    buildFilter:
+      paths:
+        - backend/**
+      ignoredPaths:
+        # none of these reach the running service
+        - backend/test/**
+        - backend/**/*.spec.ts
+        - backend/**/*.md
+        - backend/postman/**
     envVars:
       - key: NODE_ENV
         value: production

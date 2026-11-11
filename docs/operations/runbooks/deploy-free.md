@@ -298,6 +298,7 @@ Then upload a document, and confirm the file appears in the Supabase bucket.
 | `no pg_hba.conf entry … no encryption` / connection closed at once | `PG_SSL=off`. Supabase requires TLS |
 | `ENETUNREACH` with an IPv6 address in the message | you used `db.<ref>.supabase.co`. Use the pooler host |
 | First request fails, the next works | the API was asleep. Check the cron-job.org pinger |
+| The whole app says "The server cannot be reached" for a few minutes | the API was redeploying. A free service has no zero-downtime deploy, so it is briefly gone. Expected right after a push that touches `backend/` |
 | Everything times out, dashboard says paused | Supabase paused the project. Restore it, then fix the pinger |
 | `Refusing to start in production: …` | read the list it prints: that is `config.ts` naming the exact variable |
 | `/health/ready` says migrations missing | you deployed before running `npm run db:migrate` |
