@@ -4,7 +4,8 @@
  * spec §3), language, two-step verification for privileged roles, sign out.
  */
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState, type FormEvent } from "react";
+import QRCode from "qrcode";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { BACK_OFFICE } from "@/components/portal/portal-context";
 import {
   Alert,
@@ -212,7 +213,11 @@ function ContactForm() {
 
 function TwoFactorSetup() {
   const { t } = useI18n();
-  const [secret, setSecret] = useState<string | null>(null);
+  const [setup, setSetup] = useState<{
+    secret: string;
+    otpauthUrl: string;
+  } | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -222,13 +227,32 @@ function TwoFactorSetup() {
     setBusy(true);
     setError(null);
     try {
-      setSecret((await api.post<{ secret: string }>("/auth/mfa/setup")).secret);
+      setSetup(
+        await api.post<{ secret: string; otpauthUrl: string }>(
+          "/auth/mfa/setup",
+        ),
+      );
     } catch (e) {
       setError((e as ApiError).message);
     } finally {
       setBusy(false);
     }
   }
+
+  // The QR is drawn here in the browser, not fetched from a chart service: the
+  // otpauth link contains the 2FA secret itself, so it must never leave the
+  // device. If drawing fails the key below is still there to type by hand.
+  useEffect(() => {
+    if (!setup) return;
+    let alive = true;
+    QRCode.toDataURL(setup.otpauthUrl, { margin: 1, width: 352 }).then(
+      (url) => alive && setQr(url),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [setup]);
 
   async function enable(e: FormEvent) {
     e.preventDefault();
@@ -262,11 +286,22 @@ function TwoFactorSetup() {
       {error && <Alert kind="error">{error}</Alert>}
       {done ? (
         <Alert kind="success">{t("me.mfaDone")}</Alert>
-      ) : secret ? (
+      ) : setup ? (
         <form onSubmit={enable}>
-          <p className="mb-2 text-sm">{t("me.mfaSetup")}</p>
+          <p className="mb-2 text-sm">{t("me.mfaScan")}</p>
+          {qr && (
+            // eslint-disable-next-line @next/next/no-img-element -- a data: URI, nothing for next/image to fetch or optimise
+            <img
+              src={qr}
+              alt=""
+              width={176}
+              height={176}
+              className="mx-auto mb-3 rounded-xl border border-slate-200 bg-white"
+            />
+          )}
+          <p className="mb-1 text-sm text-slate-600">{t("me.mfaKey")}</p>
           <p className="mb-3 rounded-xl bg-slate-100 p-3 text-center font-mono text-lg tracking-widest break-all select-all">
-            {secret}
+            {setup.secret}
           </p>
           <Field label={t("login.code")}>
             <Input

@@ -615,8 +615,8 @@ export function AssetLabel({
       className="flex w-80 items-center gap-3 rounded border border-slate-400 p-3"
       data-testid="asset-label"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- a generated data URL */}
       {qr ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a generated data URL
         <img src={qr} alt={asset.tag} width={96} height={96} />
       ) : (
         <span className="h-24 w-24" />

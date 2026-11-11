@@ -269,8 +269,9 @@ const en = {
   "me.language": "Language",
   "me.signOut": "Sign out",
   "me.mfa": "Two-step verification",
-  "me.mfaSetup":
-    "Your role needs two-step verification. Add this key to an authenticator app (e.g. Google Authenticator), then enter the 6-digit code.",
+  "me.mfaScan":
+    "Your role needs two-step verification. Open an authenticator app (Google Authenticator, Microsoft Authenticator, Bitwarden…), scan this picture, then enter the 6-digit code it shows.",
+  "me.mfaKey": "Cannot scan? Type this key into the app instead:",
   "me.mfaStart": "Set up two-step verification",
   "me.mfaDone": "Two-step verification is on.",
   "me.install":
@@ -539,8 +540,9 @@ const bn: Record<MessageKey, string> = {
   "me.language": "ভাষা",
   "me.signOut": "সাইন আউট",
   "me.mfa": "দুই ধাপের যাচাই",
-  "me.mfaSetup":
-    "আপনার দায়িত্বে দুই ধাপের যাচাই বাধ্যতামূলক। এই কী একটি অথেনটিকেটর অ্যাপে (যেমন Google Authenticator) যোগ করুন, তারপর ৬ অঙ্কের কোড দিন।",
+  "me.mfaScan":
+    "আপনার দায়িত্বে দুই ধাপের যাচাই বাধ্যতামূলক। ফোনে একটি অথেনটিকেটর অ্যাপ (Google Authenticator, Microsoft Authenticator, Bitwarden…) খুলে এই ছবিটি স্ক্যান করুন, তারপর অ্যাপে দেখানো ৬ অঙ্কের কোড দিন।",
+  "me.mfaKey": "স্ক্যান করা যাচ্ছে না? অ্যাপে এই কী-টি হাতে লিখুন:",
   "me.mfaStart": "দুই ধাপের যাচাই চালু করুন",
   "me.mfaDone": "দুই ধাপের যাচাই চালু আছে।",
   "me.install":
