@@ -274,6 +274,17 @@ verified by a job, and every uploaded document still goes to a private bucket.
    exposes nothing.
 7. **Debug off.** `NODE_ENV=production`, `AI_PROVIDER=off`, no seed data
    (`npm run db:seed` is for development only — never point it at Supabase).
+8. **If `FIELD_ENCRYPTION_KEY` ever has to change**, the rows written with the old
+   one must be re-sealed, or every read of an encrypted field answers 500. From
+   your machine, with `.env` pointing at Supabase:
+   ```
+   OLD_KEY=<the old one> NEW_KEY=<the new one> npm run rotate-key           # reports only
+   OLD_KEY=<the old one> NEW_KEY=<the new one> npm run rotate-key -- --apply
+   ```
+   Set the new key on Render **after** the rotation finishes, and keep the old one
+   until you have confirmed a page that shows an NID or a bank account. The same
+   script repairs rows written by a machine holding a different key — which is how
+   demo data seeded locally ends up unreadable on the deployed API.
 
 ## Phase 7: testing and when it breaks
 
@@ -290,6 +301,7 @@ Then upload a document, and confirm the file appears in the Supabase bucket.
 | Everything times out, dashboard says paused | Supabase paused the project. Restore it, then fix the pinger |
 | `Refusing to start in production: …` | read the list it prints: that is `config.ts` naming the exact variable |
 | `/health/ready` says migrations missing | you deployed before running `npm run db:migrate` |
+| 500 on a page showing an NID, TIN or bank account | the rows were sealed with a different `FIELD_ENCRYPTION_KEY`. See 6.8 |
 | 500 on an upload | `S3_*` wrong, or the bucket is not called `erp-files` |
 | Build fails on `nest build` | Node version. `NODE_VERSION=24` on Render |
 | A CORS error in the browser console | something in a page is calling onrender.com directly. It should call `/api/erp/...` instead — that is a bug, not a configuration problem |
