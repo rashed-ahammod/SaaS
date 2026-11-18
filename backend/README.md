@@ -31,6 +31,41 @@ WP16 Expense claims and employee advances is done (docs/adr/0019): claims with r
 employee app (Dept Head -> Accounts, Admin from Tk 50,000), payment once, cash advances (payout, settled by
 claims, refund, salary recovery), salary advances paid out through the books, and the nightly check that the
 staff advances account equals the advances sub-ledger.
+WP17 Procurement (docs/adr/0020), WP18 Budgets (0021), WP19 Assets and stock (0022), WP20 Bank reconciliation
+(0023), WP21 VAT and compliance (0024) and WP22 Finance portal, reports and Gate 2 (0025) are built; Gate 2
+itself (a pilot's first real month closed in the system) waits for a pilot.
+
+Phase 3 (Customers and talent, ../docs/phase-3-plan.md): WP23 Customers and leads (docs/adr/0026), WP24
+Opportunities, pipeline and targets (0027) and WP25-WP27 Quotations, orders, invoices and collections (0028)
+are done. WP28 Support is done (docs/adr/0035): tickets per customer with a category and priority, an SLA
+counted in WORKING hours for the first response and the resolution (the hours per priority are PLACEHOLDERS
+until a pilot's service manager sets them), a thread of replies to the customer and internal notes,
+assignment, reopening, the `ticket-sla` job that raises each missed deadline once, and the Customer 360 page
+that shows only the blocks the viewer may see. The portal has Tickets and Customer 360 screens.
+WP29 Recruitment is done (docs/adr/0036): the manpower plan per fiscal year, new-position requests through
+the approval engine (HR -> Admin; the plan check travels with the request and marks an overrun instead of
+refusing it), job openings raised from an approved post and where they were advertised, applicants with
+CONSENT and a retention date, applications with their stages, interviews with one scorecard per panel
+member, offers (a salary outside the grade range needs the Admin; the letter is a PDF in Bangla or English),
+and hiring, which turns the applicant's own data into an employee record with nothing retyped. AI CV
+screening sees a CV with the name, gender, religion, age, photo and contact details removed, and its test
+set is test/ai-eval/cv-screening.yaml. The portal has Hiring screens (plan, posts, openings, one
+application, my interviews).
+WP30 Performance is done (docs/adr/0037): appraisal cycles (annual or half-yearly, phases that only move
+forward), the KPI library per designation, goals whose weights add up to 100, the employee's self-review,
+the Dept Head's rating with the weighted score as a suggestion, HR's calibration across departments (which
+a proposal cannot skip), continuous feedback notes, and increment / promotion proposals - the Admin
+approves them, HR applies them, and the effective-dated salary makes payroll pay the arrears itself. AI
+drafts the manager's comment from the year's feedback and rates nobody (test/ai-eval/review-draft.yaml).
+The portal has Performance screens (cycles with the calibration spread, one appraisal, my team, proposals).
+WP31 Commission rules, automation, the sales assistant and Gate 3 is built (docs/adr/0038): the commission
+scheme per company (on invoiced or collected sales, a rate, and a better rate above target), each month
+calculated from the SOURCE DOCUMENTS and posted into payroll as COMMISSION payroll items (one path to a
+payslip line; cancelling the run cancels them), the AI sales assistant (lead score with reasons, next step,
+follow-up and quotation text, call-note summary) which sees only the asker's own records and no contact
+details and acts on nothing, expiry alerts for employee documents (30 days / 7 days / expired), the n8n
+workflows for lead capture and the onboarding / offboarding kits (../n8n), and the Gate 3 report. Phase 3 is
+code-complete; Gate 3 itself awaits a pilot that has run a quarter of sales and one appraisal cycle.
 
 ## First-time setup
 
@@ -197,6 +232,10 @@ controller file lists its routes at the top.
 | Payroll runs | `POST`/`GET /companies/:id/payroll-runs` · `GET /payroll-runs/:id` · `POST .../calculate` · `GET .../employees/:employeeId` · `POST /payroll-flags/:id/clear` · `POST .../submit` · `POST .../cancel` · `GET .../reproduce` · `GET /employees/:id/payslips` · `GET /me/payslips` · `GET /me/payslips/:runId` |
 | Payslip PDF, journal | `GET /me/payslips/:runId/pdf?lang=bn&protect=true` · `GET /payroll-runs/:id/employees/:employeeId/payslip.pdf?lang=` · `GET /payroll-runs/:id/journal.csv` |
 | Disbursement | `GET /disbursement-formats` · `GET /payroll-runs/:id/payments` · `POST`/`GET /payroll-runs/:id/disbursement-files` (generate: step-up) · `GET /disbursement-files/:id/download` · `POST .../settle` · `POST .../returns` · `POST .../cancel` (Admin approval) · `POST /payments/:id/reissue` (step-up) |
+| Commission, assistant, Gate 3 (WP31) | `GET`/`PUT /companies/:id/commission-scheme` · `GET`/`POST /companies/:id/commission-runs` · `GET /commission-runs/:id` · `POST .../post` · `.../cancel` · `GET /companies/:id/my-commission` · `POST /leads/:id/assist` · `POST /customers/:id/assist` · `GET /companies/:id/gate-3` |
+| Performance (WP30) | `GET`/`POST /companies/:id/appraisal-cycles` · `GET /appraisal-cycles/:id` · `POST .../open` · `.../advance` · `GET .../calibration` · `GET .../mine` · `GET .../my-team` · `GET /appraisals/:id` · `PUT .../goals` · `POST .../self-review` · `.../rate` · `.../calibrate` · `.../review-draft` · `.../proposal` · `GET`/`POST /companies/:id/kpis` · `PUT /kpis/:id` · `GET`/`POST /employees/:id/feedback` · `GET /companies/:id/increment-proposals` · `GET /increment-proposals/:id` · `POST .../apply` · `.../withdraw` |
+| Recruitment (WP29) | `GET`/`PUT /companies/:id/manpower-plan` · `POST /manpower-plans/:id/approve` · `GET`/`POST /companies/:id/position-requests` · `GET /position-requests/:id` · `POST .../cancel` · `POST .../opening` · `GET /companies/:id/job-openings` · `GET /job-openings/:id` · `POST .../postings` · `.../hold` · `.../resume` · `.../close` · `GET`/`POST /companies/:id/applicants` · `GET /applicants/:id` · `POST /applicants/:id/cv` (multipart) · `PUT /applicants/:id/cv-text` · `GET /applicants/:id/cv` · `POST /job-openings/:id/applications` · `GET /applications/:id` · `POST .../move` · `POST .../screen` · `POST .../interviews` · `GET /companies/:id/my-interviews` · `GET /interviews/:id` · `POST .../scorecard` · `.../finish` · `.../cancel` · `POST /applications/:id/offer` · `GET /job-offers/:id` · `GET .../letter.pdf` · `POST .../send` · `.../accept` · `.../decline` · `.../withdraw` |
+| Support (WP28) | `GET`/`POST /companies/:id/support/tickets` · `GET /companies/:id/support/my-tickets` · `GET /support/tickets/:id` · `POST .../messages` · `POST .../assign` · `PUT .../priority` · `POST .../wait` · `POST .../resolve` · `POST .../close` · `POST .../reopen` · `GET`/`POST /companies/:id/support/categories` · `PUT /support/categories/:id` · `GET`/`PUT /companies/:id/support/sla` · `GET /customers/:id/360` |
 | Data migration | `GET /imports/templates` · `GET /imports/templates/:entity?format=xlsx\|csv` · `POST /companies/:id/imports` (multipart: file, entity, cutOverDate) · `GET /companies/:id/imports` · `GET /imports/:id` · `POST /imports/:id/rows/:rowNo/skip` · `GET /imports/:id/dry-run` · `POST /imports/:id/commit` · `POST /imports/:id/rollback` · `POST /imports/:id/discard` · `GET /companies/:id/migration/reconciliation?cutOverDate=` · `POST /companies/:id/migration/sign-off` (Admin) · `GET /companies/:id/migration/sign-offs` |
 | AI (WP11) | `GET /ai/status` · `POST /ai/assistant` { question, history? } · `POST /ai/interactions/:id/feedback` · `POST /payroll-flags/:id/explanation` · `GET`/`PUT /ai/settings` (Admin) · `GET /ai/usage?month=` (Admin) · `GET /ai/interactions` (Admin, auditor) · `GET`/`POST /ai/policy-documents` · `GET /ai/policy-documents/:id` · `POST /ai/policy-documents/:id/deactivate` (HR, Admin) |
 | Consent (WP12) | `GET /me/consents` · `POST /me/consents` { purpose, granted } · `GET`/`POST /employees/:id/consents` (HR, paper form) |

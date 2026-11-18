@@ -174,6 +174,47 @@ export const PERMISSIONS = {
   'sales.catalogue':
     'Set up products, price lists and the discount limits of salespeople',
 
+  // commissions and the sales assistant (Phase 3 WP31)
+  'commission.view':
+    'See the commission scheme, the monthly runs and what each salesperson earned',
+  'commission.manage':
+    'Set the commission scheme, calculate a month and post it to payroll',
+  'ai.sales_assist.use':
+    'Ask the sales assistant about own leads and customers (score, next step, draft text)',
+  'gate3.view':
+    'See the Gate 3 report: the pilot ran its sales pipeline and one appraisal cycle',
+
+  // performance (Phase 3 WP30)
+  'performance.own':
+    'Own appraisal: see the goals, write the self-review, read shared feedback',
+  'performance.rate':
+    "Rate one's own team's appraisals and write their goals (Dept Head)",
+  'performance.view':
+    'See appraisals, ratings and feedback within the scope',
+  'performance.manage':
+    'Cycles, the KPI library, opening appraisals, calibrating ratings across departments',
+  'performance.propose':
+    'Propose an increment or a promotion from a calibrated appraisal',
+
+  // recruitment (Phase 3 WP29)
+  'recruitment.request_own':
+    'Ask for a new post in own department, and follow the request',
+  'recruitment.view':
+    'See the manpower plan, position requests, openings, applicants and interviews in scope',
+  'recruitment.manage':
+    'Openings and postings, applicants and their CVs, stages, interviews and offers',
+  'recruitment.interview':
+    'Give a scorecard for an interview one is on the panel of',
+  'recruitment.plan': 'Set and approve the manpower plan for a fiscal year',
+
+  // support tickets (Phase 3 WP28)
+  'support.view':
+    'See customers’ tickets within the scope, and the Customer 360 page',
+  'support.own':
+    'Work the tickets assigned to oneself: reply, note, resolve, ask the customer',
+  'support.manage':
+    'Raise and assign tickets, reopen a closed one, ticket categories and the SLA per priority',
+
   // AI assistant (WP11)
   'ai.assistant.use': 'Use the AI assistant within own access',
   'ai.manage':
@@ -294,6 +335,38 @@ export const PERMISSIONS_BN: Record<PermissionKey, string> = {
   'crm.capture':
     'বাইরে থেকে লিড পাঠানো (ওয়েবসাইটের ফর্ম ও ফেসবুক লিড অ্যাড, n8n ও সার্ভিস কী দিয়ে)',
   'sales.catalogue': 'পণ্য, মূল্যতালিকা ও বিক্রয়কর্মীর ছাড়ের সীমা নির্ধারণ',
+  'commission.view':
+    'কমিশনের নিয়ম, মাসিক হিসাব ও কে কত পেলেন তা দেখা',
+  'commission.manage':
+    'কমিশনের নিয়ম নির্ধারণ, মাসের হিসাব করা ও বেতনে পাঠানো',
+  'ai.sales_assist.use':
+    'নিজের লিড ও গ্রাহক নিয়ে বিক্রয় সহকারীকে জিজ্ঞাসা (স্কোর, পরের ধাপ, খসড়া লেখা)',
+  'gate3.view':
+    'গেট ৩ প্রতিবেদন দেখা: পাইলট নিজের বিক্রয় প্রক্রিয়া ও একটি মূল্যায়ন চক্র চালিয়েছে',
+  'performance.own':
+    'নিজের মূল্যায়ন: লক্ষ্য দেখা, নিজের পর্যালোচনা লেখা, শেয়ার করা মতামত পড়া',
+  'performance.rate':
+    'নিজের দলের মূল্যায়ন ও লক্ষ্য নির্ধারণ (বিভাগীয় প্রধান)',
+  'performance.view': 'নিজের আওতার মূল্যায়ন, রেটিং ও মতামত দেখা',
+  'performance.manage':
+    'মূল্যায়ন চক্র, কেপিআই তালিকা, মূল্যায়ন শুরু করা, বিভাগজুড়ে রেটিং সমন্বয়',
+  'performance.propose':
+    'সমন্বিত মূল্যায়ন থেকে ইনক্রিমেন্ট বা পদোন্নতির প্রস্তাব',
+  'recruitment.request_own':
+    'নিজের বিভাগে নতুন পদের অনুরোধ করা ও তার অবস্থা দেখা',
+  'recruitment.view':
+    'জনবল পরিকল্পনা, পদের অনুরোধ, নিয়োগ বিজ্ঞপ্তি, আবেদনকারী ও সাক্ষাৎকার দেখা',
+  'recruitment.manage':
+    'নিয়োগ বিজ্ঞপ্তি ও প্রচার, আবেদনকারী ও তাদের সিভি, ধাপ, সাক্ষাৎকার ও নিয়োগপত্র',
+  'recruitment.interview':
+    'যে সাক্ষাৎকারের বোর্ডে আছেন তার মূল্যায়ন দেওয়া',
+  'recruitment.plan': 'অর্থবছরের জনবল পরিকল্পনা নির্ধারণ ও অনুমোদন',
+  'support.view':
+    'নিজের আওতার গ্রাহকদের অভিযোগ ও কাস্টমার ৩৬০ পাতা দেখা',
+  'support.own':
+    'নিজের ওপর দেওয়া অভিযোগের কাজ: উত্তর, অন্তর্গত নোট, সমাধান, গ্রাহকের কাছে জিজ্ঞাসা',
+  'support.manage':
+    'অভিযোগ তোলা ও কাউকে দেওয়া, বন্ধ অভিযোগ আবার খোলা, অভিযোগের শ্রেণি ও অগ্রাধিকার অনুযায়ী এসএলএ',
   'ai.assistant.use': 'নিজের প্রবেশাধিকারের ভেতরে এআই সহকারী ব্যবহার',
   'ai.manage':
     'এআই সুবিধা চালু ও বন্ধ; এআই ব্যবহার, কোটা ও উত্তরের মূল্যায়ন দেখা',

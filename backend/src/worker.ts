@@ -10,12 +10,18 @@
  *   - bank auto-match         every hour   statement lines the rules can match to newly posted ledger lines (WP20)
  *   - compliance reminders    every 6 h    the calendar kept up to date; one event per item and stage (7 days, 1 day, overdue) (WP21)
  *   - budget alerts           every hour   a budget line reaching 80 % / 100 %: one event per line and level (WP18)
+ *   - collection reminders    every 6 h    overdue invoices at 1, 7, 15 and 30 days late; each stage once (WP27)
+ *   - ticket SLA              every 5 min  tickets past their first-response or resolution deadline;
+ *                                          each clock of each ticket reported once (WP28)
  *   - probation reminders     every 6 h    Dept Head reminded 15 days before a probation ends; once per end date
+ *   - offer expiry            every 6 h    job offers past their validity date can no longer be accepted (WP29)
+ *   - document expiry         every 6 h    employee documents running out: 30 days, 7 days, expired (WP31)
  *   - notifications           every minute plans in-app messages for new events (also without n8n),
  *                                          and sends events again whose e-mail / SMS failed or got stuck
  *   - idempotency cleanup     every hour   removes keys older than 7 days
  *   - audit chain verifier    at start and every 24 h; logs an ALERT on any break
- *   - retention               every 24 h   clears personal data past its retention period (WP12)
+ *   - retention               every 24 h   clears personal data past its retention period (WP12), including
+ *                                          the CVs and details of applicants who were not hired (WP29)
  *   - ledger checks           every 24 h   books balance, every approved payroll and settled salary
  *                                          file posted; logs an ALERT per problem (WP14)
  *

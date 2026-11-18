@@ -14,6 +14,35 @@ import { addDays, toBusinessDate, type BusinessDate } from './business-date.js';
 /** Dhaka has no daylight saving time: every day starts at 00:00 +06:00. */
 const DHAKA_OFFSET = '+06:00';
 
+/**
+ * Working hours between two instants, the same clock the other way round
+ * (WP28: how long a ticket waited for the customer, which is not the team's
+ * delay, so the resolution deadline moves out by exactly this much).
+ */
+export function workingHoursBetween(
+  from: Date,
+  to: Date,
+  isWorkingDay: (date: BusinessDate) => boolean,
+): number {
+  if (to <= from) return 0;
+  let cursor = from.getTime();
+  const end = to.getTime();
+  let worked = 0;
+
+  for (let days = 0; cursor < end; days++) {
+    if (days > 3660)
+      throw new Error('workingHoursBetween: more than 10 years apart');
+    const today = toBusinessDate(new Date(cursor));
+    const nextMidnight = Date.parse(
+      `${addDays(today, 1)}T00:00:00${DHAKA_OFFSET}`,
+    );
+    const until = Math.min(end, nextMidnight);
+    if (isWorkingDay(today)) worked += until - cursor;
+    cursor = until;
+  }
+  return worked / 3_600_000;
+}
+
 export function addWorkingHours(
   start: Date,
   hours: number,

@@ -59,8 +59,11 @@ export class FakeProvider implements AiProvider {
     if (last.role === 'user' && last.files?.length)
       return answer(readDocument(last.files[0].data));
 
-    // no tools: an explanation of facts given in the prompt
-    if (!request.tools.length) return answer(explainFacts(question, bn));
+    // no tools: an explanation of facts given in the prompt. The RAW text is used, because
+    // the sales assistant puts outside content in <said> and <note> tags that
+    // lastUserText() strips for the policy-search path.
+    if (!request.tools.length)
+      return answer(explainFacts(lastUserRaw(request.messages), bn));
 
     // a new question: choose a tool
     if (last.role === 'user') {
@@ -114,6 +117,15 @@ export class FakeProvider implements AiProvider {
       };
     }
   }
+}
+
+/** The last user message as it was written, tags and all. */
+function lastUserRaw(messages: AiMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role === 'user') return m.text;
+  }
+  return '';
 }
 
 function lastUserText(messages: AiMessage[]): string {
@@ -229,6 +241,9 @@ function policyAnswer(
 
 function explainFacts(prompt: string, bn: boolean): string {
   if (prompt.includes('TASK: bank_match')) return chooseBankMatch(prompt, bn);
+  if (prompt.includes('TASK: cv_screening')) return screenCv(prompt, bn);
+  if (prompt.includes('TASK: review_draft')) return draftReview(prompt, bn);
+  if (prompt.includes('TASK: sales_assist')) return assistSales(prompt, bn);
   const match = /FACTS:\s*(\{[\s\S]*\})/.exec(prompt);
   const facts = match ? JSON.parse(match[1]) : {};
   const code = facts.flag?.code ?? 'UNKNOWN';
@@ -296,6 +311,287 @@ function chooseBankMatch(prompt: string, bn: boolean): string {
       : `The bank description and this entry share: ${shared}.`,
   });
 }
+
+/**
+ * The sales assistant (WP31): built from the facts it was given and nothing else. It never
+ * mentions a name, a phone number or an e-mail address, because it is never given any - which
+ * is what the test set checks.
+ */
+function assistSales(prompt: string, bn: boolean): string {
+  // anchored to the start of a line: "TASK: sales_assist" also contains "ASK:"
+  const ask = /(?:^|\n)ASK:\s*(\w+)/.exec(prompt)?.[1] ?? 'next_step';
+  const json = jsonAfter(prompt, 'FACTS:');
+  const said = /<said>([\s\S]*?)<\/said>/.exec(prompt)?.[1] ?? '';
+  const note = /<note>([\s\S]*?)<\/note>/.exec(prompt)?.[1] ?? '';
+  const facts = json
+    ? (JSON.parse(json) as {
+        about?: {
+          organisation?: string | null;
+          district?: string | null;
+          daysOld?: number | null;
+        };
+        activities?: Array<{ kind: string; subject: string; daysAgo: number }>;
+        opportunities?: Array<{
+          title: string;
+          value: string;
+          probability: number;
+          stage: string | null;
+        }>;
+        dues?: { owed: string; overdue: string } | null;
+      })
+    : {};
+  const org = facts.about?.organisation ?? (bn ? 'এই প্রতিষ্ঠান' : 'this organisation');
+  const activities = facts.activities ?? [];
+  const opportunities = facts.opportunities ?? [];
+  const biggest = [...opportunities].sort(
+    (a, b) => Number(b.value) - Number(a.value),
+  )[0];
+
+  if (ask === 'score') {
+    // evidence of interest: activities logged, an opportunity open, something they said
+    let score = 10;
+    const reasons: string[] = [];
+    if (activities.length) {
+      score += Math.min(30, activities.length * 10);
+      reasons.push(
+        bn
+          ? `${activities.length}টি কার্যক্রম লিপিবদ্ধ আছে, শেষটি ${activities[0].daysAgo} দিন আগে।`
+          : `${activities.length} activity/activities logged, the latest ${activities[0].daysAgo} day(s) ago.`,
+      );
+    }
+    if (biggest) {
+      score += 35;
+      reasons.push(
+        bn
+          ? `খোলা সম্ভাব্য বিক্রয় আছে: ${biggest.title} (${biggest.value})।`
+          : `An open opportunity exists: ${biggest.title} (${biggest.value}).`,
+      );
+    }
+    if (said.trim()) {
+      score += 15;
+      reasons.push(
+        bn
+          ? 'তারা নিজেরাই কী চান তা লিখেছেন, যা আগ্রহের প্রমাণ।'
+          : 'They wrote what they want, which is evidence of real interest.',
+      );
+    }
+    if (!activities.length && !biggest && !said.trim())
+      reasons.push(
+        bn
+          ? 'এই লিডে প্রমাণ কম: কোনো কার্যক্রম, সম্ভাব্য বিক্রয় বা বার্তা নেই।'
+          : 'The evidence here is thin: no activity, no opportunity and no message.',
+      );
+    return JSON.stringify({ score: Math.min(95, score), reasons });
+  }
+
+  if (ask === 'call_note') {
+    const lines = note
+      .split(/[.\n;]+/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 3)
+      .slice(0, 5);
+    if (!lines.length)
+      return bn ? 'কলের নোটে কিছু লেখা নেই।' : 'The call note is empty.';
+    return lines.map((l) => `- ${l}`).join('\n');
+  }
+
+  if (ask === 'follow_up')
+    return bn
+      ? [
+          `${org}-এর সাথে আলোচনার সূত্রে লিখছি।`,
+          biggest
+            ? `${biggest.title} নিয়ে আমাদের প্রস্তাব এখনো খোলা আছে।`
+            : 'আপনার প্রয়োজন অনুযায়ী আমরা দাম ও সরবরাহের সময় জানাতে পারি।',
+          facts.dues && Number(facts.dues.overdue) > 0
+            ? 'পাশাপাশি পুরোনো বকেয়াটি নিয়েও একবার কথা বলতে চাই।'
+            : '',
+          'আগামী দুই কর্মদিবসের মধ্যে একবার ফোন করলে সুবিধা হবে কি?',
+        ]
+          .filter(Boolean)
+          .join(' ')
+      : [
+          `I am writing to follow up on our discussion with ${org}.`,
+          biggest
+            ? `Our proposal for ${biggest.title} is still open.`
+            : 'We can confirm prices and delivery dates against your requirement.',
+          facts.dues && Number(facts.dues.overdue) > 0
+            ? 'I would also like to settle the older outstanding amount.'
+            : '',
+          'Would a short call in the next two working days suit you?',
+        ]
+          .filter(Boolean)
+          .join(' ');
+
+  if (ask === 'quotation_text')
+    return bn
+      ? `${org}-এর জন্য এই কোটেশন। ${biggest ? `${biggest.title} বাবদ প্রস্তাবিত মূল্য সংযুক্ত তালিকায় দেওয়া আছে। ` : ''}সরবরাহ ও পরিশোধের শর্ত আলোচনা অনুযায়ী। সম্মত থাকলে কোটেশনটি স্বাক্ষর করে ফেরত দিন।`
+      : `This quotation is for ${org}. ${biggest ? `The prices for ${biggest.title} are in the lines below. ` : ''}Delivery and payment terms are as discussed. If you accept, please sign and return the quotation.`;
+
+  // next_step
+  const stale = activities.length ? activities[0].daysAgo : (facts.about?.daysOld ?? 0);
+  return bn
+    ? `পরের ধাপ: ${stale > 7 ? 'আজই একবার ফোন করুন' : 'আলোচনা অনুযায়ী পরের কাজটি সারুন'} — ${biggest ? `${biggest.title} নিয়ে নির্দিষ্ট পরিমাণে কোটেশন পাঠান।` : 'তাদের প্রয়োজন ও পরিমাণ জেনে নিন।'} শেষ যোগাযোগ ${stale} দিন আগে, তাই দেরি হলে আগ্রহ কমে যেতে পারে।`
+    : `Next step: ${stale > 7 ? 'call them today' : 'carry on with what was agreed'} — ${biggest ? `send a quotation for a named quantity of ${biggest.title}.` : 'find out what they need and in what quantity.'} The last contact was ${stale} day(s) ago, so waiting longer will cost interest.`;
+}
+
+/**
+ * Review drafting (WP30): a first draft built from the goals and the feedback notes it was
+ * given, and nothing else. It rates nobody and recommends nothing, because the prompt
+ * forbids both and the test set checks it.
+ */
+function draftReview(prompt: string, bn: boolean): string {
+  const match = /FACTS:\s*(\{[\s\S]*\})/.exec(prompt);
+  const facts = match
+    ? (JSON.parse(match[1]) as {
+        period: { from: string; to: string };
+        goals: Array<{
+          title: string;
+          weight: number;
+          selfScore: number | null;
+          managerScore: number | null;
+        }>;
+        feedback: Array<{ kind: string; body: string }>;
+        weightedScore: number | null;
+      })
+    : { period: { from: '', to: '' }, goals: [], feedback: [], weightedScore: null };
+  const score = (g: { selfScore: number | null; managerScore: number | null }) =>
+    g.managerScore ?? g.selfScore;
+  const strong = facts.goals.filter((g) => (score(g) ?? 0) >= 4);
+  const weak = facts.goals.filter((g) => (score(g) ?? 5) <= 2);
+  const praise = facts.feedback.filter((f) => f.kind === 'praise');
+  const concern = facts.feedback.filter((f) => f.kind === 'concern');
+  const thin = facts.feedback.length < 2;
+  const lines = bn
+    ? [
+        `পর্যালোচনার সময়কাল ${facts.period.from} থেকে ${facts.period.to}।`,
+        strong.length
+          ? `যেখানে ভালো করেছেন: ${strong.map((g) => g.title).join('; ')}।`
+          : 'লক্ষ্যের নম্বরে স্পষ্টভাবে এগিয়ে থাকার প্রমাণ কম।',
+        praise.length
+          ? `বছরজুড়ে লেখা মতামতে প্রশংসা আছে: ${praise[0].body}`
+          : 'প্রশংসার আলাদা কোনো মতামত লেখা হয়নি।',
+        weak.length
+          ? `যেখানে উন্নতি দরকার: ${weak.map((g) => g.title).join('; ')}।`
+          : 'কোনো লক্ষ্যে দুর্বল নম্বর নেই।',
+        concern.length
+          ? `উদ্বেগ হিসেবে লেখা হয়েছে: ${concern[0].body}`
+          : '',
+        thin
+          ? 'এই সময়ের মতামত কম, তাই প্রমাণ সীমিত — ব্যবস্থাপক নিজের পর্যবেক্ষণ যোগ করুন।'
+          : 'পরের সময়কালে এই জায়গাগুলোতে মনোযোগ দেওয়া যেতে পারে।',
+      ]
+    : [
+        `The review covers ${facts.period.from} to ${facts.period.to}.`,
+        strong.length
+          ? `Went well: ${strong.map((g) => g.title).join('; ')}.`
+          : 'The goal scores show no clear area of strength.',
+        praise.length
+          ? `The feedback written during the year includes praise: ${praise[0].body}`
+          : 'No praise was written as feedback during the period.',
+        weak.length
+          ? `Needs work: ${weak.map((g) => g.title).join('; ')}.`
+          : 'No goal was scored poorly.',
+        concern.length ? `A concern was recorded: ${concern[0].body}` : '',
+        thin
+          ? 'The feedback for this period is thin, so the evidence here is limited; the manager should add their own observations.'
+          : 'Next period could focus on the areas above.',
+      ];
+  return lines.filter(Boolean).join('\n\n');
+}
+
+/**
+ * CV screening (WP29): score by how many of the post's requirements the blind CV shows
+ * evidence for, and say which. The fake never sees who the person is, because the text it
+ * is given has already had that removed - which is exactly what the test set checks.
+ */
+function screenCv(prompt: string, bn: boolean): string {
+  const match = /FACTS:\s*(\{[\s\S]*\})/.exec(prompt);
+  const facts = match
+    ? (JSON.parse(match[1]) as {
+        post: { title: string; requirements: string[] };
+        cv: string;
+      })
+    : { post: { title: '', requirements: [] }, cv: '' };
+  const cv = facts.cv.toLowerCase();
+  const keywords = (text: string) =>
+    text
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}+#.]+/u)
+      .filter((w) => w.length >= 3 && !REQUIREMENT_STOP.has(w));
+  const met: string[] = [];
+  const missing: string[] = [];
+  for (const requirement of facts.post.requirements) {
+    const words = keywords(requirement);
+    const hits = words.filter((w) => cv.includes(w)).length;
+    if (words.length && hits / words.length >= 0.5) met.push(requirement);
+    else missing.push(requirement);
+  }
+  const total = facts.post.requirements.length || 1;
+  const score = Math.round((met.length / total) * 100);
+  const reasons = [
+    ...met.slice(0, 3).map((r) =>
+      bn
+        ? `শর্ত পূরণের প্রমাণ আছে: ${r}।`
+        : `The CV shows evidence for: ${r}.`,
+    ),
+    ...missing.slice(0, 3).map((r) =>
+      bn
+        ? `এই শর্তের কোনো প্রমাণ পাওয়া যায়নি: ${r}।`
+        : `No evidence for: ${r}.`,
+    ),
+  ];
+  return JSON.stringify({ score, reasons });
+}
+
+/** The JSON object that follows a label, taken by balancing braces (it has nested objects). */
+function jsonAfter(text: string, label: string): string | null {
+  const at = text.indexOf(label);
+  if (at < 0) return null;
+  const start = text.indexOf('{', at);
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+const REQUIREMENT_STOP = new Set([
+  'and',
+  'the',
+  'with',
+  'for',
+  'min',
+  'minimum',
+  'least',
+  'years',
+  'year',
+  'experience',
+  'knowledge',
+  'good',
+  'strong',
+  'able',
+  'must',
+  'should',
+  'have',
+  'has',
+  'any',
+  'degree',
+]);
 
 const STOP = new Set([
   'BANK',

@@ -77,6 +77,19 @@ function tableFor(
     comparisonId: 'old_system_comparisons',
     leadId: 'leads',
     customerId: 'customers',
+    ticketId: 'support_tickets',
+    ticketCategoryId: 'support_categories',
+    planId: 'manpower_plans',
+    openingId: 'job_openings',
+    applicantId: 'applicants',
+    applicationId: 'applications',
+    interviewId: 'interviews',
+    offerId: 'job_offers',
+    cycleId: 'appraisal_cycles',
+    appraisalId: 'appraisals',
+    kpiId: 'kpi_library',
+    proposalId: 'increment_proposals',
+    commissionRunId: 'commission_runs',
     territoryId: 'sales_territories',
     activityId: 'crm_activities',
     opportunityId: 'opportunities',
@@ -208,6 +221,22 @@ const TABLES: Array<keyof Database> = [
   'sales_orders',
   'sales_invoices',
   'customer_receipts',
+  'support_tickets',
+  'support_categories',
+  'manpower_plans',
+  'position_requests',
+  'job_openings',
+  'applicants',
+  'applications',
+  'interviews',
+  'job_offers',
+  'appraisal_cycles',
+  'appraisals',
+  'kpi_library',
+  'increment_proposals',
+  'feedback_notes',
+  'commission_runs',
+  'commission_rules',
 ];
 
 beforeAll(async () => {
@@ -225,7 +254,9 @@ beforeAll(async () => {
     )
     .expect(201);
   await a.hr.api.post(`${c}/leave-types/defaults`).expect(201);
-  await a.hr.api.post(`${c}/salary-heads/defaults`).expect(201);
+  const salaryStructureId = (
+    await a.hr.api.post(`${c}/salary-heads/defaults`).expect(201)
+  ).body.structureId;
   await a.hr.api
     .post('/leave/accruals/run', { companyId: a.companyId, asOf: '2026-10-15' })
     .expect(201);
@@ -244,11 +275,17 @@ beforeAll(async () => {
     .expect(201);
   const types = (await a.hr.api.get(`${c}/leave-types`).expect(200)).body;
   const cl = types.find((t: { code: string }) => t.code === 'CL').id;
+  // dated from the real clock: this suite runs without a ManualClock, and a leave request
+  // in the past is refused (it failed the day the hard-coded dates became yesterday)
+  const inDays = (n: number) => {
+    const d = new Date(Date.now() + n * 86_400_000 + 6 * 3_600_000);
+    return d.toISOString().slice(0, 10);
+  };
   await a.rafi.api
     .post(`/employees/${a.rafi.employeeId}/leave-requests`, {
       leaveTypeId: cl,
-      fromDate: '2026-11-10',
-      toDate: '2026-11-11',
+      fromDate: inDays(14),
+      toDate: inDays(15),
       reason: 'Family wedding in Cumilla',
     })
     .expect(201);
@@ -519,6 +556,173 @@ beforeAll(async () => {
       allocations: [{ itemId: inv.itemId, amount: '1000' }],
     })
     .expect(201);
+  // support (WP28): a ticket of Karim Stores, so the sweep has one to attack
+  const ticketCategories = (
+    await a.md.api.get(`${c}/support/categories`).expect(200)
+  ).body.categories as Array<{ id: string; code: string }>;
+  await a.md.api
+    .post(`${c}/support/tickets`, {
+      customerId: karim,
+      categoryId: ticketCategories.find((x) => x.code === 'DELIVERY')!.id,
+      subject: 'Two cans leaked on delivery',
+      description: 'The driver delivered 10 cans; 2 were leaking.',
+      source: 'phone',
+    })
+    .expect(201);
+  // recruitment (WP29): a plan, an approved post, its opening, an applicant who applied,
+  // an interview and an offer
+  const designationId = (await a.owner.get(`${c}/designations`).expect(200))
+    .body[0].id;
+  const gradeRow = (await a.owner.get(`${c}/grades`).expect(200)).body[0];
+  await a.md.api
+    .put(`${c}/manpower-plan`, {
+      lines: [
+        {
+          departmentId: a.departments.salesDhaka,
+          designationId,
+          headcount: 5,
+        },
+      ],
+    })
+    .expect(200);
+  const positionRequest = (
+    await a.salesHead.api
+      .post(`${c}/position-requests`, {
+        departmentId: a.departments.salesDhaka,
+        designationId,
+        gradeId: gradeRow.id,
+        branchId: a.branchId,
+        headcount: 1,
+        reason: 'Route coverage for Mirpur',
+      })
+      .expect(201)
+  ).body;
+  for (const who of [a.hr.api, a.md.api])
+    await who
+      .post(
+        `/approvals/requests/${positionRequest.approvalRequestId}/approve`,
+        { comment: 'Approved' },
+      )
+      .expect(200);
+  const jobOpening = (
+    await a.hr.api
+      .post(`/position-requests/${positionRequest.id}/opening`, {
+        title: 'Sales Executive',
+        description: 'Retail route sales in Dhaka.',
+        requirements: ['Retail sales experience'],
+      })
+      .expect(201)
+  ).body;
+  const jobApplicant = (
+    await a.hr.api
+      .post(`${c}/applicants`, {
+        fullNameEn: 'Nasir Uddin',
+        phone: '01733445566',
+        cvText: 'Retail sales experience in Mirpur for three years.',
+        consent: true,
+      })
+      .expect(201)
+  ).body;
+  const jobApplication = (
+    await a.hr.api
+      .post(`/job-openings/${jobOpening.id}/applications`, {
+        applicantId: jobApplicant.id,
+      })
+      .expect(201)
+  ).body;
+  await a.hr.api
+    .post(`/applications/${jobApplication.id}/move`, { to: 'shortlisted' })
+    .expect(200);
+  await a.hr.api
+    .post(`/applications/${jobApplication.id}/interviews`, {
+      scheduledAt: '2026-11-25T04:00:00.000Z',
+      panelUserIds: [a.salesHead.userId],
+    })
+    .expect(201);
+  await a.hr.api
+    .post(`/applications/${jobApplication.id}/offer`, {
+      branchId: a.branchId,
+      departmentId: a.departments.salesDhaka,
+      designationId,
+      gradeId: gradeRow.id,
+      grossSalary: '32000',
+      joiningOn: '2027-01-01',
+      validUntil: '2026-12-20',
+    })
+    .expect(201);
+
+  // performance (WP30): a KPI, a cycle with its appraisals, a rating, a calibration and a
+  // proposal waiting for the Admin
+  await a.hr.api
+    .post(`${c}/kpis`, {
+      code: 'COLLECT',
+      title: 'Collection of dues within 45 days',
+      measure: 'percent',
+    })
+    .expect(201);
+  const perfCycle = (
+    await a.hr.api
+      .post(`${c}/appraisal-cycles`, {
+        name: '2025-26 annual',
+        kind: 'annual',
+        periodFrom: '2025-07-01',
+        periodTo: '2026-06-30',
+        incrementFrom: '2026-09-01',
+      })
+      .expect(201)
+  ).body;
+  const perfAppraisals = (
+    await a.hr.api.post(`/appraisal-cycles/${perfCycle.id}/open`).expect(200)
+  ).body.appraisals as Array<{ id: string; employeeId: string }>;
+  const rafiAppraisal = perfAppraisals.find(
+    (x) => x.employeeId === a.rafi.employeeId,
+  )!.id;
+  await a.hr.api
+    .put(`/appraisals/${rafiAppraisal}/goals`, {
+      goals: [{ title: 'Collection of dues', weight: 100 }],
+    })
+    .expect(200);
+  await a.salesHead.api
+    .post(`/employees/${a.rafi.employeeId}/feedback`, {
+      body: 'Cleared an old due without escalation.',
+      kind: 'praise',
+    })
+    .expect(201);
+  for (const _ of [0, 1])
+    await a.hr.api
+      .post(`/appraisal-cycles/${perfCycle.id}/advance`)
+      .expect(200); // self_review, manager_review
+  await a.salesHead.api
+    .post(`/appraisals/${rafiAppraisal}/rate`, {
+      rating: 4,
+      comment: 'Strong on collection.',
+    })
+    .expect(200);
+  await a.hr.api
+    .post(`/appraisals/${rafiAppraisal}/calibrate`, { rating: 3 })
+    .expect(200);
+  await a.hr.api
+    .post(`/appraisals/${rafiAppraisal}/proposal`, {
+      kind: 'increment',
+      newGross: '33000',
+      structureId: salaryStructureId,
+      justification: 'Appraisal round',
+    })
+    .expect(201);
+
+  // commissions (WP31): a scheme and one calculated month
+  await a.hr.api
+    .put(`${c}/commission-scheme`, {
+      code: 'SALES-2026',
+      name: '2% of collection',
+      basis: 'collected',
+      ratePercent: '2',
+    })
+    .expect(200);
+  await a.hr.api
+    .post(`${c}/commission-runs`, { period: '2026-10' })
+    .expect(201);
+
   await a.hr.api
     .post(`/employees/${a.rafi.employeeId}/loans`, {
       principal: '10000',

@@ -169,6 +169,68 @@ export const MSG = {
   PF_SETTLED: 'PF_SETTLED',
   PF_PENDING: 'PF_PENDING',
   SALES_STORE_NEEDED: 'SALES_STORE_NEEDED',
+  // commissions (WP31)
+  COMMISSION_RULE_NOT_FOUND: 'COMMISSION_RULE_NOT_FOUND',
+  COMMISSION_RULE_CODE_TAKEN: 'COMMISSION_RULE_CODE_TAKEN',
+  COMMISSION_RULE_INVALID: 'COMMISSION_RULE_INVALID',
+  COMMISSION_NO_RULE: 'COMMISSION_NO_RULE',
+  COMMISSION_RUN_NOT_FOUND: 'COMMISSION_RUN_NOT_FOUND',
+  COMMISSION_RUN_EXISTS: 'COMMISSION_RUN_EXISTS',
+  COMMISSION_RUN_WRONG_STATE: 'COMMISSION_RUN_WRONG_STATE',
+  COMMISSION_PERIOD_LOCKED: 'COMMISSION_PERIOD_LOCKED',
+
+  // performance (WP30)
+  CYCLE_NOT_FOUND: 'CYCLE_NOT_FOUND',
+  CYCLE_WRONG_STATE: 'CYCLE_WRONG_STATE',
+  CYCLE_NAME_TAKEN: 'CYCLE_NAME_TAKEN',
+  APPRAISAL_NOT_FOUND: 'APPRAISAL_NOT_FOUND',
+  APPRAISAL_WRONG_STATE: 'APPRAISAL_WRONG_STATE',
+  APPRAISAL_NOT_MINE: 'APPRAISAL_NOT_MINE',
+  GOAL_WEIGHTS_INVALID: 'GOAL_WEIGHTS_INVALID',
+  GOALS_NEEDED: 'GOALS_NEEDED',
+  KPI_NOT_FOUND: 'KPI_NOT_FOUND',
+  KPI_CODE_TAKEN: 'KPI_CODE_TAKEN',
+  NOT_CALIBRATED: 'NOT_CALIBRATED',
+  PROPOSAL_NOT_FOUND: 'PROPOSAL_NOT_FOUND',
+  PROPOSAL_WRONG_STATE: 'PROPOSAL_WRONG_STATE',
+  PROPOSAL_LIVE_EXISTS: 'PROPOSAL_LIVE_EXISTS',
+  PROPOSAL_NOTHING_TO_DO: 'PROPOSAL_NOTHING_TO_DO',
+  FEEDBACK_EMPTY: 'FEEDBACK_EMPTY',
+
+  // recruitment (WP29)
+  MANPOWER_PLAN_NOT_FOUND: 'MANPOWER_PLAN_NOT_FOUND',
+  MANPOWER_PLAN_FINAL: 'MANPOWER_PLAN_FINAL',
+  POSITION_REQUEST_NOT_FOUND: 'POSITION_REQUEST_NOT_FOUND',
+  POSITION_REQUEST_WRONG_STATE: 'POSITION_REQUEST_WRONG_STATE',
+  OPENING_NOT_FOUND: 'OPENING_NOT_FOUND',
+  OPENING_WRONG_STATE: 'OPENING_WRONG_STATE',
+  OPENING_EXISTS: 'OPENING_EXISTS',
+  APPLICANT_NOT_FOUND: 'APPLICANT_NOT_FOUND',
+  APPLICANT_DUPLICATE: 'APPLICANT_DUPLICATE',
+  APPLICANT_CONSENT_NEEDED: 'APPLICANT_CONSENT_NEEDED',
+  APPLICANT_REDACTED: 'APPLICANT_REDACTED',
+  APPLICATION_NOT_FOUND: 'APPLICATION_NOT_FOUND',
+  APPLICATION_EXISTS: 'APPLICATION_EXISTS',
+  APPLICATION_WRONG_STATE: 'APPLICATION_WRONG_STATE',
+  INTERVIEW_NOT_FOUND: 'INTERVIEW_NOT_FOUND',
+  INTERVIEW_WRONG_STATE: 'INTERVIEW_WRONG_STATE',
+  INTERVIEW_NOT_ON_PANEL: 'INTERVIEW_NOT_ON_PANEL',
+  OFFER_NOT_FOUND: 'OFFER_NOT_FOUND',
+  OFFER_WRONG_STATE: 'OFFER_WRONG_STATE',
+  OFFER_LIVE_EXISTS: 'OFFER_LIVE_EXISTS',
+  OFFER_NEEDS_APPROVAL: 'OFFER_NEEDS_APPROVAL',
+  CV_TEXT_NEEDED: 'CV_TEXT_NEEDED',
+
+  // support tickets (WP28)
+  TICKET_NOT_FOUND: 'TICKET_NOT_FOUND',
+  TICKET_CATEGORY_NOT_FOUND: 'TICKET_CATEGORY_NOT_FOUND',
+  TICKET_CATEGORY_CODE_TAKEN: 'TICKET_CATEGORY_CODE_TAKEN',
+  TICKET_WRONG_STATE: 'TICKET_WRONG_STATE',
+  TICKET_CONTACT_INVALID: 'TICKET_CONTACT_INVALID',
+  TICKET_ASSIGNEE_INVALID: 'TICKET_ASSIGNEE_INVALID',
+  TICKET_RESOLUTION_NEEDED: 'TICKET_RESOLUTION_NEEDED',
+  TICKET_NOT_REOPENABLE: 'TICKET_NOT_REOPENABLE',
+  SLA_POLICY_INVALID: 'SLA_POLICY_INVALID',
   RESIGNATION_PENDING: 'RESIGNATION_PENDING',
   RESIGNATION_NOT_POSSIBLE: 'RESIGNATION_NOT_POSSIBLE',
   RECEIPT_ALLOCATION_INVALID: 'RECEIPT_ALLOCATION_INVALID',
@@ -432,6 +494,81 @@ const en: Record<MessageKey, string> = {
   PF_PENDING: 'A PF payment for this member waits for the checker.',
   SALES_STORE_NEEDED:
     'Name the store the goods leave from (some products are kept in a store).',
+  COMMISSION_RULE_NOT_FOUND: 'Commission rule not found.',
+  COMMISSION_RULE_CODE_TAKEN: 'Another commission rule has this code.',
+  COMMISSION_RULE_INVALID:
+    'The bonus rate needs a target to beat, and the target must be at least the minimum.',
+  COMMISSION_NO_RULE:
+    'Set the commission scheme before calculating a month.',
+  COMMISSION_RUN_NOT_FOUND: 'Commission run not found.',
+  COMMISSION_RUN_EXISTS:
+    'This month has a commission run already: cancel it to calculate again.',
+  COMMISSION_RUN_WRONG_STATE:
+    'This commission run cannot do that in its current state.',
+  COMMISSION_PERIOD_LOCKED:
+    'That month\u2019s payroll is already approved: commission for it cannot be posted any more.',
+  CYCLE_NOT_FOUND: 'Appraisal cycle not found.',
+  CYCLE_WRONG_STATE: 'This cycle cannot do that in its current phase.',
+  CYCLE_NAME_TAKEN: 'Another cycle of this company has that name.',
+  APPRAISAL_NOT_FOUND: 'Appraisal not found.',
+  APPRAISAL_WRONG_STATE:
+    'This appraisal cannot do that at its current step.',
+  APPRAISAL_NOT_MINE: 'That is not your appraisal, nor your team\u2019s.',
+  GOAL_WEIGHTS_INVALID: 'The weights of the goals must add up to 100.',
+  GOALS_NEEDED: 'Set the goals before the self-review opens.',
+  KPI_NOT_FOUND: 'KPI not found, or not in use.',
+  KPI_CODE_TAKEN: 'Another KPI has this code.',
+  NOT_CALIBRATED:
+    'HR calibrates the rating before an increment or a promotion is proposed.',
+  PROPOSAL_NOT_FOUND: 'Proposal not found.',
+  PROPOSAL_WRONG_STATE: 'This proposal cannot do that in its current state.',
+  PROPOSAL_LIVE_EXISTS:
+    'This appraisal has a live proposal already: withdraw it first.',
+  PROPOSAL_NOTHING_TO_DO:
+    'A proposal needs a new salary, a new designation or a new grade.',
+  FEEDBACK_EMPTY: 'Write the feedback before saving it.',
+  MANPOWER_PLAN_NOT_FOUND: 'No manpower plan for that fiscal year.',
+  MANPOWER_PLAN_FINAL: 'An approved manpower plan is not edited; approve a new one.',
+  POSITION_REQUEST_NOT_FOUND: 'Position request not found.',
+  POSITION_REQUEST_WRONG_STATE:
+    'This position request cannot do that in its current state.',
+  OPENING_NOT_FOUND: 'Job opening not found.',
+  OPENING_WRONG_STATE: 'This opening cannot do that in its current state.',
+  OPENING_EXISTS: 'This position request already has its opening.',
+  APPLICANT_NOT_FOUND: 'Applicant not found.',
+  APPLICANT_DUPLICATE:
+    'This phone number or e-mail already belongs to another applicant.',
+  APPLICANT_CONSENT_NEEDED:
+    'A CV is kept only with the applicant\u2019s consent: record it.',
+  APPLICANT_REDACTED:
+    'This applicant\u2019s personal data was cleared after its retention period.',
+  APPLICATION_NOT_FOUND: 'Application not found.',
+  APPLICATION_EXISTS: 'This applicant has already applied for this opening.',
+  APPLICATION_WRONG_STATE:
+    'This application cannot do that in its current state.',
+  INTERVIEW_NOT_FOUND: 'Interview not found.',
+  INTERVIEW_WRONG_STATE: 'This interview cannot do that in its current state.',
+  INTERVIEW_NOT_ON_PANEL: 'Only the interview panel gives a scorecard.',
+  OFFER_NOT_FOUND: 'Offer not found.',
+  OFFER_WRONG_STATE: 'This offer cannot do that in its current state.',
+  OFFER_LIVE_EXISTS:
+    'This application has a live offer already: withdraw it first.',
+  OFFER_NEEDS_APPROVAL:
+    'The salary is outside the grade\u2019s range: the Admin must approve the offer first.',
+  CV_TEXT_NEEDED:
+    'Screening needs the CV as text: upload the CV or paste its text.',
+  TICKET_NOT_FOUND: 'Ticket not found.',
+  TICKET_CATEGORY_NOT_FOUND: 'Ticket category not found, or not in use.',
+  TICKET_CATEGORY_CODE_TAKEN: 'Another ticket category has this code.',
+  TICKET_WRONG_STATE: 'This ticket cannot do that in its current state.',
+  TICKET_CONTACT_INVALID: 'That contact is not this customer’s.',
+  TICKET_ASSIGNEE_INVALID:
+    'Tickets are assigned to someone who may work them (support.own or support.manage).',
+  TICKET_RESOLUTION_NEEDED: 'Say how the ticket was resolved.',
+  TICKET_NOT_REOPENABLE:
+    'Only a resolved or closed ticket is reopened, and only with a reason.',
+  SLA_POLICY_INVALID:
+    'First response and resolution are in working hours, and resolution cannot be sooner than the first response.',
   RESIGNATION_PENDING: 'You have a resignation waiting for approval already.',
   RESIGNATION_NOT_POSSIBLE:
     'A resignation is for an active employee (or on probation) not already leaving.',
@@ -836,6 +973,76 @@ const bn: Record<MessageKey, string> = {
   PF_PENDING: 'এই সদস্যের একটি পিএফ পরিশোধ যাচাইকারীর অপেক্ষায়।',
   SALES_STORE_NEEDED:
     'যে স্টোর থেকে মাল যাচ্ছে তা উল্লেখ করুন (কিছু পণ্য স্টোরে রাখা হয়)।',
+  COMMISSION_RULE_NOT_FOUND: 'কমিশনের নিয়মটি পাওয়া যায়নি।',
+  COMMISSION_RULE_CODE_TAKEN: 'এই কোডে আরেকটি নিয়ম আছে।',
+  COMMISSION_RULE_INVALID:
+    'বোনাস হারের জন্য লক্ষ্যমাত্রা দরকার, আর সেই লক্ষ্য ন্যূনতমের চেয়ে কম হতে পারে না।',
+  COMMISSION_NO_RULE: 'মাসের হিসাব করার আগে কমিশনের নিয়ম নির্ধারণ করুন।',
+  COMMISSION_RUN_NOT_FOUND: 'কমিশনের হিসাবটি পাওয়া যায়নি।',
+  COMMISSION_RUN_EXISTS:
+    'এই মাসের কমিশন হিসাব ইতিমধ্যে আছে: আবার করতে হলে আগেরটি বাতিল করুন।',
+  COMMISSION_RUN_WRONG_STATE: 'এই অবস্থায় হিসাবটিতে এটি করা যাবে না।',
+  COMMISSION_PERIOD_LOCKED:
+    'ওই মাসের বেতন অনুমোদিত হয়ে গেছে: এখন আর কমিশন পাঠানো যাবে না।',
+  CYCLE_NOT_FOUND: 'মূল্যায়ন চক্রটি পাওয়া যায়নি।',
+  CYCLE_WRONG_STATE: 'এই ধাপে চক্রটিতে এটি করা যাবে না।',
+  CYCLE_NAME_TAKEN: 'এই কোম্পানিতে এই নামে আরেকটি চক্র আছে।',
+  APPRAISAL_NOT_FOUND: 'মূল্যায়নটি পাওয়া যায়নি।',
+  APPRAISAL_WRONG_STATE: 'এই ধাপে মূল্যায়নটিতে এটি করা যাবে না।',
+  APPRAISAL_NOT_MINE: 'এটি আপনার বা আপনার দলের মূল্যায়ন নয়।',
+  GOAL_WEIGHTS_INVALID: 'লক্ষ্যগুলোর ভার মিলে ১০০ হতে হবে।',
+  GOALS_NEEDED: 'নিজের পর্যালোচনা শুরুর আগে লক্ষ্য নির্ধারণ করুন।',
+  KPI_NOT_FOUND: 'কেপিআইটি পাওয়া যায়নি, বা চালু নেই।',
+  KPI_CODE_TAKEN: 'এই কোডে আরেকটি কেপিআই আছে।',
+  NOT_CALIBRATED:
+    'ইনক্রিমেন্ট বা পদোন্নতির প্রস্তাবের আগে এইচআর রেটিং সমন্বয় করে।',
+  PROPOSAL_NOT_FOUND: 'প্রস্তাবটি পাওয়া যায়নি।',
+  PROPOSAL_WRONG_STATE: 'এই অবস্থায় প্রস্তাবটিতে এটি করা যাবে না।',
+  PROPOSAL_LIVE_EXISTS:
+    'এই মূল্যায়নের একটি চলমান প্রস্তাব আছে: আগে সেটি প্রত্যাহার করুন।',
+  PROPOSAL_NOTHING_TO_DO:
+    'প্রস্তাবে নতুন বেতন, নতুন পদবি বা নতুন গ্রেড থাকতে হবে।',
+  FEEDBACK_EMPTY: 'সংরক্ষণের আগে মতামত লিখুন।',
+  MANPOWER_PLAN_NOT_FOUND: 'ওই অর্থবছরের জনবল পরিকল্পনা নেই।',
+  MANPOWER_PLAN_FINAL:
+    'অনুমোদিত জনবল পরিকল্পনা পরিবর্তন করা হয় না; নতুন একটি অনুমোদন করুন।',
+  POSITION_REQUEST_NOT_FOUND: 'পদের অনুরোধটি পাওয়া যায়নি।',
+  POSITION_REQUEST_WRONG_STATE: 'এই অবস্থায় অনুরোধটিতে এটি করা যাবে না।',
+  OPENING_NOT_FOUND: 'নিয়োগ বিজ্ঞপ্তিটি পাওয়া যায়নি।',
+  OPENING_WRONG_STATE: 'এই অবস্থায় বিজ্ঞপ্তিটিতে এটি করা যাবে না।',
+  OPENING_EXISTS: 'এই অনুরোধের বিজ্ঞপ্তি ইতিমধ্যে আছে।',
+  APPLICANT_NOT_FOUND: 'আবেদনকারীকে পাওয়া যায়নি।',
+  APPLICANT_DUPLICATE: 'এই ফোন নম্বর বা ই-মেইল আগে থেকেই আরেকজন আবেদনকারীর।',
+  APPLICANT_CONSENT_NEEDED:
+    'সিভি শুধু আবেদনকারীর সম্মতিতেই রাখা হয়: সম্মতি লিপিবদ্ধ করুন।',
+  APPLICANT_REDACTED:
+    'সংরক্ষণকাল শেষে এই আবেদনকারীর ব্যক্তিগত তথ্য মুছে ফেলা হয়েছে।',
+  APPLICATION_NOT_FOUND: 'আবেদনটি পাওয়া যায়নি।',
+  APPLICATION_EXISTS: 'এই আবেদনকারী এই পদে ইতিমধ্যে আবেদন করেছেন।',
+  APPLICATION_WRONG_STATE: 'এই অবস্থায় আবেদনটিতে এটি করা যাবে না।',
+  INTERVIEW_NOT_FOUND: 'সাক্ষাৎকারটি পাওয়া যায়নি।',
+  INTERVIEW_WRONG_STATE: 'এই অবস্থায় সাক্ষাৎকারটিতে এটি করা যাবে না।',
+  INTERVIEW_NOT_ON_PANEL: 'শুধু সাক্ষাৎকার বোর্ডের সদস্যরাই মূল্যায়ন দেন।',
+  OFFER_NOT_FOUND: 'নিয়োগপত্রটি পাওয়া যায়নি।',
+  OFFER_WRONG_STATE: 'এই অবস্থায় নিয়োগপত্রটিতে এটি করা যাবে না।',
+  OFFER_LIVE_EXISTS:
+    'এই আবেদনের একটি চলমান নিয়োগপত্র আছে: আগে সেটি প্রত্যাহার করুন।',
+  OFFER_NEEDS_APPROVAL:
+    'বেতন গ্রেডের সীমার বাইরে: নিয়োগপত্র পাঠানোর আগে অ্যাডমিনের অনুমোদন লাগবে।',
+  CV_TEXT_NEEDED:
+    'যাচাইয়ের জন্য সিভির লেখা দরকার: সিভি আপলোড করুন বা তার লেখা দিন।',
+  TICKET_NOT_FOUND: 'অভিযোগটি পাওয়া যায়নি।',
+  TICKET_CATEGORY_NOT_FOUND: 'অভিযোগের শ্রেণিটি পাওয়া যায়নি, বা চালু নেই।',
+  TICKET_CATEGORY_CODE_TAKEN: 'এই কোডে আরেকটি শ্রেণি আছে।',
+  TICKET_WRONG_STATE: 'এই অবস্থায় অভিযোগটিতে এটি করা যাবে না।',
+  TICKET_CONTACT_INVALID: 'এই যোগাযোগকারী এই গ্রাহকের নন।',
+  TICKET_ASSIGNEE_INVALID:
+    'অভিযোগ এমন কাউকে দেওয়া হয় যিনি এর কাজ করতে পারেন (support.own বা support.manage)।',
+  TICKET_RESOLUTION_NEEDED: 'অভিযোগটি কীভাবে সমাধান হলো তা লিখুন।',
+  TICKET_NOT_REOPENABLE:
+    'শুধু সমাধান হওয়া বা বন্ধ অভিযোগ আবার খোলা যায়, এবং কারণ লিখেই।',
+  SLA_POLICY_INVALID:
+    'প্রথম উত্তর ও সমাধানের সময় কর্মঘণ্টায় হিসাব হয়, আর সমাধানের সময় প্রথম উত্তরের চেয়ে কম হতে পারে না।',
   RESIGNATION_PENDING: 'আপনার একটি পদত্যাগপত্র ইতিমধ্যে অনুমোদনের অপেক্ষায়।',
   RESIGNATION_NOT_POSSIBLE:
     'পদত্যাগ শুধু সক্রিয় (বা শিক্ষানবিশ) কর্মীর জন্য, যিনি ইতিমধ্যে চলে যাচ্ছেন না।',

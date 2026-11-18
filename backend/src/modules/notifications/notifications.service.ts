@@ -42,6 +42,7 @@ import { PayrollRunsService } from '../payroll/payroll-runs.service.js';
 import type { ReportResultDto } from './dto/notifications.dto.js';
 import {
   CHANNELS,
+  shortDateTime,
   TEMPLATES,
   type Kind,
   type Lang,
@@ -66,6 +67,10 @@ export const NOTIFIED_EVENTS = [
   'lead.created',
   'lead.assigned',
   'invoice.overdue',
+  'document.expiring',
+  'ticket.created',
+  'ticket.assigned',
+  'ticket.sla_breached',
 ];
 
 interface Recipient {
@@ -486,6 +491,13 @@ export class NotificationsService {
         return this.leadMessages(p);
       case 'invoice.overdue':
         return this.overdueMessages(p);
+      case 'document.expiring':
+        return this.documentExpiryMessages(p);
+      case 'ticket.created':
+      case 'ticket.assigned':
+        return this.ticketMessages(p);
+      case 'ticket.sla_breached':
+        return this.ticketBreachMessages(p);
     }
     return [];
   }
@@ -821,6 +833,137 @@ export class NotificationsService {
       .executeTakeFirst();
     // decided meanwhile (e.g. a reminder for a request approved since): nothing to say
     return r && r.state === 'in_approval' ? r.summary : null;
+  }
+
+
+  /**
+   * A document that runs out (WP31). It goes to HR, who replaces it — not to the employee,
+   * who cannot upload one themselves.
+   */
+  private async documentExpiryMessages(
+    p: Record<string, unknown>,
+  ): Promise<Planned[]> {
+    const employee = await this.db.tx
+      .selectFrom('employees')
+      .select(['id', 'company_id', 'full_name_en', 'employee_code'])
+      .where('id', '=', String(p.employeeId))
+      .executeTakeFirst();
+    if (!employee) return [];
+    const hr = await this.access.usersWithSystemRole('hr', {
+      companyId: employee.company_id,
+    });
+    const link = `${this.config.notifications.publicAppUrl}/portal/employees/${employee.id}`;
+    const stage = (['days_30', 'days_7', 'expired'] as string[]).includes(
+      String(p.stage),
+    )
+      ? (String(p.stage) as 'days_30' | 'days_7' | 'expired')
+      : 'days_30';
+    const out: Planned[] = [];
+    for (const userId of hr) {
+      const to = await this.userRecipient(userId);
+      if (!to) continue;
+      out.push({
+        kind: 'document_expiring' as const,
+        recipient: to,
+        link,
+        text: TEMPLATES.document_expiring(to.language, {
+          who: `${employee.full_name_en} (${employee.employee_code})`,
+          docType: String(p.docType ?? 'document'),
+          expiresOn: String(p.expiresOn),
+          stage,
+          link,
+        }),
+      });
+    }
+    return out;
+  }
+
+  /** A ticket the assignee must answer (WP28). */
+  private async ticketMessages(
+    p: Record<string, unknown>,
+  ): Promise<Planned[]> {
+    const ticket = await this.ticketFacts(String(p.ticketId));
+    if (!ticket?.assignee_id) return [];
+    // the person who raised it for themself needs no message
+    const by = p.createdBy ?? p.assignedBy;
+    if (by && by === ticket.assignee_id) return [];
+    const to = await this.userRecipient(ticket.assignee_id);
+    if (!to) return [];
+    const link = `${this.config.notifications.publicAppUrl}/portal/support/tickets/${ticket.id}`;
+    return [
+      {
+        kind: 'ticket_assigned' as const,
+        recipient: to,
+        link,
+        text: TEMPLATES.ticket_assigned(to.language, {
+          number: ticket.number,
+          customer: ticket.customer_name,
+          subject: ticket.subject,
+          priority: ticket.priority,
+          dueIn: shortDateTime(ticket.first_response_due_at, to.language),
+          link,
+        }),
+      },
+    ];
+  }
+
+  /**
+   * An SLA deadline passed (WP28): the assignee, and the company's Admin for an urgent or
+   * high ticket, which is the escalation the spec asks for on a breach.
+   */
+  private async ticketBreachMessages(
+    p: Record<string, unknown>,
+  ): Promise<Planned[]> {
+    const ticket = await this.ticketFacts(String(p.ticketId));
+    if (!ticket) return [];
+    const clock =
+      p.clock === 'first_response' ? 'first_response' : 'resolution';
+    const userIds = new Set<string>();
+    if (ticket.assignee_id) userIds.add(ticket.assignee_id);
+    if (['urgent', 'high'].includes(ticket.priority))
+      for (const admin of await this.access.usersWithSystemRole('admin', {
+        companyId: ticket.company_id,
+      }))
+        userIds.add(admin);
+
+    const out: Planned[] = [];
+    const link = `${this.config.notifications.publicAppUrl}/portal/support/tickets/${ticket.id}`;
+    for (const userId of userIds) {
+      const to = await this.userRecipient(userId);
+      if (!to) continue;
+      out.push({
+        kind: 'ticket_sla_breached' as const,
+        recipient: to,
+        link,
+        text: TEMPLATES.ticket_sla_breached(to.language, {
+          number: ticket.number,
+          customer: ticket.customer_name,
+          subject: ticket.subject,
+          clock,
+          link,
+        }),
+      });
+    }
+    return out;
+  }
+
+  private async ticketFacts(ticketId: string) {
+    const row = await this.db.tx
+      .selectFrom('support_tickets as t')
+      .innerJoin('customers as c', 'c.id', 't.customer_id')
+      .select([
+        't.id',
+        't.company_id',
+        't.number',
+        't.subject',
+        't.priority',
+        't.assignee_id',
+        't.first_response_due_at',
+        'c.name as customer_name',
+      ])
+      .where('t.id', '=', ticketId)
+      .executeTakeFirst();
+    return row ?? null;
   }
 
   private async userRecipient(userId: string): Promise<Recipient | null> {

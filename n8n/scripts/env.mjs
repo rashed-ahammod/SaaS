@@ -26,6 +26,8 @@ export const settings = {
   // WP20: the secret the bank feed signs statement pushes with, and the ERP service key
   // (permission bank.import only) the workflow imports them with
   bankFeedSecret: local.BANK_FEED_SECRET ?? 'local-bank-feed-secret',
+  // WP31: the secret the lead feed (Facebook lead ads, an outside form) signs with
+  leadFeedSecret: local.LEAD_FEED_SECRET ?? 'local-lead-feed-secret',
   env: {
     // where n8n keeps its own database, credentials and encryption key (git-ignored)
     N8N_USER_FOLDER: path.join(root, '.n8n'),
@@ -37,6 +39,9 @@ export const settings = {
     EMAIL_API_URL: local.EMAIL_API_URL ?? 'http://localhost:5680/email',
     SMS_PRIMARY_URL: local.SMS_PRIMARY_URL ?? 'http://localhost:5680/sms/primary',
     SMS_FALLBACK_URL: local.SMS_FALLBACK_URL ?? 'http://localhost:5680/sms/fallback',
+    // WP31: where the links in the kit e-mails point, and who gets them
+    ERP_APP_URL: local.ERP_APP_URL ?? 'http://localhost:3001',
+    OFFICE_KIT_MAILBOX: local.OFFICE_KIT_MAILBOX ?? 'office@example.test',
     // WP12: load ONLY the node types the reviewed workflow uses. n8n's own dependency tree
     // has advisories in nodes we never use (AI / LangChain, expression evaluator, XML, git);
     // nodes that are not loaded cannot be reached. Add a type here only with a reviewed workflow.
@@ -60,5 +65,7 @@ export const settings = {
     smsFallbackKey: local.SMS_FALLBACK_KEY ?? 'local-test-key',
     // "ServiceKey <id>.<secret>" from POST /service-keys (permissions: ["bank.import"])
     erpBankImportKey: local.ERP_BANK_IMPORT_KEY ?? '',
+    // WP31: the same, with permissions: ["crm.capture"] only
+    erpCrmCaptureKey: local.ERP_CRM_CAPTURE_KEY ?? '',
   },
 };

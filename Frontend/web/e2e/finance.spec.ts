@@ -978,6 +978,319 @@ test.describe("CRM: customers and leads (WP23)", () => {
   });
 });
 
+test.describe("Commission and Gate 3 (WP31)", () => {
+  test.describe("HR (Farzana)", () => {
+    test.use({ storageState: USERS.farzana.state });
+
+    test("the scheme, October's run, and what each salesperson earned", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/sales/commission");
+      await expect(
+        page.getByRole("heading", { name: "Commission scheme" }),
+      ).toBeVisible();
+      // the demo scheme: 2% of collection, 3% above target
+      await expect(page.getByText("SALES-2026")).toBeVisible();
+      await expect(page.getByText("Money collected")).toBeVisible();
+
+      // October was calculated and posted by the seed
+      const row = page.getByRole("row").filter({ hasText: "2026-10" });
+      await expect(row).toBeVisible();
+      await expect(row.getByText("Posted to payroll")).toBeVisible();
+      await row.first().click();
+
+      // each line keeps the receipts it came from, and says it reached payroll
+      await expect(
+        page.getByRole("heading", { name: /What each salesperson earned/ }),
+      ).toBeVisible();
+      await expect(page.getByText(/Receipts: \d/).first()).toBeVisible();
+      await expect(page.getByText("In payroll").first()).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+
+    test("the Gate 3 report counts what the pilot has run, and says what it has not", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/gate-3");
+      await expect(
+        page.getByRole("heading", { name: "Gate 3 report" }),
+      ).toBeVisible();
+      // the demo company has sold, collected, run an appraisal cycle and posted commission
+      await expect(
+        page.getByRole("row").filter({ hasText: "appraisal cycle" }),
+      ).toBeVisible();
+      await expect(page.getByText("Met").first()).toBeVisible();
+      // and the page never rounds up: it shows how many checks are met
+      await expect(page.getByText(/checks met|Every check is met/)).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+  });
+
+  test.describe("Sales user (Rafi)", () => {
+    test.use({ storageState: USERS.rafi.state });
+
+    test("sees his own commission months, not the company's run", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/sales/commission");
+      await expect(
+        page.getByRole("heading", { name: "My commission" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("row").filter({ hasText: "2026-10" }),
+      ).toBeVisible();
+      // the scheme and the run belong to HR's screen, not his
+      await expect(
+        page.getByRole("heading", { name: "Commission scheme" }),
+      ).toHaveCount(0);
+      expect(errors).toEqual([]);
+    });
+
+    test("the sales assistant scores his lead and drafts a message he sends himself", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/crm/leads");
+      await page.getByRole("row").filter({ hasText: "Nasrin Akter" }).click();
+      await expect(
+        page.getByRole("heading", { name: "Sales assistant" }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Score this lead" }).click();
+      await expect(page.getByText(/Score: \d+/)).toBeVisible();
+
+      await page.getByLabel("Sales assistant").selectOption("follow_up");
+      await page
+        .getByRole("button", { name: "Draft a follow-up message" })
+        .click();
+      await expect(page.getByRole("button", { name: "Copy" })).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+  });
+});
+
+test.describe("Performance (WP30)", () => {
+  test.describe("HR (Farzana)", () => {
+    test.use({ storageState: USERS.farzana.state });
+
+    test("the cycle in calibration, the spread per department, and the proposal it led to", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/performance/cycles");
+      await expect(
+        page.getByRole("heading", { name: "Appraisal cycles" }),
+      ).toBeVisible();
+      await page.getByRole("row").filter({ hasText: "2025-26 annual" }).click();
+
+      // calibration is HR's own screen: the spread of ratings per department
+      await expect(
+        page.getByRole("heading", { name: "Calibration across departments" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("row").filter({ hasText: "Sales Dhaka" }),
+      ).toBeVisible();
+
+      // Rafi's appraisal carries both numbers: the manager's 4 and HR's calibrated 3
+      await page.getByRole("link", { name: /Rafi/ }).first().click();
+      await expect(page.getByText("Weighted score")).toBeVisible();
+      await expect(page.getByText("Calibrated", { exact: false }).first()).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Increments & promotions" }),
+      ).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+
+    test("the proposals list shows the increment waiting for the MD", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/performance/proposals");
+      const row = page
+        .getByRole("row")
+        .filter({ hasText: "Mahmudul Hasan Rafi" });
+      await expect(row).toBeVisible();
+      await expect(row.getByText("Waiting for the Admin")).toBeVisible();
+      // it cannot be applied until the Admin approves: no Apply button yet
+      await expect(row.getByRole("button", { name: "Apply it" })).toHaveCount(0);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  test.describe("Dept Head (Tanvir)", () => {
+    test.use({ storageState: USERS.tanvir.state });
+
+    test("his team's appraisals, and the rating he gave with its goals", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/performance/team");
+      await expect(
+        page.getByRole("heading", { name: "My team’s appraisals" }),
+      ).toBeVisible();
+      const row = page.getByRole("row").filter({ hasText: "Rafi" });
+      await expect(row).toBeVisible();
+      await row.first().click();
+      await expect(page.getByText("Collection of dues within 45 days")).toBeVisible();
+      await expect(page.getByText("Weights")).toBeVisible();
+      // the feedback he wrote during the year is on the same page
+      await expect(page.getByText(/Khatunganj/)).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+  });
+
+  test.describe("Employee (Rafi)", () => {
+    test.use({ storageState: USERS.rafi.state });
+
+    test("sees his own self-review and only the feedback shared with him", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/performance/cycles");
+      await page.getByRole("row").filter({ hasText: "2025-26 annual" }).click();
+      await page.getByRole("link", { name: /Rafi/ }).first().click();
+      await expect(page.getByRole("heading", { name: "Self-review" })).toBeVisible();
+      await expect(page.getByText(/আদায় ভালো হয়েছে|Collection/)).toBeVisible();
+      // the concern note was not shared with him
+      await expect(page.getByText(/Route reports were missing/)).toHaveCount(0);
+      expect(errors).toEqual([]);
+    });
+  });
+});
+
+test.describe("Hiring (WP29)", () => {
+  test.describe("HR (Farzana)", () => {
+    test.use({ storageState: USERS.farzana.state });
+
+    test("the opening, its applicants, and a blind CV screening with reasons", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/hiring/openings");
+      await expect(
+        page.getByRole("heading", { name: "Job openings" }),
+      ).toBeVisible();
+      const row = page
+        .getByRole("row")
+        .filter({ hasText: "Sales Executive (Dhaka north)" });
+      await expect(row).toBeVisible();
+      await row.first().click();
+
+      // the post as advertised, and the three applicants
+      await expect(page.getByText("Retail sales experience")).toBeVisible();
+      await expect(
+        page.getByRole("row").filter({ hasText: "Rakib Hasan" }),
+      ).toBeVisible();
+
+      // screen the applicant who has not been screened yet
+      await page.getByRole("row").filter({ hasText: "Rakib Hasan" }).click();
+      await expect(
+        page.getByRole("heading", { name: "CV screening" }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Screen the CV" }).click();
+      await expect(page.getByText("Removed before the model saw the CV")).toBeVisible();
+      // the reasons are shown next to the score, which is the point of the feature
+      await expect(page.getByText(/No evidence for|evidence for/)).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+
+    test("the manpower plan is approved and cannot be edited", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/hiring/plan");
+      await expect(
+        page.getByRole("heading", { name: "Manpower plan" }),
+      ).toBeVisible();
+      await expect(page.getByText("Approved").first()).toBeVisible();
+      // HR may read the plan but not change it: no save form for them
+      await expect(
+        page.getByRole("button", { name: "Save the plan" }),
+      ).toHaveCount(0);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  test.describe("Dept Head (Tanvir)", () => {
+    test.use({ storageState: USERS.tanvir.state });
+
+    test("his own post request, and the interview he is on the panel of", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/hiring/positions");
+      await expect(
+        page.getByRole("row").filter({ hasText: /NP\/2026-27/ }).first(),
+      ).toBeVisible();
+      await page
+        .getByRole("row")
+        .filter({ hasText: /NP\/2026-27/ })
+        .first()
+        .click();
+      await expect(page.getByText("In the plan")).toBeVisible();
+      await expect(page.getByText("What the plan says")).toBeVisible();
+
+      await page.goto("/portal/hiring/interviews");
+      await expect(
+        page.getByRole("heading", { name: "My interviews" }),
+      ).toBeVisible();
+      await expect(page.getByText("Given").first()).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+  });
+});
+
+test.describe("Support tickets and Customer 360 (WP28)", () => {
+  test.describe("Sales user (Rafi)", () => {
+    test.use({ storageState: USERS.rafi.state });
+
+    test("his ticket, the customer's answer recorded, the SLA clock shown", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/support/tickets");
+      await expect(
+        page.getByRole("heading", { name: "Customer tickets" }),
+      ).toBeVisible();
+      const row = page.getByRole("row").filter({ hasText: "Meghna Dealers" });
+      await expect(row).toBeVisible();
+      // Mitu's tickets are not his
+      await expect(
+        page.getByRole("row").filter({ hasText: "Sylhet Agro" }),
+      ).toHaveCount(0);
+
+      await row.first().click();
+      await expect(page.getByText("Two cans leaked")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "SLA" })).toBeVisible();
+      await expect(page.getByText("First response")).toBeVisible();
+
+      // it is waiting for the customer: record what they answered
+      const answer = `Photo sent on WhatsApp (${Date.now() % 100000})`; // runs repeat on the demo data
+      await page
+        .getByRole("button", { name: "Record the customer’s answer" })
+        .click();
+      await page.getByLabel("From the customer").fill(answer);
+      await page
+        .getByRole("button", { name: "Record the customer’s answer" })
+        .last()
+        .click();
+      await expect(page.getByText(answer)).toBeVisible();
+      await expect(page.getByText("Being worked").first()).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+  });
+
+  test.describe("Accounts (Sujit)", () => {
+    test.use({ storageState: USERS.sujit.state });
+
+    test("Customer 360 shows the money, and says plainly what it may not show", async ({
+      page,
+    }) => {
+      const errors = await open(page, "/portal/crm/customers");
+      await page.getByRole("row").filter({ hasText: "Meghna Dealers" }).click();
+      await page.getByRole("link", { name: "Customer 360" }).click();
+      await expect(
+        page.getByRole("heading", { name: "What they owe" }),
+      ).toBeVisible();
+      // Accounts holds no support permission: the tickets block is absent, not empty
+      await expect(
+        page.getByText("You do not have access to this part."),
+      ).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+  });
+});
+
 test.describe("CRM: opportunities, pipeline and targets (WP24)", () => {
   test.describe("Sales user (Rafi)", () => {
     test.use({ storageState: USERS.rafi.state });

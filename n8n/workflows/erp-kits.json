@@ -1,0 +1,187 @@
+{
+  "id": "erpKits01",
+  "name": "ERP onboarding and offboarding kits",
+  "active": false,
+  "isArchived": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": false
+  },
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "description": "Phase 3 WP31. Two ERP events arrive here (POST <base>/erp/employee.created and <base>/erp/employee.separation_recorded, same signature as every other event) and turn into the e-mails the OFFICE needs: IT opens the accounts and prepares the kit for a joiner, and admin collects the assets and the clearances for a leaver. It decides nothing about the employee: the onboarding checklist (WP1) and the clearances / final settlement (WP13, resignation) live in the ERP, and this workflow only tells the people whose job it is, with a link to the record. No salary, NID or bank detail is in an event payload (guide §15), so none can reach an inbox from here."
+  },
+  "nodes": [
+    {
+      "id": "d7b2e0a4-0001-4000-8000-000000000001",
+      "name": "ERP event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 300],
+      "webhookId": "2c7d9e1f-4a6b-4c8d-9e0f-1a2b3c4d5e61",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kits/:eventType",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "d7b2e0a4-0002-4000-8000-000000000002",
+      "name": "Signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.headers['x-timestamp'] + '.' + JSON.stringify($json.body) }}",
+        "dataPropertyName": "expectedSignature",
+        "encoding": "hex"
+      },
+      "credentials": {
+        "crypto": { "id": "erpWebhookSecret", "name": "ERP webhook secret" }
+      }
+    },
+    {
+      "id": "d7b2e0a4-0003-4000-8000-000000000003",
+      "name": "Signed and fresh?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "signed",
+              "leftValue": "={{ $json.expectedSignature === $json.headers['x-signature'] && Math.abs($now.toUnixInteger() - Number($json.headers['x-timestamp'])) <= 300 }}",
+              "rightValue": "",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d7b2e0a4-0004-4000-8000-000000000004",
+      "name": "Rejected (bad signature)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [660, 480],
+      "parameters": {}
+    },
+    {
+      "id": "d7b2e0a4-0005-4000-8000-000000000005",
+      "name": "Joiner or leaver?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [660, 280],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "id": "joiner",
+                    "leftValue": "={{ $json.params.eventType }}",
+                    "rightValue": "employee.created",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "joiner"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "id": "leaver",
+                    "leftValue": "={{ $json.params.eventType }}",
+                    "rightValue": "employee.separation_recorded",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "leaver"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra", "renameFallbackOutput": "other" }
+      }
+    },
+    {
+      "id": "d7b2e0a4-0006-4000-8000-000000000006",
+      "name": "Onboarding kit to IT and admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 160],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EMAIL_API_URL }}/messages",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $env.OFFICE_KIT_MAILBOX, subject: 'New joiner: ' + $('ERP event').item.json.body.payload.employeeCode + ' joins ' + $('ERP event').item.json.body.payload.joinDate, text: ['A new employee record was created in the ERP.', 'Employee code: ' + $('ERP event').item.json.body.payload.employeeCode, 'Joining date: ' + $('ERP event').item.json.body.payload.joinDate, '', 'IT: open the e-mail account and the ERP login, and prepare the laptop or desk phone.', 'Admin: prepare the ID card, the seat and the welcome pack.', 'HR: the onboarding checklist in the ERP is what makes the record active; tick each item there as it is done.', '', $env.ERP_APP_URL + '/portal/employees/' + $('ERP event').item.json.body.payload.employeeId].join('\\n') }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "erpEmailApi", "name": "E-mail API" }
+      }
+    },
+    {
+      "id": "d7b2e0a4-0007-4000-8000-000000000007",
+      "name": "Offboarding kit to IT and admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 380],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EMAIL_API_URL }}/messages",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $env.OFFICE_KIT_MAILBOX, subject: 'Leaver: last working day ' + $('ERP event').item.json.body.payload.lastWorkingDay, text: ['A separation was recorded in the ERP (' + $('ERP event').item.json.body.payload.kind + ').', 'Last working day: ' + $('ERP event').item.json.body.payload.lastWorkingDay, '', 'IT: close the e-mail account and the ERP login on the last working day, and collect the laptop and SIM.', 'Admin: collect the ID card, the keys and any other asset issued, and sign the asset return in the ERP.', 'Accounts: the final settlement waits for the clearances; do not pay before they are signed.', '', $env.ERP_APP_URL + '/portal/lifecycle'].join('\\n') }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "erpEmailApi", "name": "E-mail API" }
+      }
+    },
+    {
+      "id": "d7b2e0a4-0008-4000-8000-000000000008",
+      "name": "Nothing to send",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [940, 560],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "ERP event": { "main": [[{ "node": "Signature", "type": "main", "index": 0 }]] },
+    "Signature": { "main": [[{ "node": "Signed and fresh?", "type": "main", "index": 0 }]] },
+    "Signed and fresh?": {
+      "main": [
+        [{ "node": "Joiner or leaver?", "type": "main", "index": 0 }],
+        [{ "node": "Rejected (bad signature)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Joiner or leaver?": {
+      "main": [
+        [{ "node": "Onboarding kit to IT and admin", "type": "main", "index": 0 }],
+        [{ "node": "Offboarding kit to IT and admin", "type": "main", "index": 0 }],
+        [{ "node": "Nothing to send", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

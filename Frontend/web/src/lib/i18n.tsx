@@ -30,6 +30,10 @@ import { en as BANK_EN, bn as BANK_BN } from "./bank-text";
 import { en as VAT_EN, bn as VAT_BN } from "./vat-text";
 import { en as CLOSE_EN, bn as CLOSE_BN } from "./close-text";
 import { en as CRM_EN, bn as CRM_BN } from "./crm-text";
+import { en as SUPPORT_EN, bn as SUPPORT_BN } from "./support-text";
+import { en as HIRING_EN, bn as HIRING_BN } from "./hiring-text";
+import { en as PERF_EN, bn as PERF_BN } from "./performance-text";
+import { en as COMM_EN, bn as COMM_BN } from "./commission-text";
 import { en as SALES_EN, bn as SALES_BN } from "./sales-text";
 import { en as ACCESS_EN, bn as ACCESS_BN } from "./access-text";
 import { en as COMPLETION_EN, bn as COMPLETION_BN } from "./completion-text";
@@ -596,6 +600,10 @@ const DICT: Record<Lang, Record<string, string>> = {
     ...VAT_EN,
     ...CLOSE_EN,
     ...CRM_EN,
+    ...SUPPORT_EN,
+    ...HIRING_EN,
+    ...PERF_EN,
+    ...COMM_EN,
     ...SALES_EN,
     ...ACCESS_EN,
     ...COMPLETION_EN,
@@ -616,6 +624,10 @@ const DICT: Record<Lang, Record<string, string>> = {
     ...VAT_BN,
     ...CLOSE_BN,
     ...CRM_BN,
+    ...SUPPORT_BN,
+    ...HIRING_BN,
+    ...PERF_BN,
+    ...COMM_BN,
     ...SALES_BN,
     ...ACCESS_BN,
     ...COMPLETION_BN,

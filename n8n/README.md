@@ -1,4 +1,4 @@
-# n8n: ERP notifications (WP10) and bank statements (WP20)
+# n8n: ERP notifications (WP10), bank statements (WP20), lead capture and kits (WP31)
 
 n8n carries the ERP's messages to the outside world: e-mail and SMS. It **does not decide**
 anything (spec §9: the core owns every decision). The ERP core decides:
@@ -65,6 +65,51 @@ bank host-to-host / SFTP or e-mail fetcher ──signed POST──► n8n "ERP b
   certain.
 - **The bank layouts are illustrative** until the pilot's banks are confirmed (see ADR 0023).
 - **Try it:** `npm run push-statement -- <bank account id> ../backend/samples/bank/dbbl-sample-26-27-oct-2026.csv`.
+
+## Lead capture, and the two workflows WP31 did not need (WP31)
+
+The third workflow, **ERP lead capture**, brings a lead in from outside: Facebook lead ads, or
+any form that is not the company's own website page.
+
+```
+Facebook lead ads / an outside form ──signed POST──► n8n "ERP lead capture"
+   { full_name, phone_number, city, campaign_name,      1. check HMAC signature + timestamp (≤ 5 min)
+     lead_id, ad_id }                                   2. drop a lead with no name or no contact
+   X-Signature, X-Timestamp (lead feed secret)          3. POST /companies/<id>/leads/capture
+                                                           (ServiceKey with crm.capture only)
+```
+
+- **What n8n holds:** a service key that can do nothing but send leads in. Create it as the
+  workspace owner: `POST /service-keys` with `{ "permissions": ["crm.capture"], "companyId": ... }`,
+  put its `authorizationHeader` in `n8n/.env` as `ERP_CRM_CAPTURE_KEY`, then `npm run import`.
+- **What the ERP decides** (WP23, ADR 0026): the phone number is normalised, a duplicate phone
+  or e-mail never becomes a second lead ("enquired again" is noted on the record that exists),
+  the lead gets an owner at once — the territory's salesperson, then in turn — and the same
+  `lead_id` sent twice is one lead. n8n maps Facebook's field names and nothing else.
+- **The company's own website form needs no workflow:** the Next.js enquiry page
+  (`/enquiry/<form>`) calls the same API directly, with its own spam checks.
+
+The fourth, **ERP onboarding and offboarding kits**, turns two ERP events into the e-mails the
+office needs:
+
+| Event | What is sent, to `OFFICE_KIT_MAILBOX` |
+| --- | --- |
+| `employee.created` | IT: open the accounts and prepare the kit · Admin: ID card, seat, welcome pack · a link to the employee, whose onboarding checklist in the ERP is what actually makes the record active (WP1) |
+| `employee.separation_recorded` | IT: close the accounts on the last working day, collect the laptop and SIM · Admin: collect the ID card and assets · Accounts: the final settlement waits for the clearances |
+
+It decides nothing about the employee: the checklist, the clearances and the settlement live in
+the ERP. And because no event payload carries a salary, an NID or a bank detail (guide §15),
+none of those can reach an inbox through it.
+
+**Two things WP31 deliberately did not add a workflow for:**
+
+- **Collection reminders** are already delivered: the core raises `invoice.overdue` at 1, 7, 15
+  and 30 days late (once per stage, WP27) and the notifications workflow sends the e-mail and
+  SMS. A second workflow would only duplicate the sending.
+- **Expiry alerts** are the same shape: company renewals (trade licence, insurance, vendor
+  agreements) are items in the compliance calendar, which reminds at 7 days, 1 day and overdue
+  (WP21), and employee documents raise `document.expiring` at 30 days, 7 days and expired
+  (WP31, `document-expiry` job). Both arrive as ordinary events in the notifications workflow.
 
 ## Run it locally
 

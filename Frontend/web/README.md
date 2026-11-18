@@ -33,6 +33,26 @@ every request). The screens:
   statement, tax certificate), vendor bills (VAT and tax at source, payment), and VAT & tax at
   source (deposit by challan, certificates, rates); expense claims (to pay, receipts, cash
   advances, the advances sub-ledger, categories). See `docs/adr/0017` to `docs/adr/0019`.
+- **Sales (Phase 3):** leads, customers, opportunities and the forecast, sales territories,
+  quotations, orders, invoices and collections; **tickets** (what customers complained about,
+  with the SLA clock, the thread of replies and internal notes, and handing a ticket over) and
+  **Customer 360**, which puts contacts, activities, opportunities, quotations, orders,
+  invoices, dues and tickets on one page and shows only the blocks the viewer may see.
+  See `docs/adr/0026` to `docs/adr/0028` and `docs/adr/0035`.
+- **Hiring (Phase 3):** the manpower plan, new-position requests with what the plan says,
+  job openings with where they were advertised and who applied, one application (blind CV
+  screening with its reasons, interviews, the offer and its letter), and "my interviews" with
+  the scorecard a panel member gives for themselves. See `docs/adr/0036`.
+- **Performance (Phase 3):** appraisal cycles with the calibration spread per department, one
+  appraisal (goals and weights, the self-review, the manager's rating with an AI draft to
+  rewrite, HR's calibration, the year's feedback, and the increment or promotion it leads to),
+  my team's appraisals, and the proposals list where an approved increment is applied. See
+  `docs/adr/0037`.
+- **Commission and Gate 3 (Phase 3):** the commission scheme, each month with the receipts or
+  invoices every figure came from, posting it into payroll (and a salesperson's own months
+  instead, when they may not see the company's run); the sales assistant on a lead or a
+  customer (score with reasons, next step, follow-up text, call-note summary — it acts on
+  nothing); and the Gate 3 report. See `docs/adr/0038`.
 - **Administration:** data migration, AI, audit log, and integrations.
 
 High-risk actions ask for a 2FA code in a dialog and retry with the same idempotency key.

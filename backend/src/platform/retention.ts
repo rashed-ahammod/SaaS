@@ -7,11 +7,14 @@
  *   location   exact location of phone punches (the punch time stays)
  *   aiTexts    question and answer texts of AI interactions (the log line stays)
  *   staging    staged rows of finished data-migration batches (the records stay)
+ *   applicants applicants who were not hired: their CV and their details (how many
+ *              applied for an opening stays, because that is not personal data)
  */
 export const RETENTION_DAYS = {
   location: 180,
   aiTexts: 365,
   staging: 90,
+  applicants: 365,
 } as const;
 
 export function retentionCutoffs(now: Date) {
@@ -21,5 +24,8 @@ export function retentionCutoffs(now: Date) {
     location: before(RETENTION_DAYS.location),
     aiTexts: before(RETENTION_DAYS.aiTexts),
     staging: before(RETENTION_DAYS.staging),
+    // the applicant's own retention date is already stored on the row (consent + period);
+    // this is only the "nothing newer than today" bound the SQL function needs
+    applicants: now,
   };
 }

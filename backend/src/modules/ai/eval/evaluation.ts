@@ -11,7 +11,13 @@ import { parse } from 'yaml';
 import type { BankMatchFacts } from '../../bank/bank-ai.service.js';
 import { normalizeForMatch } from '../policies/text.js';
 
-export type Expected = string | { data: string };
+/**
+ * What an answer must (or must not) contain: a literal, or a reference to a value the
+ * system computes now ({data: ...}). A number written plainly in YAML (`anyOf: [500]`)
+ * arrives here as a number, so it is matched as its own text rather than mistaken for a
+ * reference.
+ */
+export type Expected = string | number | { data: string };
 
 export interface EvalCase {
   id: string;
@@ -29,6 +35,48 @@ export interface EvalCase {
   /** document reader cases: a sample file and what it is (graded on the fields read, as JSON) */
   document?: string;
   kind?: 'bill' | 'receipt';
+  /** CV screening cases (WP29): the post, and the CV text AS THE MODEL GETS IT (already blind) */
+  post?: { title: string; requirements: string[] };
+  cv?: string;
+  /** Sales assistant cases (WP31): the ask and the facts, with no name or contact detail */
+  assist?: {
+    ask: 'score' | 'next_step' | 'follow_up' | 'quotation_text' | 'call_note';
+    subject: 'lead' | 'customer';
+    about: {
+      organisation: string | null;
+      district: string | null;
+      customerType?: string | null;
+      source?: string | null;
+      daysOld?: number | null;
+      state?: string | null;
+    };
+    said: string | null;
+    activities: Array<{ kind: string; subject: string; daysAgo: number }>;
+    opportunities: Array<{
+      title: string;
+      value: string;
+      probability: number;
+      stage: string | null;
+      state: string;
+      expectedCloseOn: string;
+    }>;
+    dues?: { owed: string; overdue: string } | null;
+    note?: string | null;
+  };
+  /** Review drafting cases (WP30): the goals and the year's feedback, with no name in them */
+  review?: {
+    period: { from: string; to: string; kind: string };
+    goals: Array<{
+      title: string;
+      target: string | null;
+      weight: number;
+      selfScore: number | null;
+      managerScore: number | null;
+    }>;
+    feedback: Array<{ kind: string; body: string }>;
+    selfReview: string | null;
+    weightedScore: number | null;
+  };
   allOf?: Expected[];
   anyOf?: Expected[];
   noneOf?: Expected[];
@@ -58,8 +106,18 @@ export function loadCases(file: string): EvalCase[] {
   for (const c of cases) {
     if (!c.id || ids.has(c.id))
       throw new Error(`Test case without a unique id in ${file}: ${c.id}`);
-    if (!c.question && !c.facts && !c.bankFacts && !c.document)
+    if (
+      !c.question &&
+      !c.facts &&
+      !c.bankFacts &&
+      !c.document &&
+      !c.cv &&
+      !c.review &&
+      !c.assist
+    )
       throw new Error(`Test case ${c.id} has neither a question nor facts`);
+    if (c.cv && !c.post)
+      throw new Error(`CV screening case ${c.id} has no post to match against`);
     ids.add(c.id);
   }
   return cases;
@@ -74,7 +132,7 @@ export function grade(
 ): string[] {
   const text = normalizeForMatch(answer);
   const value = (e: Expected) =>
-    normalizeForMatch(typeof e === 'string' ? e : resolve(e.data));
+    normalizeForMatch(typeof e === 'object' ? resolve(e.data) : String(e));
   const failures: string[] = [];
   if (!answer.trim()) failures.push('empty answer');
   if (c.tool && !toolsUsed.includes(c.tool))

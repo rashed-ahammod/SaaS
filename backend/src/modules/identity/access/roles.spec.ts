@@ -303,6 +303,124 @@ const MATRIX: Row[] = [
     permission: 'sales.catalogue',
     cells: { admin: 'yes', accounts: 'yes' },
   },
+  // Support (WP28): Admin V company + settings, Dept Head V dept (the service department
+  // raises and assigns), Sales user O (their own customers' tickets), Auditor read-only
+  {
+    capability: 'Support tickets: view',
+    permission: 'support.view',
+    cells: {
+      admin: 'yes',
+      dept_head: 'yes',
+      auditor: 'yes',
+    },
+  },
+  {
+    capability: 'Support tickets: work own',
+    permission: 'support.own',
+    cells: { dept_head: 'yes', sales: 'yes' },
+  },
+  {
+    capability: 'Support tickets: raise, assign, categories and SLA',
+    permission: 'support.manage',
+    cells: { admin: 'yes', dept_head: 'yes' },
+  },
+  // Recruitment (WP29): Dept Head asks for a post, HR runs the hiring, Admin owns the
+  // manpower plan and approves the post, a panel member scores an interview
+  {
+    capability: 'Recruitment: ask for a new post',
+    permission: 'recruitment.request_own',
+    cells: { dept_head: 'yes' },
+  },
+  {
+    capability: 'Recruitment: view',
+    permission: 'recruitment.view',
+    cells: {
+      admin: 'yes',
+      hr: 'yes',
+      dept_head: 'yes',
+      auditor: 'yes',
+    },
+  },
+  {
+    capability: 'Recruitment: openings, applicants, stages and offers',
+    permission: 'recruitment.manage',
+    cells: { hr: 'yes' },
+  },
+  {
+    capability: 'Recruitment: interview scorecard',
+    permission: 'recruitment.interview',
+    cells: {
+      admin: 'yes',
+      hr: 'yes',
+      dept_head: 'yes',
+      employee: 'yes',
+    },
+  },
+  {
+    capability: 'Recruitment: the manpower plan',
+    permission: 'recruitment.plan',
+    cells: { admin: 'yes' },
+  },
+  // Performance (WP30, spec §6.5): the employee reviews themself, the Dept Head rates,
+  // HR runs the cycle and calibrates, the Admin approves what it leads to
+  {
+    capability: 'Performance: own appraisal',
+    permission: 'performance.own',
+    cells: { employee: 'yes' },
+  },
+  {
+    capability: 'Performance: rate own team',
+    permission: 'performance.rate',
+    cells: { dept_head: 'yes' },
+  },
+  {
+    capability: 'Performance: view',
+    permission: 'performance.view',
+    cells: {
+      admin: 'yes',
+      hr: 'yes',
+      dept_head: 'yes',
+      auditor: 'yes',
+    },
+  },
+  {
+    capability: 'Performance: cycles, KPIs and calibration',
+    permission: 'performance.manage',
+    cells: { hr: 'yes' },
+  },
+  {
+    capability: 'Performance: propose an increment or promotion',
+    permission: 'performance.propose',
+    cells: { hr: 'yes' },
+  },
+  // Commissions and the sales assistant (WP31): HR runs the month into payroll, Accounts
+  // and the Sales head read it, the Sales user gets the assistant
+  {
+    capability: 'Commission: view',
+    permission: 'commission.view',
+    cells: {
+      admin: 'yes',
+      hr: 'yes',
+      accounts: 'yes',
+      dept_head: 'yes',
+      auditor: 'yes',
+    },
+  },
+  {
+    capability: 'Commission: scheme, calculate and post',
+    permission: 'commission.manage',
+    cells: { hr: 'yes' },
+  },
+  {
+    capability: 'AI sales assistant',
+    permission: 'ai.sales_assist.use',
+    cells: { sales: 'yes' },
+  },
+  {
+    capability: 'Gate 3 report',
+    permission: 'gate3.view',
+    cells: { admin: 'yes', hr: 'yes', auditor: 'yes' },
+  },
 ];
 
 const ROLES = Object.keys(SYSTEM_ROLES) as SystemRoleKey[];

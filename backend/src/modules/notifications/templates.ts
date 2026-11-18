@@ -4,6 +4,7 @@
  * and a short SMS text. SMS stays short: one Bangla SMS part holds 70 characters,
  * so the link carries the details.
  */
+import { toBusinessDate } from '../../platform/dates/business-date.js';
 import { formatAmount, toBanglaDigits } from '../../platform/money/format.js';
 import { Money } from '../../platform/money/money.js';
 import { monthName } from '../payroll/payslip-pdf.js';
@@ -29,6 +30,18 @@ export function shortDate(date: string, lang: Lang): string {
     `${Number(d)} ${lang === 'en' ? month.slice(0, 3) : month} ${y}`,
     lang,
   );
+}
+
+const DHAKA_TIME = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Dhaka',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+/** A deadline: "15 Oct 2026, 16:30" / "১৫ অক্টোবর ২০২৬, ১৬:৩০" (Dhaka). */
+export function shortDateTime(at: Date, lang: Lang): string {
+  return `${shortDate(toBusinessDate(at), lang)}, ${digits(DHAKA_TIME.format(at), lang)}`;
 }
 
 export const TEMPLATES = {
@@ -326,6 +339,92 @@ ${v.link}`,
           sms: '',
         };
   },
+
+  /** A document that runs out (WP31): HR replaces it before it does. */
+  document_expiring: (
+    lang: Lang,
+    v: {
+      who: string;
+      docType: string;
+      expiresOn: string;
+      stage: 'days_30' | 'days_7' | 'expired';
+      link: string;
+    },
+  ): Text => {
+    const date = shortDate(v.expiresOn, lang);
+    const expired = v.stage === 'expired';
+    return lang === 'bn'
+      ? {
+          subject: expired
+            ? `কাগজের মেয়াদ শেষ: ${v.who}`
+            : `কাগজের মেয়াদ শেষ হচ্ছে: ${v.who}`,
+          body: `${v.who}-এর ${v.docType} কাগজটির মেয়াদ ${date}${expired ? ' তারিখে শেষ হয়েছে' : ' তারিখে শেষ হবে'}। নতুন কাগজ নিয়ে আপলোড করুন।\n${v.link}`,
+          sms: expired ? `কাগজের মেয়াদ শেষ: ${v.who}, ${date}` : '',
+        }
+      : {
+          subject: expired
+            ? `Document expired: ${v.who}`
+            : `Document expiring: ${v.who}`,
+          body: `${v.who}'s ${v.docType} ${expired ? 'expired on' : 'expires on'} ${date}. Please collect and upload the new one.\n${v.link}`,
+          sms: expired ? `Document expired: ${v.who}, ${date}` : '',
+        };
+  },
+
+  /** A ticket for the person who must answer it (WP28). */
+  ticket_assigned: (
+    lang: Lang,
+    v: {
+      number: string;
+      customer: string;
+      subject: string;
+      priority: string;
+      dueIn: string;
+      link: string;
+    },
+  ): Text =>
+    lang === 'bn'
+      ? {
+          subject: `নতুন অভিযোগ ${v.number}: ${v.customer}`,
+          body: `${v.customer}-এর অভিযোগ (${v.priority}): ${v.subject}। প্রথম উত্তর দিতে হবে ${v.dueIn}-এর মধ্যে।
+${v.link}`,
+          sms: '',
+        }
+      : {
+          subject: `Ticket ${v.number}: ${v.customer}`,
+          body: `A ticket from ${v.customer} (${v.priority}): ${v.subject}. First response due by ${v.dueIn}.
+${v.link}`,
+          sms: '',
+        },
+
+  /** The SLA clock ran out (WP28): the same weight as an escalated approval. */
+  ticket_sla_breached: (
+    lang: Lang,
+    v: {
+      number: string;
+      customer: string;
+      subject: string;
+      clock: 'first_response' | 'resolution';
+      link: string;
+    },
+  ): Text => {
+    const what =
+      v.clock === 'first_response'
+        ? { bn: 'প্রথম উত্তরের', en: 'first response' }
+        : { bn: 'সমাধানের', en: 'resolution' };
+    return lang === 'bn'
+      ? {
+          subject: `এসএলএ পেরিয়েছে: অভিযোগ ${v.number}`,
+          body: `${v.customer}-এর অভিযোগ ${v.number} (${v.subject}): ${what.bn} সময় পেরিয়ে গেছে। এখনই দেখুন।
+${v.link}`,
+          sms: `এসএলএ পেরিয়েছে: অভিযোগ ${v.number}, ${v.customer}`,
+        }
+      : {
+          subject: `SLA missed: ticket ${v.number}`,
+          body: `${v.customer}'s ticket ${v.number} (${v.subject}) is past its ${what.en} deadline. Please act now.
+${v.link}`,
+          sms: `SLA missed: ticket ${v.number}, ${v.customer}`,
+        };
+  },
 };
 
 export type Kind = keyof typeof TEMPLATES;
@@ -345,4 +444,7 @@ export const CHANNELS: Record<Kind, Array<'in_app' | 'email' | 'sms'>> = {
   compliance_overdue: ['in_app', 'email', 'sms'],
   lead_assigned: ['in_app', 'email'],
   invoice_overdue: ['in_app', 'email'],
+  document_expiring: ['in_app', 'email'],
+  ticket_assigned: ['in_app', 'email'],
+  ticket_sla_breached: ['in_app', 'email', 'sms'],
 };

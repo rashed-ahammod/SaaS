@@ -26,6 +26,8 @@ export const en = {
   "g.group.payroll":
     "From the month’s inputs to a paid salary, with the checks in between.",
   "g.group.crm": "Enquiries, deals, and what is sold to customers.",
+  "g.group.hiring":
+    "Posts the company may fill, who applied, and how they were judged.",
   "g.group.finance": "The ledger and everything that posts into it.",
   "g.group.admin": "Settings, data, and the record of what happened.",
 
@@ -179,6 +181,94 @@ export const en = {
     "The credit limit and payment terms are checked when an order or an invoice is raised.",
   "g.customers.s3":
     "The ledger tab shows what has been billed, what is paid, and what is overdue.",
+
+  "g.tickets.purpose":
+    "What customers have complained about or asked for, with the clock the service promise is measured on.",
+  "g.tickets.s1":
+    "Every ticket belongs to a customer and to one person; the category sets how urgent it starts out.",
+  "g.tickets.s2":
+    "Two clocks run in working hours: the first reply to the customer, and the resolution. Waiting for the customer stops the resolution clock.",
+  "g.tickets.s3":
+    "A missed deadline is raised by itself, once, and goes to the person holding the ticket (and the Admin for an urgent one).",
+
+  "g.commission.purpose":
+    "What each salesperson earned this month, worked out from the invoices or the money collected.",
+  "g.commission.s1":
+    "One scheme at a time: the basis, the rate, and an optional better rate above target.",
+  "g.commission.s2":
+    "Every line keeps the receipts or invoices it came from, so a figure can be argued with.",
+  "g.commission.s3":
+    "Posting writes one payroll item per person; cancelling the run cancels those items with it.",
+
+  "g.gate3.purpose":
+    "Whether this pilot has actually run its sales pipeline and one appraisal cycle in the system.",
+  "g.gate3.s1":
+    "Each check says what has to be true and the numbers behind the answer.",
+  "g.gate3.s2":
+    "A check that is not met is shown as not met: the page never rounds up to \u201cready\u201d.",
+  "g.gate3.s3":
+    "Passing Gate 3 is a human decision, taken with this report in hand.",
+
+  "g.cycles.purpose":
+    "Appraisal cycles: goals, self-review, the manager\u2019s rating, HR\u2019s calibration, and what they lead to.",
+  "g.cycles.s1":
+    "A cycle moves forward one phase at a time, and never back: ratings and proposals already depend on it.",
+  "g.cycles.s2":
+    "Goals carry weights that add up to 100, so the score means the same thing for everyone.",
+  "g.cycles.s3":
+    "HR calibrates across departments before any increment is proposed \u2014 one department rating everyone 5 is not a company-wide 5.",
+  "g.cycles.s4":
+    "An approved increment becomes an effective-dated salary; payroll pays any arrears by itself.",
+
+  "g.myTeamAppraisals.purpose":
+    "The appraisals of the people who report to you: their goals, their self-review, your rating.",
+  "g.myTeamAppraisals.s1":
+    "Write the goals from the KPI library so two managers measuring the same job measure the same things.",
+  "g.myTeamAppraisals.s2":
+    "The weighted score is a suggestion; the rating you give is the one that is stored.",
+  "g.myTeamAppraisals.s3":
+    "The AI draft is built from the year\u2019s feedback and rates nobody: rewrite it in your own words.",
+
+  "g.incrementProposals.purpose":
+    "What the appraisal round led to: increments, promotions, and where each one stands.",
+  "g.incrementProposals.s1":
+    "A proposal needs a calibrated rating first \u2014 that is the point of calibration.",
+  "g.incrementProposals.s2":
+    "The Admin approves it, and HR then applies it.",
+  "g.incrementProposals.s3":
+    "Applying it writes the salary from its date; a back-dated one is paid as arrears in the next payroll, with no extra entry.",
+
+  "g.openings.purpose":
+    "Posts being recruited for right now, and the people who applied for each one.",
+  "g.openings.s1":
+    "An opening exists only for an approved post, so it can always be traced back to who allowed it.",
+  "g.openings.s2":
+    "Record where it was advertised; that is what tells you which channel actually brings people.",
+  "g.openings.s3":
+    "The screening score sorts the pile; the reasons are there so you can disagree with it.",
+
+  "g.positions.purpose":
+    "Requests for a new post: what is asked for, what the manpower plan allows, and who approved it.",
+  "g.positions.s1":
+    "A Dept Head asks; HR checks the plan and the terms; the Admin decides the money.",
+  "g.positions.s2":
+    "A request outside the plan is not refused \u2014 it is marked, and the approvers see exactly why.",
+  "g.positions.s3":
+    "Once approved, HR opens it for hiring, and the opening carries the approval with it.",
+
+  "g.manpowerPlan.purpose":
+    "How many posts of each designation each department may have this fiscal year.",
+  "g.manpowerPlan.s1":
+    "The plan is the budget for people: posts in use, posts asked for, posts left.",
+  "g.manpowerPlan.s2":
+    "An approved plan is not edited; next year gets its own.",
+
+  "g.myInterviews.purpose":
+    "The interviews you are on the panel of, and the scorecard only you can give.",
+  "g.myInterviews.s1":
+    "Each panel member gives their own card: nobody scores on someone else\u2019s behalf.",
+  "g.myInterviews.s2":
+    "HR records what the round decided after the cards are in.",
 
   "g.opportunities.purpose":
     "Deals being worked on: value, stage, expected close date, and the chance of winning.",
@@ -439,6 +529,8 @@ export const bn: Record<GuideKey, string> = {
   "g.group.time": "হাজিরা, ছুটি, আর যে সিদ্ধান্তগুলো কারও অপেক্ষায় আছে।",
   "g.group.payroll": "মাসের তথ্য থেকে বেতন পরিশোধ পর্যন্ত, মাঝের সব যাচাই সহ।",
   "g.group.crm": "অনুসন্ধান, সম্ভাব্য বিক্রি, আর ক্রেতার কাছে যা বিক্রি হয়।",
+  "g.group.hiring":
+    "কোন পদ পূরণ করা যাবে, কে আবেদন করলেন, আর কীভাবে বিচার হলো।",
   "g.group.finance": "হিসাবের খতিয়ান আর যা কিছু এখানে এসে জমা হয়।",
   "g.group.admin": "সেটিংস, তথ্য, আর কী ঘটেছে তার রেকর্ড।",
 
@@ -589,6 +681,94 @@ export const bn: Record<GuideKey, string> = {
     "অর্ডার বা চালান তৈরির সময় ধারের সীমা ও পরিশোধের শর্ত যাচাই হয়।",
   "g.customers.s3":
     "খতিয়ান ট্যাবে দেখা যায় কত বিল হয়েছে, কত পরিশোধ হয়েছে, আর কত বকেয়া।",
+
+  "g.tickets.purpose":
+    "গ্রাহকেরা যা নিয়ে অভিযোগ করেছেন বা যা চেয়েছেন, আর সেবার প্রতিশ্রুতি মাপার ঘড়ি।",
+  "g.tickets.s1":
+    "প্রতিটি অভিযোগ একজন গ্রাহকের এবং একজন দায়িত্বপ্রাপ্তের; শ্রেণি ঠিক করে দেয় এটি কত জরুরি হিসেবে শুরু হবে।",
+  "g.tickets.s2":
+    "দুটি ঘড়ি কর্মঘণ্টায় চলে: গ্রাহককে প্রথম উত্তর, আর সমাধান। গ্রাহকের উত্তরের অপেক্ষায় থাকলে সমাধানের ঘড়ি থেমে থাকে।",
+  "g.tickets.s3":
+    "সময় পেরিয়ে গেলে তা নিজে থেকেই একবার জানানো হয় — দায়িত্বপ্রাপ্তকে, আর অতি জরুরি হলে অ্যাডমিনকেও।",
+
+  "g.commission.purpose":
+    "এই মাসে কোন বিক্রয়কর্মী কত পেলেন, চালান বা আদায় থেকে হিসাব করা।",
+  "g.commission.s1":
+    "এক সময়ে একটি নিয়ম: ভিত্তি, হার, আর ইচ্ছা হলে লক্ষ্য ছাড়ালে বেশি হার।",
+  "g.commission.s2":
+    "প্রতিটি লাইন তার প্রাপ্তি বা চালানগুলো বহন করে, তাই হিসাব নিয়ে তর্ক করা যায়।",
+  "g.commission.s3":
+    "পাঠালে প্রতিজনের জন্য একটি বেতন ভুক্তি হয়; বাতিল করলে সেগুলোও বাতিল হয়।",
+
+  "g.gate3.purpose":
+    "এই পাইলট সত্যিই নিজের বিক্রয় প্রক্রিয়া ও একটি মূল্যায়ন চক্র সিস্টেমে চালিয়েছে কি না।",
+  "g.gate3.s1":
+    "প্রতিটি যাচাই বলে কী সত্য হতে হবে, আর উত্তরের পিছনের সংখ্যাগুলো দেখায়।",
+  "g.gate3.s2":
+    "যা পূরণ হয়নি তা পূরণ হয়নি বলেই দেখায়: পাতাটি কখনো “প্রস্তুত” বলে দেয় না।",
+  "g.gate3.s3":
+    "গেট ৩ পার হলো কি না সে সিদ্ধান্ত মানুষের, এই প্রতিবেদন হাতে নিয়ে।",
+
+  "g.cycles.purpose":
+    "মূল্যায়ন চক্র: লক্ষ্য, নিজের পর্যালোচনা, ব্যবস্থাপকের রেটিং, এইজারের সমন্বয়, আর তার ফলাফল।",
+  "g.cycles.s1":
+    "চক্র এক ধাপ করে সামনে যায়, পিছনে নয়: রেটিং ও প্রস্তাব ইতিমধ্যে তার ওপর নির্ভর করে।",
+  "g.cycles.s2":
+    "লক্ষ্যগুলোর ভার মিলে ১০০ হয়, তাই নম্বরের অর্থ সবার জন্য একই।",
+  "g.cycles.s3":
+    "কোনো ইনক্রিমেন্টের প্রস্তাবের আগে এইজার বিভাগজুড়ে সমন্বয় করে — এক বিভাগের সবাই ৫ পেলে সেটা কোম্পানির ৫ নয়।",
+  "g.cycles.s4":
+    "অনুমোদিত ইনক্রিমেন্ট তারিখসহ বেতন পরিবর্তন হয়; বকেয়া বেতন নিজেই পরিশোধ করে।",
+
+  "g.myTeamAppraisals.purpose":
+    "আপনার অধীনস্থদের মূল্যায়ন: লক্ষ্য, নিজের পর্যালোচনা, আপনার রেটিং।",
+  "g.myTeamAppraisals.s1":
+    "কেপিআই তালিকা থেকে লক্ষ্য লিখুন, যাতে একই কাজের দুই ব্যবস্থাপক একই জিনিস মাপেন।",
+  "g.myTeamAppraisals.s2":
+    "ভারযুক্ত নম্বর কেবল পরামর্শ; আপনার দেওয়া রেটিংই সংরক্ষিত হয়।",
+  "g.myTeamAppraisals.s3":
+    "এআই খসড়া বছরের মতামত থেকে তৈরি আর কারও রেটিং দেয় না: নিজের ভাষায় লিখে নিন।",
+
+  "g.incrementProposals.purpose":
+    "মূল্যায়নের ফলাফল: ইনক্রিমেন্ট, পদোন্নতি, আর প্রতিটি কোন অবস্থায় আছে।",
+  "g.incrementProposals.s1":
+    "প্রস্তাবের আগে সমন্বিত রেটিং দরকার — সমন্বয়ের উদ্দেশ্য তাই।",
+  "g.incrementProposals.s2":
+    "অ্যাডমিন অনুমোদন দেন, তারপর এইজার সেটি কার্যকর করে।",
+  "g.incrementProposals.s3":
+    "কার্যকর করলে ওই তারিখ থেকে বেতন লিপিবদ্ধ হয়; পুরোনো তারিখ হলে পরের বেতনে বকেয়া হিসেবে পরিশোধ হয়।",
+
+  "g.openings.purpose":
+    "এখন যে পদগুলোর জন্য নিয়োগ চলছে, আর প্রতিটিতে কে কে আবেদন করেছেন।",
+  "g.openings.s1":
+    "অনুমোদিত পদ ছাড়া বিজ্ঞপ্তি হয় না, তাই কে অনুমোদন দিয়েছেন তা সবসময় খুঁজে পাওয়া যায়।",
+  "g.openings.s2":
+    "কোথায় প্রচার হয়েছে লিখে রাখুন; তাতেই বোঝা যায় কোন মাধ্যম থেকে আসলে লোক আসে।",
+  "g.openings.s3":
+    "যাচাইয়ের নম্বর শুধু সাজিয়ে দেয়; কারণগুলো দেওয়া আছে যাতে আপনি দ্বিমত করতে পারেন।",
+
+  "g.positions.purpose":
+    "নতুন পদের অনুরোধ: কী চাওয়া হয়েছে, জনবল পরিকল্পনা কী বলে, আর কে অনুমোদন দিয়েছেন।",
+  "g.positions.s1":
+    "বিভাগীয় প্রধান চান; এইজার পরিকল্পনা ও শর্ত দেখে; অ্যাডমিন টাকার সিদ্ধান্ত নেন।",
+  "g.positions.s2":
+    "পরিকল্পনার বাইরের অনুরোধ আটকে দেওয়া হয় না — চিহ্নিত হয়, আর অনুমোদনকারীরা কারণ দেখতে পান।",
+  "g.positions.s3":
+    "অনুমোদনের পর এইজার সেটি নিয়োগের জন্য খোলে, আর বিজ্ঞপ্তিটি অনুমোদনের সূত্র বহন করে।",
+
+  "g.manpowerPlan.purpose":
+    "এই অর্থবছরে কোন বিভাগে কোন পদবির কতটি পদ থাকতে পারে।",
+  "g.manpowerPlan.s1":
+    "পরিকল্পনা মানুষের বাজেট: কতটি পদ পূরণ, কতটি চাওয়া হয়েছে, কতটি বাকি।",
+  "g.manpowerPlan.s2":
+    "অনুমোদিত পরিকল্পনা পরিবর্তন করা হয় না; পরের বছর নতুন পরিকল্পনা হয়।",
+
+  "g.myInterviews.purpose":
+    "যে সাক্ষাৎকারের বোর্ডে আপনি আছেন, আর শুধু আপনিই যে মূল্যায়ন দিতে পারেন।",
+  "g.myInterviews.s1":
+    "বোর্ডের প্রত্যেকে নিজের মূল্যায়ন দেন: কেউ অন্যের হয়ে নম্বর দেন না।",
+  "g.myInterviews.s2":
+    "মূল্যায়ন জমা হলে এইজার পর্বের ফলাফল লিপিবদ্ধ করে।",
 
   "g.opportunities.purpose":
     "যে বিক্রিগুলো নিয়ে কাজ চলছে: টাকার অঙ্ক, ধাপ, সম্ভাব্য শেষ তারিখ ও জেতার সম্ভাবনা।",

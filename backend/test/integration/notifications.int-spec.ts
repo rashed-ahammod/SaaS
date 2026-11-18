@@ -41,7 +41,12 @@ interface Sent {
 }
 let sent: Sent[] = [];
 /** Make the next SMS fail at "both gateways" (to see the retry). */
-let failSms = 0;
+/**
+ * Event types whose next SMS this fake gateway refuses, for THIS tenant only. It used to be
+ * a plain count, which another test file's SMS could spend: the dispatcher works on the
+ * shared test database, and Phase 3 added several more events that carry an SMS.
+ */
+const failSmsFor = new Set<string>();
 
 beforeAll(async () => {
   app = await startApp({ clock });
@@ -117,8 +122,11 @@ async function fakeN8n(req: IncomingMessage, body: string): Promise<number> {
     text: string;
     attachment: { path: string } | null;
   }>) {
-    if (m.channel === 'sms' && failSms > 0) {
-      failSms--;
+    if (
+      m.channel === 'sms' &&
+      event.tenantId === co.tenant.id &&
+      failSmsFor.delete(event.type)
+    ) {
       await http.post(`/notifications/${m.id}/result`).set(auth).send({
         status: 'failed',
         provider: 'sms-primary+sms-fallback',
@@ -360,7 +368,7 @@ describe('payslip delivery', () => {
       .expect(200);
 
     // the SMS gateways are down for the first try
-    failSms = 1;
+    failSmsFor.add('payroll.disbursed');
     sent = [];
     await dispatchAll();
 

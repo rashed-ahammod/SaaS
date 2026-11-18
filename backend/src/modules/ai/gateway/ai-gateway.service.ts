@@ -146,6 +146,9 @@ export class AiGatewayService {
         payroll_flag_explanation: settings?.payroll_explain_enabled,
         bank_match_suggestion: settings?.bank_match_enabled,
         document_reader: settings?.document_reader_enabled,
+        cv_screening: settings?.cv_screening_enabled,
+        review_draft: settings?.review_draft_enabled,
+        sales_assist: settings?.sales_assist_enabled,
       }[feature];
       if (!settings?.enabled || !featureOn)
         return { available: false, reason: 'switched_off' as const };

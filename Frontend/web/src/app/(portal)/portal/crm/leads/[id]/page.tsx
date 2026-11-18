@@ -11,6 +11,7 @@ import {
 import { OpportunitiesPanel } from "@/components/portal/opportunities";
 import { Detail, PageHeader, Panel } from "@/components/portal/kit";
 import { usePortal } from "@/components/portal/portal-context";
+import { SalesAssistPanel } from "@/components/portal/sales-assist";
 import { Badge, Button, ErrorBox, Loading } from "@/components/ui";
 import { useApi } from "@/lib/api";
 import { LEAD_STATE_COLOR, type Lead } from "@/lib/crm-types";
@@ -120,6 +121,15 @@ export default function LeadPage({
             canWork={!!l.canWork && l.state !== "qualified"}
             onChanged={lead.reload}
           />
+          {/* WP31: the assistant scores the lead and drafts the next message; it acts on
+              nothing, and sees only what this user may see */}
+          {l.canWork && (
+            <SalesAssistPanel
+              subject="lead"
+              id={l.id}
+              asks={["score", "next_step", "follow_up", "call_note"]}
+            />
+          )}
         </div>
       </div>
       {dialog === "qualify" && company && (

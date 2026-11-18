@@ -17,6 +17,14 @@
 import { NestFactory } from '@nestjs/core';
 import { sql } from 'kysely';
 import { AppModule } from '../app.module.js';
+import { CvScreeningService } from '../modules/recruitment/cv-screening.service.js';
+import { ReviewDraftService } from '../modules/performance/review-draft.service.js';
+import { REVIEW_PROMPT_VERSION } from '../modules/performance/performance-rules.js';
+import {
+  SALES_ASSIST_PROMPT_VERSION,
+  SalesAssistService,
+} from '../modules/commissions/sales-assist.service.js';
+import { SCREENING_PROMPT_VERSION } from '../modules/recruitment/recruitment-rules.js';
 import { APP_CONFIG, type AppConfig } from '../config/config.js';
 import { AssistantService } from '../modules/ai/assistant/assistant.service.js';
 import {
@@ -200,6 +208,74 @@ async function main() {
       reports.push({
         feature: 'bank_match_suggestion',
         promptVersion: BANK_MATCH_PROMPT_VERSION,
+        report,
+      });
+    }
+
+    if (!args.only || args.only === 'cv_screening') {
+      const screening = app.get(CvScreeningService, { strict: false });
+      const report = await runCases(
+        loadCases('test/ai-eval/cv-screening.yaml'),
+        config.ai.requiredPassRate,
+        async (c) => {
+          const r = await as(reviewer, c.language, () =>
+            screening.ask(
+              { post: c.post!, cv: c.cv! },
+              `eval:${c.id}`,
+              true,
+            ),
+          );
+          // graded on the reasons: the score alone says nothing about fairness
+          return {
+            answer: `score: ${r.parsed?.score ?? 'none'}\n${(r.parsed?.reasons ?? []).join('\n')}`,
+            toolsUsed: [],
+          };
+        },
+        resolve,
+      );
+      reports.push({
+        feature: 'cv_screening',
+        promptVersion: SCREENING_PROMPT_VERSION,
+        report,
+      });
+    }
+
+    if (!args.only || args.only === 'sales_assist') {
+      const assist = app.get(SalesAssistService, { strict: false });
+      const report = await runCases(
+        loadCases('test/ai-eval/sales-assist.yaml'),
+        config.ai.requiredPassRate,
+        async (c) => {
+          const r = await as(reviewer, c.language, () =>
+            assist.ask(c.assist!, `eval:${c.id}`, true),
+          );
+          return { answer: r.answer, toolsUsed: [] };
+        },
+        resolve,
+      );
+      reports.push({
+        feature: 'sales_assist',
+        promptVersion: SALES_ASSIST_PROMPT_VERSION,
+        report,
+      });
+    }
+
+    if (!args.only || args.only === 'review_draft') {
+      const drafts = app.get(ReviewDraftService, { strict: false });
+      const report = await runCases(
+        loadCases('test/ai-eval/review-draft.yaml'),
+        config.ai.requiredPassRate,
+        async (c) => {
+          const r = await as(reviewer, c.language, () =>
+            drafts.ask(c.review!, `eval:${c.id}`, true),
+          );
+          return { answer: r.answer, toolsUsed: [] };
+        },
+        resolve,
+      );
+      reports.push({
+        feature: 'review_draft',
+        promptVersion: REVIEW_PROMPT_VERSION,
         report,
       });
     }

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import { AuditService } from '../../platform/audit/audit.service.js';
+import { Clock } from '../../platform/clock.js';
 import {
   addDays,
   businessDate,
@@ -22,6 +23,7 @@ import {
 import { DatabaseService } from '../../platform/db/database.service.js';
 import type { EmployeeDocument } from '../../platform/db/schema.js';
 import { MSG } from '../../platform/i18n/messages.js';
+import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import {
   detectFileType,
   FileStorage,
@@ -46,6 +48,8 @@ export class DocumentsService {
     private readonly employeeAccess: EmployeeAccess,
     private readonly access: AccessService,
     private readonly org: OrgLookupService,
+    private readonly clock: Clock,
+    private readonly outbox: OutboxService,
   ) {}
 
   async uploadDocument(
@@ -194,6 +198,89 @@ export class DocumentsService {
       });
     }
     return out;
+  }
+
+  /**
+   * Expiry alerts (WP31): a document that runs out needs replacing before it does, and HR
+   * only notices if something tells them. One event per document per stage (30 days, 7 days,
+   * expired), tracked on the row itself, so a replay or a second worker sends nothing twice.
+   *
+   * Company renewals — trade licence, insurance, vendor agreements — are the compliance
+   * calendar's job (WP21), which already reminds at 7 days, 1 day and overdue. This is for
+   * the documents attached to people.
+   */
+  async remindExpiringDocuments(): Promise<number> {
+    const today = todayInDhaka(this.clock.now());
+    const stages: Array<{
+      stage: 'expired' | 'days_7' | 'days_30';
+      until: string;
+      column: 'reminded_expired' | 'reminded_7' | 'reminded_30';
+      prefixed: 'd.reminded_expired' | 'd.reminded_7' | 'd.reminded_30';
+    }> = [
+      {
+        stage: 'expired',
+        until: today,
+        column: 'reminded_expired',
+        prefixed: 'd.reminded_expired',
+      },
+      {
+        stage: 'days_7',
+        until: addDays(today, 7),
+        column: 'reminded_7',
+        prefixed: 'd.reminded_7',
+      },
+      {
+        stage: 'days_30',
+        until: addDays(today, 30),
+        column: 'reminded_30',
+        prefixed: 'd.reminded_30',
+      },
+    ];
+    let sent = 0;
+    for (const { stage, until, column, prefixed } of stages) {
+      const due = await this.db.tx
+        .selectFrom('employee_documents as d')
+        .innerJoin('employees as e', 'e.id', 'd.employee_id')
+        .select([
+          'd.id',
+          'd.employee_id',
+          'd.doc_type',
+          'd.expires_on',
+          'e.company_id',
+        ])
+        .where('d.status', '=', 'active')
+        .where('e.status', '<>', 'separated')
+        .where('d.expires_on', 'is not', null)
+        .where('d.expires_on', '<=', until)
+        .where(prefixed, '=', false)
+        .limit(500)
+        .execute();
+      for (const doc of due) {
+        // the flag is set first and only sent when this call is the one that set it, so two
+        // workers running at once send one event between them
+        const claimed = await this.db.tx
+          .updateTable('employee_documents')
+          .set({ [column]: true } as never)
+          .where('id', '=', doc.id)
+          .where(column, '=', false)
+          .executeTakeFirst();
+        if (claimed.numUpdatedRows === 0n) continue;
+        await this.outbox.add({
+          type: 'document.expiring',
+          entityId: doc.id,
+          payload: {
+            documentId: doc.id,
+            companyId: doc.company_id,
+            employeeId: doc.employee_id,
+            docType: doc.doc_type,
+            expiresOn: doc.expires_on,
+            stage,
+          },
+        });
+        sent += 1;
+      }
+    }
+    return sent;
   }
 
   async listDocuments(employeeId: string, includeRemoved = false) {

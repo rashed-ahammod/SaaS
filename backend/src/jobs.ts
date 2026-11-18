@@ -30,6 +30,10 @@ import { AssetsService } from './modules/assets/assets.service.js';
 import { BankService } from './modules/bank/bank.service.js';
 import { ComplianceService } from './modules/vat/compliance.service.js';
 import { ReceiptsService } from './modules/sales/receipts.service.js';
+import { TicketSlaService } from './modules/support/ticket-sla.service.js';
+import { DocumentsService } from './modules/employees/documents.service.js';
+import { ApplicantsService } from './modules/recruitment/applicants.service.js';
+import { OffersService } from './modules/recruitment/offers.service.js';
 import { BudgetsService } from './modules/budgets/budgets.service.js';
 import { LifecycleService } from './modules/employees/lifecycle.service.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
@@ -293,6 +297,37 @@ export async function startJobs(
     }),
   );
 
+  // support (WP28): tickets past their first-response or resolution deadline are reported
+  // once each, from the SLA clock in working hours
+  const ticketSla = app.get(TicketSlaService, { strict: false });
+  timers.push(
+    every(5 * 60 * 1000, 'ticket-sla', async () => {
+      const { rows } = await sql<{
+        id: string;
+      }>`SELECT worker_active_tenant_ids() AS id`.execute(workerDb.kysely);
+      const total = { firstResponse: 0, resolution: 0 };
+      for (const { id } of rows) {
+        try {
+          const r = await appDb.withTenant(
+            { tenantId: id, access: AccessGrants.system() },
+            () => ticketSla.processDue(),
+          );
+          total.firstResponse += r.firstResponse;
+          total.resolution += r.resolution;
+        } catch (err) {
+          log(
+            `ticket-sla: tenant ${id} skipped: ${err instanceof Error ? err.message : err}`,
+          );
+        }
+      }
+      if (total.firstResponse || total.resolution)
+        log(
+          `ticket-sla: ${total.firstResponse} response breach(es), ${total.resolution} resolution breach(es)`,
+        );
+      return total;
+    }),
+  );
+
   // budgets: 80 % / 100 % alerts for the current fiscal year (once per line and level)
   const budgets = app.get(BudgetsService, { strict: false });
   timers.push(
@@ -365,31 +400,92 @@ export async function startJobs(
     }),
   );
 
+  // documents (WP31): an employee document that runs out, at 30 days, 7 days and expired;
+  // each stage once per document
+  const documents = app.get(DocumentsService, { strict: false });
+  timers.push(
+    every(6 * 60 * 60 * 1000, 'document-expiry', async () => {
+      const { rows } = await sql<{
+        id: string;
+      }>`SELECT worker_active_tenant_ids() AS id`.execute(workerDb.kysely);
+      let sent = 0;
+      for (const { id } of rows)
+        sent += await appDb.withTenant(
+          { tenantId: id, access: AccessGrants.system() },
+          () => documents.remindExpiringDocuments(),
+        );
+      if (sent) log(`document-expiry: ${sent} alert(s)`);
+      return { alerts: sent };
+    }),
+  );
+
+  // recruitment (WP29): offers nobody answered by their validity date can no longer be
+  // accepted, and they stop cluttering HR's list
+  const offersService = app.get(OffersService, { strict: false });
+  timers.push(
+    every(6 * 60 * 60 * 1000, 'offer-expiry', async () => {
+      const { rows } = await sql<{
+        id: string;
+      }>`SELECT worker_active_tenant_ids() AS id`.execute(workerDb.kysely);
+      let expired = 0;
+      for (const { id } of rows)
+        expired += await appDb.withTenant(
+          { tenantId: id, access: AccessGrants.system() },
+          () => offersService.expireOverdue(),
+        );
+      if (expired) log(`offers: ${expired} expired`);
+      return { expired };
+    }),
+  );
+
   // retention: personal data past its period, tenant by tenant (the database enforces minimum periods)
+  const applicantsService = app.get(ApplicantsService, { strict: false });
   timers.push(
     every(24 * 60 * 60 * 1000, 'retention', async () => {
       const cut = retentionCutoffs(new Date());
       const { rows } = await sql<{
         id: string;
       }>`SELECT worker_active_tenant_ids() AS id`.execute(workerDb.kysely);
-      const total = { punchLocations: 0, aiTexts: 0, stagedRows: 0 };
+      const total = {
+        punchLocations: 0,
+        aiTexts: 0,
+        stagedRows: 0,
+        applicants: 0,
+        cvFiles: 0,
+      };
       for (const { id } of rows) {
         const r = await appDb.withTenant(
           { tenantId: id, access: AccessGrants.system() },
-          async () =>
-            (
+          async () => {
+            // the CV files first: clearing the rows loses the keys that find them
+            const files = await applicantsService.clearExpired();
+            const cleared = (
               await sql<{
-                r: typeof total;
-              }>`SELECT retention_apply(${cut.location}, ${cut.aiTexts}, ${cut.staging}) AS r`.execute(
+                r: {
+                  punchLocations: number;
+                  aiTexts: number;
+                  stagedRows: number;
+                  applicants: number;
+                };
+              }>`SELECT retention_apply(${cut.location}, ${cut.aiTexts}, ${cut.staging}, ${cut.applicants}) AS r`.execute(
                 appDb.tx,
               )
-            ).rows[0].r,
+            ).rows[0].r;
+            return { ...cleared, cvFiles: files.files };
+          },
         );
         total.punchLocations += r.punchLocations;
         total.aiTexts += r.aiTexts;
         total.stagedRows += r.stagedRows;
+        total.applicants += r.applicants;
+        total.cvFiles += r.cvFiles;
       }
-      if (total.punchLocations || total.aiTexts || total.stagedRows)
+      if (
+        total.punchLocations ||
+        total.aiTexts ||
+        total.stagedRows ||
+        total.applicants
+      )
         log(`retention: cleared ${JSON.stringify(total)}`);
       return total;
     }),

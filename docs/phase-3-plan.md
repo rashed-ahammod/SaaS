@@ -9,6 +9,11 @@ The spec's Phase 3 (spec §12) covers:
 
 **◆ Gate 3:** pilots run their sales pipeline and one appraisal cycle in the system.
 
+**Status (18 November 2026):** WP23 to WP31 are built (ADR 0026 to 0028, 0035 to 0038).
+Phase 3 is code-complete; Gate 3 itself is a pilot milestone, and the report that measures
+it is `GET /companies/:id/gate-3` (portal: Gate 3 report), read with
+`docs/operations/runbooks/gate-3-sales-and-appraisal.md`.
+
 This plan continues the numbering and style of Phase 2. Business rules come from:
 
 - spec §6.8 (CRM), §6.5 (performance) and §6.4 (commissions into payroll);
@@ -32,23 +37,29 @@ This plan continues the numbering and style of Phase 2. Business rules come from
 | **WP25 Products, price lists and quotations** ✅ done (ADR 0028) | Products and services (linked to VAT items), price lists per customer type and fiscal year, quotations (versions, validity, Bangla and English PDF), discount limits per user, product and customer type; above the limit, the discount chain (Sales head → Admin); an accepted quotation becomes an order | No quotation above a discount limit goes out without its approval; quotation totals and VAT reproduce from the lines |
 | **WP26 Orders, invoices and the customer ledger** ✅ done (ADR 0028) | Sales orders (credit-limit check: over the limit needs Accounts' approval), delivery, invoice from the order (Mushak 6.3 VAT invoice, numbered; posted Dr receivables, Cr sales and output VAT), credit notes (Mushak 6.7), customer VDS (Mushak 6.6); receivables per customer and invoice, replacing the WP22 opening items; the VAT register reads invoices | The receivables control account equals the open invoices every night; credit limit enforced; invoice VAT ties to the VAT return |
 | **WP27 Collections** ✅ done (ADR 0028) | Receipts allocated to invoices (partial, several, on account), cheques and bank deposits (feeding bank reconciliation), customer statements, aged receivables per customer and account manager; collection follow-up tasks; invoice.overdue reminders through n8n at set intervals, escalation to the account manager | A receipt closes exactly what it pays; reminders go once per stage; the aged receivables equal the ledger |
-| **WP28 Support** | Tickets (customer, contact, category, priority), SLA per priority (first response, resolution) on working hours, assignment, internal notes and replies, ticket.created and ticket.sla_breached; the Customer 360 page (contacts, activities, opportunities, quotes, orders, invoices, dues and tickets on one screen) | A breach is raised on time from the SLA clock; Customer 360 shows only what the viewer may see |
-| **WP29 Recruitment** | New-position requests (Dept Head → HR → Admin, checked against an approved manpower plan), job openings and postings, applicants and CVs (consent and retention), stages, interviews with scorecards, offers (letter from template), hire → employee record and onboarding (no retyping); AI CV screening with protected characteristics removed and reasons shown | A hired applicant becomes an employee with nothing retyped; CV screening never sees name, gender, religion, age or photo, and passes its test set |
-| **WP30 Performance** | Cycles (annual / half-yearly), KPI library per designation, goals and weights, self-review, Dept Head rating, HR calibration across departments, continuous feedback notes, increment and promotion proposals → Admin approval → effective-dated salary change → arrears in payroll; AI review drafting from a year of feedback (manager rewrites) | An approved increment reaches payroll as an effective-dated change with the correct arrears; ratings are calibrated before proposals go out |
-| **WP31 Commissions, automation, assistant and Gate 3** | Commission rules (on invoiced or collected sales, per target attainment) → payroll variables each month; n8n: lead capture (website, Facebook), collection reminders, expiry alerts (contracts, vendor agreements, insurance, trade licence), onboarding and offboarding kits (employee.created / employee.separated → accounts, IT tasks, welcome pack, asset return); AI sales assistant (lead score with reasons, next best action, follow-up e-mail and quotation text, call note summary); portal and app screens completed; the Gate 3 report | Commission in payroll equals the rule applied to the source invoices or receipts; Gate 3: a pilot runs its sales pipeline and one appraisal cycle in the system |
+| **WP28 Support** ✅ done (ADR 0035) | Tickets (customer, contact, category, priority), SLA per priority (first response, resolution) on working hours, assignment, internal notes and replies, ticket.created and ticket.sla_breached; the Customer 360 page (contacts, activities, opportunities, quotes, orders, invoices, dues and tickets on one screen) | A breach is raised on time from the SLA clock; Customer 360 shows only what the viewer may see |
+| **WP29 Recruitment** ✅ done (ADR 0036) | New-position requests (Dept Head → HR → Admin, checked against an approved manpower plan), job openings and postings, applicants and CVs (consent and retention), stages, interviews with scorecards, offers (letter from template), hire → employee record and onboarding (no retyping); AI CV screening with protected characteristics removed and reasons shown | A hired applicant becomes an employee with nothing retyped; CV screening never sees name, gender, religion, age or photo, and passes its test set |
+| **WP30 Performance** ✅ done (ADR 0037) | Cycles (annual / half-yearly), KPI library per designation, goals and weights, self-review, Dept Head rating, HR calibration across departments, continuous feedback notes, increment and promotion proposals → Admin approval → effective-dated salary change → arrears in payroll; AI review drafting from a year of feedback (manager rewrites) | An approved increment reaches payroll as an effective-dated change with the correct arrears; ratings are calibrated before proposals go out |
+| **WP31 Commissions, automation, assistant and Gate 3** ✅ built (ADR 0038; the gate itself awaits a pilot) | Commission rules (on invoiced or collected sales, per target attainment) → payroll variables each month; n8n: lead capture (website, Facebook), collection reminders, expiry alerts (contracts, vendor agreements, insurance, trade licence), onboarding and offboarding kits (employee.created / employee.separated → accounts, IT tasks, welcome pack, asset return); AI sales assistant (lead score with reasons, next best action, follow-up e-mail and quotation text, call note summary); portal and app screens completed; the Gate 3 report | Commission in payroll equals the rule applied to the source invoices or receipts; Gate 3: a pilot runs its sales pipeline and one appraisal cycle in the system |
 
 Screens are built with each work package's API, as in Phase 2. WP31 completes the portal and
 app, and the Gate 3 tooling.
 
 **Still open (owner decisions):**
 
-- **Support tickets in v1** (spec §13). This plan includes them as WP28, which can be dropped
-  without touching the others.
+- ~~**Support tickets in v1** (spec §13)~~ — decided: built as WP28 (ADR 0035). The SLA hours
+  per priority are placeholders until a pilot's service manager sets them.
 - **Facebook lead ads:** whose Facebook app and page token. Until then, leads arrive through the
-  website form and manual entry.
+  website form and manual entry. The n8n workflow and the `crm.capture` service key are built
+  and waiting (ADR 0038).
 - **WhatsApp as a channel** for collection reminders. Until then, e-mail and SMS only.
-- **Commission basis:** on invoiced or on collected sales; clawback on credit notes.
+- **Commission basis:** on invoiced or on collected sales; clawback on credit notes. Built as
+  a per-company setting (either basis, clawback on or off), so this is now the pilot's choice
+  rather than a decision the product has to make (ADR 0038).
 - **Appraisal:** the rating scale, and whether a forced distribution is used in calibration.
+  Built with 1-5 and no forced distribution: calibration shows the spread per department and
+  HR moves a rating with a reason (ADR 0037).
 - **CV data:** retention period, and consent wording (Bangladesh data-protection practice).
+  Built with a placeholder: consent version `cv-consent-v1` and 365 days (ADR 0036).
 - **Discount limits and credit limits:** the default values (placeholders until set per
   customer).

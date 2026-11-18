@@ -15,9 +15,10 @@
  * implementations check the shape anyway (assertStorageKey) and both refuse to
  * overwrite a key that exists, so a bug cannot silently replace a document.
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -27,6 +28,12 @@ import {
 export abstract class FileStorage {
   abstract put(key: string, content: Buffer): Promise<void>;
   abstract get(key: string): Promise<Buffer>;
+  /**
+   * Remove a file. Used only by retention (WP12, WP29): personal data past its period has
+   * to leave the bucket as well as the database. Removing a key that is not there is not an
+   * error, because retention must be safe to run again.
+   */
+  abstract remove(key: string): Promise<void>;
   /** Releases sockets and handles. Called on application shutdown. */
   async close(): Promise<void> {}
 }
@@ -69,6 +76,14 @@ export class LocalFileStorage extends FileStorage {
 
   async get(key: string): Promise<Buffer> {
     return readFile(this.pathFor(key));
+  }
+
+  async remove(key: string): Promise<void> {
+    try {
+      await rm(this.pathFor(key));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+    }
   }
 
   private pathFor(key: string): string {
@@ -156,6 +171,17 @@ export class S3FileStorage extends FileStorage {
     );
     if (!result.Body) throw new Error(`Empty response for storage key: ${key}`);
     return Buffer.from(await result.Body.transformToByteArray());
+  }
+
+  async remove(key: string): Promise<void> {
+    assertStorageKey(key);
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+    } catch (err) {
+      if (!isNotFound(err)) throw err;
+    }
   }
 
   override async close(): Promise<void> {

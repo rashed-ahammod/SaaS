@@ -25,6 +25,10 @@ import { VatModule } from './modules/vat/vat.module.js';
 import { CloseModule } from './modules/close/close.module.js';
 import { CrmModule } from './modules/crm/crm.module.js';
 import { SalesModule } from './modules/sales/sales.module.js';
+import { SupportModule } from './modules/support/support.module.js';
+import { RecruitmentModule } from './modules/recruitment/recruitment.module.js';
+import { PerformanceModule } from './modules/performance/performance.module.js';
+import { CommissionsModule } from './modules/commissions/commissions.module.js';
 import { ResignationModule } from './modules/resignation/resignation.module.js';
 import { OrgModule } from './modules/org/org.module.js';
 import { PortalModule } from './modules/portal/portal.module.js';
@@ -75,6 +79,10 @@ import { TenantTransactionInterceptor } from './platform/tenancy/tenant-transact
     CloseModule, // Phase 2 WP22
     CrmModule, // Phase 3 WP23
     SalesModule, // Phase 3 WP25-WP27
+    SupportModule, // Phase 3 WP28
+    RecruitmentModule, // Phase 3 WP29
+    PerformanceModule, // Phase 3 WP30
+    CommissionsModule, // Phase 3 WP31
     ResignationModule, // resignation from the app (2026-10-30)
     PortalModule, // portal home screen (setup progress + what needs attention)
   ],

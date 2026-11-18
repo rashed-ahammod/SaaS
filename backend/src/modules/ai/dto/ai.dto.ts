@@ -92,6 +92,18 @@ export class UpdateAiSettingsDto {
   @IsOptional()
   @IsBoolean()
   documentReaderEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cvScreeningEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  reviewDraftEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  salesAssistEnabled?: boolean;
 }
 
 /** POST /ai/policy-documents   { "title": "Leave policy 2026", "language": "en", "body": "# Casual leave\n..." } */

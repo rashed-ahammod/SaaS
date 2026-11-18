@@ -342,6 +342,10 @@ export interface EmployeeDocumentsTable extends EditableColumns {
   expires_on: string | null;
   status: Defaulted<'active' | 'removed'>;
   removed_reason: string | null;
+  /** WP31 expiry alerts: one event per document per stage */
+  reminded_30: Defaulted<boolean>;
+  reminded_7: Defaulted<boolean>;
+  reminded_expired: Defaulted<boolean>;
 }
 
 export interface OnboardingChecklistsTable {
@@ -1331,7 +1335,10 @@ export type AiFeature =
   | 'assistant'
   | 'payroll_flag_explanation'
   | 'bank_match_suggestion'
-  | 'document_reader';
+  | 'document_reader'
+  | 'cv_screening'
+  | 'review_draft'
+  | 'sales_assist';
 
 export interface AiSettingsTable {
   tenant_id: Defaulted<string>;
@@ -1340,6 +1347,9 @@ export interface AiSettingsTable {
   payroll_explain_enabled: Defaulted<boolean>;
   bank_match_enabled: Defaulted<boolean>;
   document_reader_enabled: Defaulted<boolean>;
+  cv_screening_enabled: Defaulted<boolean>;
+  review_draft_enabled: Defaulted<boolean>;
+  sales_assist_enabled: Defaulted<boolean>;
   monthly_quota: number | null;
   extra_credits: Defaulted<number>;
   updated_by: string | null;
@@ -2340,6 +2350,571 @@ export interface CollectionRemindersTable {
   sent_at: Generated<Date>;
 }
 
+// ---------------------------------------------------------------- commissions (WP31)
+
+export type CommissionBasis = 'invoiced' | 'collected';
+export type CommissionRunState = 'calculated' | 'posted' | 'cancelled';
+
+export interface CommissionRulesTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  code: string;
+  name: string;
+  basis: Defaulted<CommissionBasis>;
+  rate_percent: string;
+  min_attainment: Defaulted<string>;
+  bonus_attainment: string | null;
+  bonus_rate_percent: string | null;
+  clawback: Defaulted<boolean>;
+  is_active: Defaulted<boolean>;
+  note: string | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface CommissionRunsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  period: string;
+  rule_id: string;
+  state: Defaulted<CommissionRunState>;
+  total: Defaulted<string>;
+  rule_snapshot: Defaulted<unknown>;
+  posted_at: Date | null;
+  posted_by: string | null;
+  cancel_reason: string | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface CommissionLinesTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  run_id: string;
+  user_id: string;
+  employee_id: string | null;
+  basis_amount: string;
+  target_amount: string | null;
+  attainment: string | null;
+  rate_percent: string;
+  amount: string;
+  detail: Defaulted<unknown>;
+  payroll_variable_id: string | null;
+  created_at: Generated<Date>;
+}
+
+export type CommissionRule = Selectable<CommissionRulesTable>;
+export type CommissionRun = Selectable<CommissionRunsTable>;
+export type CommissionLine = Selectable<CommissionLinesTable>;
+
+// ---------------------------------------------------------------- performance (WP30)
+
+export type CycleKind = 'annual' | 'half_yearly';
+export type CycleState =
+  | 'draft'
+  | 'goals'
+  | 'self_review'
+  | 'manager_review'
+  | 'calibration'
+  | 'proposals'
+  | 'closed';
+export type AppraisalState =
+  | 'goals'
+  | 'self_review'
+  | 'manager_review'
+  | 'calibration'
+  | 'done';
+export type KpiMeasure = 'number' | 'percent' | 'taka' | 'date' | 'judgement';
+export type FeedbackKind = 'note' | 'praise' | 'concern' | 'coaching';
+export type ProposalKind = 'increment' | 'promotion' | 'both';
+export type ProposalState =
+  | 'in_approval'
+  | 'approved'
+  | 'rejected'
+  | 'withdrawn'
+  | 'applied';
+
+export interface KpiLibraryTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  code: string;
+  title: string;
+  title_bn: string | null;
+  description: string | null;
+  measure: Defaulted<KpiMeasure>;
+  designation_id: string | null;
+  default_weight: Defaulted<number>;
+  is_active: Defaulted<boolean>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface AppraisalCyclesTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  name: string;
+  kind: CycleKind;
+  period_from: string;
+  period_to: string;
+  state: Defaulted<CycleState>;
+  increment_from: string | null;
+  note: string | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface AppraisalsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  cycle_id: string;
+  employee_id: string;
+  manager_employee_id: string | null;
+  department_id: string | null;
+  state: Defaulted<AppraisalState>;
+  self_review: string | null;
+  self_submitted_at: Date | null;
+  manager_rating: number | null;
+  manager_comment: string | null;
+  manager_submitted_at: Date | null;
+  manager_user_id: string | null;
+  calibrated_rating: number | null;
+  calibration_note: string | null;
+  calibrated_by: string | null;
+  calibrated_at: Date | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface AppraisalGoalsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  appraisal_id: string;
+  kpi_id: string | null;
+  title: string;
+  target: string | null;
+  weight: number;
+  self_score: number | null;
+  self_note: string | null;
+  manager_score: number | null;
+  manager_note: string | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface FeedbackNotesTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  employee_id: string;
+  body: string;
+  kind: Defaulted<FeedbackKind>;
+  shared_with_employee: Defaulted<boolean>;
+  author_user_id: Defaulted<string | null>;
+  created_at: Generated<Date>;
+}
+
+export interface IncrementProposalsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  appraisal_id: string;
+  employee_id: string;
+  kind: ProposalKind;
+  new_gross: string | null;
+  structure_id: string | null;
+  new_designation_id: string | null;
+  new_grade_id: string | null;
+  effective_from: string;
+  justification: string;
+  state: Defaulted<ProposalState>;
+  approval_request_id: string | null;
+  applied_salary_id: string | null;
+  applied_event_id: string | null;
+  applied_at: Date | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export type AppraisalCycle = Selectable<AppraisalCyclesTable>;
+export type Appraisal = Selectable<AppraisalsTable>;
+export type AppraisalGoal = Selectable<AppraisalGoalsTable>;
+export type Kpi = Selectable<KpiLibraryTable>;
+export type IncrementProposal = Selectable<IncrementProposalsTable>;
+
+// ---------------------------------------------------------------- recruitment (WP29)
+
+export type EmploymentType =
+  | 'permanent'
+  | 'contract'
+  | 'probation_only'
+  | 'intern'
+  | 'part_time';
+export type PositionRequestState =
+  | 'in_approval'
+  | 'approved'
+  | 'rejected'
+  | 'cancelled'
+  | 'opened';
+export type JobOpeningState = 'open' | 'on_hold' | 'filled' | 'closed';
+export type PostingChannel =
+  | 'website'
+  | 'facebook'
+  | 'notice_board'
+  | 'referral'
+  | 'newspaper'
+  | 'agency'
+  | 'other';
+export type ApplicantSource =
+  | 'website'
+  | 'facebook'
+  | 'referral'
+  | 'agency'
+  | 'walk_in'
+  | 'newspaper'
+  | 'other';
+export type ApplicationState =
+  | 'applied'
+  | 'screened'
+  | 'shortlisted'
+  | 'interviewing'
+  | 'offered'
+  | 'hired'
+  | 'rejected'
+  | 'withdrawn';
+export type InterviewKind = 'phone' | 'in_person' | 'online' | 'written_test';
+export type InterviewState = 'scheduled' | 'done' | 'cancelled' | 'no_show';
+export type InterviewOutcome = 'proceed' | 'reject' | 'hold';
+export type Recommendation = 'hire' | 'no_hire' | 'hold';
+export type OfferState =
+  | 'draft'
+  | 'in_approval'
+  | 'approved'
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'withdrawn'
+  | 'expired';
+
+export interface ManpowerPlansTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  fiscal_year_code: string;
+  state: Defaulted<'draft' | 'approved'>;
+  approved_by: string | null;
+  approved_at: Date | null;
+  note: string | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface ManpowerPlanLinesTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  plan_id: string;
+  department_id: string;
+  designation_id: string;
+  headcount: number;
+}
+
+export interface PositionRequestsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  number: string;
+  department_id: string;
+  designation_id: string;
+  grade_id: string;
+  branch_id: string;
+  employment_type: Defaulted<EmploymentType>;
+  headcount: number;
+  replacement_for: string | null;
+  reason: string;
+  within_plan: boolean;
+  plan_detail: Defaulted<unknown>;
+  state: Defaulted<PositionRequestState>;
+  approval_request_id: string | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface JobOpeningsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  number: string;
+  position_request_id: string;
+  title: string;
+  title_bn: string | null;
+  description: string;
+  requirements: Defaulted<string[]>;
+  openings: number;
+  closing_on: string | null;
+  state: Defaulted<JobOpeningState>;
+  close_reason: string | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface JobPostingsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  opening_id: string;
+  channel: PostingChannel;
+  posted_on: string;
+  reference: string | null;
+  posted_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+}
+
+export interface ApplicantsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  full_name_en: string;
+  full_name_bn: string | null;
+  phone: string | null;
+  email: string | null;
+  district: string | null;
+  date_of_birth: string | null;
+  gender: 'male' | 'female' | 'other' | null;
+  source: Defaulted<ApplicantSource>;
+  source_detail: string | null;
+  referred_by: string | null;
+  cv_file_key: string | null;
+  cv_file_name: string | null;
+  cv_text: string | null;
+  consent_at: Date;
+  consent_version: string;
+  retention_until: string;
+  redacted_at: Date | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface ApplicationsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  applicant_id: string;
+  opening_id: string;
+  state: Defaulted<ApplicationState>;
+  rejected_reason: string | null;
+  hired_employee_id: string | null;
+  applied_on: string;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface ApplicationEventsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  application_id: string;
+  from_state: string | null;
+  to_state: string;
+  note: string | null;
+  by_user_id: Defaulted<string | null>;
+  at: Generated<Date>;
+}
+
+export interface InterviewsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  application_id: string;
+  round_no: number;
+  kind: Defaulted<InterviewKind>;
+  scheduled_at: Date;
+  place: string | null;
+  state: Defaulted<InterviewState>;
+  outcome: InterviewOutcome | null;
+  cancel_reason: string | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface InterviewPanelTable {
+  tenant_id: Defaulted<string>;
+  interview_id: string;
+  user_id: string;
+}
+
+export interface InterviewScorecardsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  interview_id: string;
+  interviewer_id: string;
+  scores: Defaulted<unknown>;
+  overall: number;
+  recommendation: Recommendation;
+  notes: string | null;
+  submitted_at: Generated<Date>;
+}
+
+export interface JobOffersTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  number: string;
+  application_id: string;
+  branch_id: string;
+  department_id: string;
+  designation_id: string;
+  grade_id: string;
+  gross_salary: string;
+  outside_grade_range: Defaulted<boolean>;
+  approval_request_id: string | null;
+  joining_on: string;
+  probation_months: Defaulted<number>;
+  valid_until: string;
+  terms: string | null;
+  state: Defaulted<OfferState>;
+  decline_reason: string | null;
+  sent_at: Date | null;
+  decided_at: Date | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface CvScreeningsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  application_id: string;
+  score: number;
+  reasons: Defaulted<unknown>;
+  blind_input: string;
+  model: string;
+  prompt_version: string;
+  interaction_id: string | null;
+  created_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+}
+
+export type ManpowerPlan = Selectable<ManpowerPlansTable>;
+export type PositionRequest = Selectable<PositionRequestsTable>;
+export type JobOpening = Selectable<JobOpeningsTable>;
+export type Applicant = Selectable<ApplicantsTable>;
+export type Application = Selectable<ApplicationsTable>;
+export type Interview = Selectable<InterviewsTable>;
+export type JobOffer = Selectable<JobOffersTable>;
+
+// ---------------------------------------------------------------- support tickets (WP28)
+
+export type TicketPriority = 'urgent' | 'high' | 'normal' | 'low';
+export type TicketState =
+  | 'new'
+  | 'open'
+  | 'waiting_customer'
+  | 'resolved'
+  | 'closed';
+export type TicketSource =
+  | 'phone'
+  | 'email'
+  | 'walk_in'
+  | 'portal'
+  | 'field_visit'
+  | 'other';
+/** reply: to the customer (stops the response clock) · note: internal · customer: what they sent back. */
+export type TicketMessageKind = 'reply' | 'note' | 'customer';
+
+export interface SupportCategoriesTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  code: string;
+  name: string;
+  name_bn: string | null;
+  default_priority: Defaulted<TicketPriority>;
+  is_active: Defaulted<boolean>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface SupportSlaPoliciesTable {
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  priority: TicketPriority;
+  /** working hours, not calendar hours (spec §5) */
+  first_response_hours: string;
+  resolution_hours: string;
+  updated_at: Generated<Date>;
+  updated_by: Defaulted<string | null>;
+}
+
+export interface SupportTicketsTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  company_id: string;
+  number: string;
+  customer_id: string;
+  contact_id: string | null;
+  category_id: string;
+  subject: string;
+  description: string;
+  priority: TicketPriority;
+  source: Defaulted<TicketSource>;
+  state: Defaulted<TicketState>;
+  assignee_id: string | null;
+  sla_from: Defaulted<Date>;
+  first_response_due_at: Date;
+  resolution_due_at: Date;
+  first_response_at: Date | null;
+  first_response_breached_at: Date | null;
+  resolution_breached_at: Date | null;
+  waiting_since: Date | null;
+  resolved_at: Date | null;
+  resolution_note: string | null;
+  closed_at: Date | null;
+  reopened_count: Defaulted<number>;
+  opened_by: Defaulted<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  version: Defaulted<number>;
+}
+
+export interface SupportTicketMessagesTable {
+  id: Generated<string>;
+  tenant_id: Defaulted<string>;
+  ticket_id: string;
+  kind: TicketMessageKind;
+  body: string;
+  author_id: Defaulted<string | null>;
+  created_at: Generated<Date>;
+}
+
+export type SupportTicket = Selectable<SupportTicketsTable>;
+export type SupportCategory = Selectable<SupportCategoriesTable>;
+
 // ---------------------------------------------------------------- PF settlement, resignation from the app (2026-10-30)
 
 export interface PfTransactionsTable {
@@ -3234,6 +3809,32 @@ export interface Database {
   customer_receipt_allocations: CustomerReceiptAllocationsTable;
   advance_applications: AdvanceApplicationsTable;
   collection_reminders: CollectionRemindersTable;
+  support_categories: SupportCategoriesTable;
+  support_sla_policies: SupportSlaPoliciesTable;
+  support_tickets: SupportTicketsTable;
+  support_ticket_messages: SupportTicketMessagesTable;
+  manpower_plans: ManpowerPlansTable;
+  manpower_plan_lines: ManpowerPlanLinesTable;
+  position_requests: PositionRequestsTable;
+  job_openings: JobOpeningsTable;
+  job_postings: JobPostingsTable;
+  applicants: ApplicantsTable;
+  applications: ApplicationsTable;
+  application_events: ApplicationEventsTable;
+  interviews: InterviewsTable;
+  interview_panel: InterviewPanelTable;
+  interview_scorecards: InterviewScorecardsTable;
+  job_offers: JobOffersTable;
+  cv_screenings: CvScreeningsTable;
+  kpi_library: KpiLibraryTable;
+  appraisal_cycles: AppraisalCyclesTable;
+  appraisals: AppraisalsTable;
+  appraisal_goals: AppraisalGoalsTable;
+  feedback_notes: FeedbackNotesTable;
+  increment_proposals: IncrementProposalsTable;
+  commission_rules: CommissionRulesTable;
+  commission_runs: CommissionRunsTable;
+  commission_lines: CommissionLinesTable;
   pf_transactions: PfTransactionsTable;
   resignation_requests: ResignationRequestsTable;
   bank_statements: BankStatementsTable;

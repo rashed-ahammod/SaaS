@@ -1,0 +1,196 @@
+{
+  "id": "erpLeadCapture01",
+  "name": "ERP lead capture (Facebook lead ads and outside forms)",
+  "active": false,
+  "isArchived": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": false
+  },
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "description": "Phase 3 WP31. A lead from outside arrives here (POST <base>/lead/<companyId>, signed with the lead feed secret) and is handed to the ERP's capture API with a service key that holds crm.capture and nothing else. This workflow DECIDES NOTHING: the core normalises the phone number, refuses a duplicate phone or e-mail, gives the lead an owner by territory and then in turn, and answers whether a lead was created or an existing one was noted (WP23). Facebook's own field names are mapped here because they are Facebook's, not the ERP's. The company's own website form does not need this workflow: the Next.js enquiry page calls the same API directly (ADR 0026 update)."
+  },
+  "nodes": [
+    {
+      "id": "c4a1d0a4-0001-4000-8000-000000000001",
+      "name": "Lead from outside",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 300],
+      "webhookId": "9b2e4c7a-5f31-4d8e-9a60-7c1b2d3e4f50",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead/:companyId",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "c4a1d0a4-0002-4000-8000-000000000002",
+      "name": "Signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.headers['x-timestamp'] + '.' + JSON.stringify($json.body) }}",
+        "dataPropertyName": "expectedSignature",
+        "encoding": "hex"
+      },
+      "credentials": {
+        "crypto": { "id": "leadFeedSecret", "name": "Lead feed secret" }
+      }
+    },
+    {
+      "id": "c4a1d0a4-0003-4000-8000-000000000003",
+      "name": "Signed and fresh?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "signed",
+              "leftValue": "={{ $json.expectedSignature === $json.headers['x-signature'] && Math.abs($now.toUnixInteger() - Number($json.headers['x-timestamp'])) <= 300 }}",
+              "rightValue": "",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c4a1d0a4-0004-4000-8000-000000000004",
+      "name": "Rejected (bad signature)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [660, 480],
+      "parameters": {}
+    },
+    {
+      "id": "c4a1d0a4-0005-4000-8000-000000000005",
+      "name": "Has a name and a way to reach them?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [660, 280],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "usable",
+              "leftValue": "={{ !!($json.body.full_name || $json.body.name) && !!($json.body.phone_number || $json.body.phone || $json.body.email) }}",
+              "rightValue": "",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c4a1d0a4-0006-4000-8000-000000000006",
+      "name": "Dropped (nothing to follow up)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [880, 480],
+      "parameters": {}
+    },
+    {
+      "id": "c4a1d0a4-0007-4000-8000-000000000007",
+      "name": "Capture in the ERP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 260],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ERP_API_URL }}/companies/{{ $('Lead from outside').item.json.params.companyId }}/leads/capture",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Idempotency-Key", "value": "=lead-{{ $('Lead from outside').item.json.body.lead_id || $('Lead from outside').item.json.body.id || $('Lead from outside').item.json.headers['x-signature'] }}" },
+            { "name": "X-Language", "value": "bn" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ source: ($('Lead from outside').item.json.body.platform === 'facebook' || !!$('Lead from outside').item.json.body.ad_id) ? 'facebook' : 'web_form', externalRef: $('Lead from outside').item.json.body.lead_id || $('Lead from outside').item.json.body.id || undefined, sourceDetail: $('Lead from outside').item.json.body.campaign_name || $('Lead from outside').item.json.body.form_name || undefined, name: $('Lead from outside').item.json.body.full_name || $('Lead from outside').item.json.body.name, phone: $('Lead from outside').item.json.body.phone_number || $('Lead from outside').item.json.body.phone || undefined, email: $('Lead from outside').item.json.body.email || undefined, district: $('Lead from outside').item.json.body.city || $('Lead from outside').item.json.body.district || undefined, message: $('Lead from outside').item.json.body.message || $('Lead from outside').item.json.body.enquiry || undefined }) }}",
+        "options": { "response": { "response": { "neverError": false } } }
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "erpCrmCaptureKey", "name": "ERP CRM capture service key" }
+      }
+    },
+    {
+      "id": "c4a1d0a4-0008-4000-8000-000000000008",
+      "name": "New lead, or a known number?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1100, 260],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "created",
+              "leftValue": "={{ $json.created === true }}",
+              "rightValue": "",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c4a1d0a4-0009-4000-8000-000000000009",
+      "name": "Created (the core notifies its owner)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1320, 180],
+      "parameters": {}
+    },
+    {
+      "id": "c4a1d0a4-0010-4000-8000-000000000010",
+      "name": "Known already (noted on the existing record)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1320, 360],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Lead from outside": { "main": [[{ "node": "Signature", "type": "main", "index": 0 }]] },
+    "Signature": { "main": [[{ "node": "Signed and fresh?", "type": "main", "index": 0 }]] },
+    "Signed and fresh?": {
+      "main": [
+        [{ "node": "Has a name and a way to reach them?", "type": "main", "index": 0 }],
+        [{ "node": "Rejected (bad signature)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Has a name and a way to reach them?": {
+      "main": [
+        [{ "node": "Capture in the ERP", "type": "main", "index": 0 }],
+        [{ "node": "Dropped (nothing to follow up)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Capture in the ERP": { "main": [[{ "node": "New lead, or a known number?", "type": "main", "index": 0 }]] },
+    "New lead, or a known number?": {
+      "main": [
+        [{ "node": "Created (the core notifies its owner)", "type": "main", "index": 0 }],
+        [{ "node": "Known already (noted on the existing record)", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

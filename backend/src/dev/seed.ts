@@ -94,6 +94,22 @@
  * waiting for Tanvir (above Rafi's limit). Sylhet Agro: an order over its credit limit, waiting
  * for Accounts. Bogura Traders: an October invoice past due (collection reminders).
  *
+ * Recruitment (WP29): the 2026-27 manpower plan (approved); Tanvir's request for one more
+ * Sales Executive, approved by HR and the MD, opened as JO/2026-27/00001 and advertised on
+ * Facebook; three applicants with consent (one screened and interviewed with a panel and
+ * holding a sent offer, one rejected after screening, one still waiting to be screened).
+ *
+ * Commission (WP31): the scheme (2% of collection, 3% above target) and October 2026
+ * calculated from what Rafi and Mitu actually collected, posted into payroll.
+ *
+ * Performance (WP30): the KPI library, the 2025-26 annual cycle in its calibration phase;
+ * Rafi has goals, a self-review, Tanvir's rating 4 and HR's calibrated 3, two feedback notes,
+ * and an increment proposal (Tk 33,000 from 1 September) waiting for the MD's approval.
+ *
+ * Support (WP28): three tickets - Meghna Dealers' leaking cans (answered, waiting for their
+ * photo), Sylhet Agro's VAT query on Mitu's desk (backdated, so its SLA is already missed),
+ * and Bogura Traders' mustard oil complaint (replaced, resolved and closed).
+ *
  * Waiting in approval inboxes: a bKash change by Rafi and a DBBL account change by
  * Mitu (HR approves); Tanvir's Nagad change was approved already.
  *
@@ -144,6 +160,18 @@ import { CatalogueService } from '../modules/sales/catalogue.service.js';
 import { InvoicesService } from '../modules/sales/invoices.service.js';
 import { OrdersService } from '../modules/sales/orders.service.js';
 import { QuotationsService } from '../modules/sales/quotations.service.js';
+import { CommissionsService } from '../modules/commissions/commissions.service.js';
+import { AppraisalsService } from '../modules/performance/appraisals.service.js';
+import { KpiService } from '../modules/performance/kpi.service.js';
+import { ProposalsService } from '../modules/performance/proposals.service.js';
+import { ApplicantsService } from '../modules/recruitment/applicants.service.js';
+import { InterviewsService } from '../modules/recruitment/interviews.service.js';
+import { ManpowerService } from '../modules/recruitment/manpower.service.js';
+import { OffersService } from '../modules/recruitment/offers.service.js';
+import { OpeningsService } from '../modules/recruitment/openings.service.js';
+import { PositionsService } from '../modules/recruitment/positions.service.js';
+import { SupportSettingsService } from '../modules/support/support-settings.service.js';
+import { TicketsService } from '../modules/support/tickets.service.js';
 import { ReceiptsService } from '../modules/sales/receipts.service.js';
 import { TerritoriesService } from '../modules/crm/territories.service.js';
 import { MonthCloseService } from '../modules/close/month-close.service.js';
@@ -268,6 +296,10 @@ async function main() {
     await seedDemoOverdueInvoice(get, demo, logins, asSystem);
     await ensureDemoBooks(get, demo, logins, asSystem);
     await seedDemoSalesStock(get, demo, asSystem);
+    await seedDemoSupport(get, demo, logins, asSystem);
+    await seedDemoRecruitment(get, demo, logins, asSystem);
+    await seedDemoPerformance(get, demo, logins, asSystem);
+    await seedDemoCommission(get, demo, logins, asSystem);
 
     const rival = await ensureWorkspace(
       db,
@@ -3373,6 +3405,752 @@ async function seedDemoCrm(
   );
   console.log(
     "  demo CRM seeded: Rafi and Mitu sell (territory CTG is Rafi's), 6 leads (one became Karim Stores, one disqualified), 4 customers with credit terms",
+  );
+}
+
+
+
+
+
+/**
+ * Commission (WP31): the scheme a pilot would set, and one month calculated from the
+ * receipts the sales seed already created and posted into payroll — so a demo can open
+ * October's payroll and find the COMMISSION line, and the Gate 3 report has something to
+ * report.
+ */
+async function seedDemoCommission(
+  get: Get,
+  tenantId: string,
+  logins: Map<string, string>,
+  asSystem: <T>(
+    tenantId: string,
+    work: () => Promise<T>,
+    userId?: string,
+  ) => Promise<T>,
+) {
+  const db = currentDb!;
+  const company = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('companies')
+      .select('id')
+      .where('legal_name', '=', 'Demo Trading Ltd')
+      .executeTakeFirstOrThrow(),
+  );
+  const done = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('commission_runs')
+      .select('id')
+      .where('company_id', '=', company.id)
+      .executeTakeFirst(),
+  );
+  if (done) {
+    console.log('  demo commission already seeded');
+    return;
+  }
+  const farzana = logins.get('farzana.akter@demo.test')!;
+  const asUser = async <T>(userId: string, work: () => Promise<T>) => {
+    const access = await asSystem(
+      tenantId,
+      () => get(AccessService).load(userId),
+      userId,
+    );
+    return db.withTenant({ tenantId, userId, access }, work);
+  };
+  const commissions = get(CommissionsService);
+
+  await asUser(farzana, () =>
+    commissions.setScheme(company.id, {
+      code: 'SALES-2026',
+      name: '2% of collection, 3% above target',
+      basis: 'collected',
+      ratePercent: '2',
+      minAttainment: '0',
+      bonusAttainment: '120',
+      bonusRatePercent: '3',
+      note: 'Agreed with the Sales head for 2026-27. ILLUSTRATIVE until a pilot sets its own.',
+    }),
+  );
+  const run = await asUser(farzana, () =>
+    commissions.calculate(company.id, '2026-10'),
+  );
+  // post it only when October's payroll is not approved yet (the demo payroll is September)
+  const posted = await asUser(farzana, async () => {
+    try {
+      return await commissions.post(run.id);
+    } catch {
+      return null;
+    }
+  });
+  console.log(
+    posted
+      ? `  demo commission seeded: scheme SALES-2026, October ${posted.total} posted to payroll for ${posted.lines.length} salesperson(s)`
+      : `  demo commission seeded: scheme SALES-2026, October calculated (${run.total}); not posted, because that month's payroll is already approved`,
+  );
+}
+
+/**
+ * Performance (WP30): a cycle a demo can walk through at every step — goals set, a
+ * self-review written, a manager's rating given, HR's calibration done, and an increment
+ * proposal waiting for the Admin. Nothing is applied, so the "apply it and watch payroll
+ * pay the arrear" step stays something to try.
+ */
+async function seedDemoPerformance(
+  get: Get,
+  tenantId: string,
+  logins: Map<string, string>,
+  asSystem: <T>(
+    tenantId: string,
+    work: () => Promise<T>,
+    userId?: string,
+  ) => Promise<T>,
+) {
+  const db = currentDb!;
+  const company = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('companies')
+      .select('id')
+      .where('legal_name', '=', 'Demo Trading Ltd')
+      .executeTakeFirstOrThrow(),
+  );
+  const done = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('appraisal_cycles')
+      .select('id')
+      .where('company_id', '=', company.id)
+      .executeTakeFirst(),
+  );
+  if (done) {
+    console.log('  demo performance already seeded');
+    return;
+  }
+  const [anisur, farzana, tanvir, rafi] = [
+    'anisur.rahman@demo.test',
+    'farzana.akter@demo.test',
+    'tanvir.hossain@demo.test',
+    'rafi@demo.test',
+  ].map((e) => logins.get(e)!);
+  const asUser = async <T>(userId: string, work: () => Promise<T>) => {
+    const access = await asSystem(
+      tenantId,
+      () => get(AccessService).load(userId),
+      userId,
+    );
+    return db.withTenant({ tenantId, userId, access }, work);
+  };
+  const employeeOf = (userId: string) =>
+    asSystem(tenantId, async () => {
+      const user = await db.tx
+        .selectFrom('users')
+        .select('employee_id')
+        .where('id', '=', userId)
+        .executeTakeFirstOrThrow();
+      return user.employee_id!;
+    });
+  const rafiEmployee = await employeeOf(rafi);
+
+  // the KPI library
+  const kpis = get(KpiService);
+  for (const kpi of [
+    {
+      code: 'COLLECT',
+      title: 'Collection of dues within 45 days',
+      titleBn: 'বকেয়া আদায় ৪৫ দিনের মধ্যে',
+      measure: 'percent' as const,
+      defaultWeight: 40,
+    },
+    {
+      code: 'NEW-DEALER',
+      title: 'New dealer accounts opened',
+      titleBn: 'নতুন ডিলার হিসাব খোলা',
+      measure: 'number' as const,
+      defaultWeight: 30,
+    },
+    {
+      code: 'ROUTE-REPORT',
+      title: 'Daily route reporting in the app',
+      titleBn: 'অ্যাপে দৈনিক রুট রিপোর্ট',
+      measure: 'judgement' as const,
+      defaultWeight: 30,
+    },
+  ])
+    await asUser(farzana, () => kpis.create(company.id, kpi));
+  const library = (
+    await asUser(farzana, () => kpis.list(company.id))
+  ).kpis;
+  const kpiId = (code: string) => library.find((k) => k.code === code)!.id;
+
+  // the cycle, opened for everyone
+  const appraisals = get(AppraisalsService);
+  const cycle = await asUser(farzana, () =>
+    appraisals.createCycle(company.id, {
+      name: '2025-26 annual',
+      kind: 'annual',
+      periodFrom: '2025-07-01',
+      periodTo: '2026-06-30',
+      incrementFrom: '2026-09-01',
+      note: 'First annual cycle in the system.',
+    }),
+  );
+  const opened = await asUser(farzana, () =>
+    appraisals.openAppraisals(cycle.id),
+  );
+  const rafiAppraisal = opened.appraisals.find(
+    (a) => a.employeeId === rafiEmployee,
+  )!.id;
+
+  // Tanvir sets Rafi's goals from the library
+  await asUser(tanvir, () =>
+    appraisals.setGoals(rafiAppraisal, {
+      goals: [
+        {
+          kpiId: kpiId('COLLECT'),
+          title: 'Collection of dues within 45 days',
+          target: '95% of invoices',
+          weight: 40,
+        },
+        {
+          kpiId: kpiId('NEW-DEALER'),
+          title: 'New dealer accounts opened',
+          target: '6 dealers',
+          weight: 30,
+        },
+        {
+          kpiId: kpiId('ROUTE-REPORT'),
+          title: 'Daily route reporting in the app',
+          target: 'every working day',
+          weight: 30,
+        },
+      ],
+    }),
+  );
+
+  // feedback written during the year
+  for (const note of [
+    {
+      kind: 'praise' as const,
+      body: 'Recovered a six-month-old due from the Khatunganj dealer without escalation.',
+      sharedWithEmployee: true,
+    },
+    {
+      kind: 'concern' as const,
+      body: 'Route reports were missing for most of Ramadan, so the territory could not be planned.',
+    },
+    {
+      kind: 'coaching' as const,
+      body: 'Agreed to file the route report before leaving the last shop each day.',
+      sharedWithEmployee: true,
+    },
+  ])
+    await asUser(tanvir, () => appraisals.addFeedback(rafiEmployee, note));
+
+  // the phases: self-review, then the manager's rating
+  await asUser(farzana, () => appraisals.advanceCycle(cycle.id)); // self_review
+  const goals = await asSystem(tenantId, () =>
+    appraisals.goalsOf(rafiAppraisal),
+  );
+  await asUser(rafi, () =>
+    appraisals.selfReview(rafiAppraisal, {
+      review:
+        'আদায় ভালো হয়েছে, চারজন নতুন ডিলার খুলেছি। রোজার মাসে রুট রিপোর্টে ঘাটতি ছিল।',
+      scores: [
+        { goalId: goals[0].id, score: 4, note: 'খাতুনগঞ্জের বকেয়া আদায় হয়েছে' },
+        { goalId: goals[1].id, score: 4 },
+        { goalId: goals[2].id, score: 3, note: 'রোজায় কিছু দিন বাদ পড়েছে' },
+      ],
+    }),
+  );
+  await asUser(farzana, () => appraisals.advanceCycle(cycle.id)); // manager_review
+  await asUser(tanvir, () =>
+    appraisals.rate(rafiAppraisal, {
+      rating: 4,
+      comment:
+        'Strong on collection and dealer handling; reporting discipline needs work. Agreed a habit for the daily report.',
+      scores: [
+        { goalId: goals[0].id, score: 4 },
+        { goalId: goals[1].id, score: 3 },
+        { goalId: goals[2].id, score: 2 },
+      ],
+    }),
+  );
+
+  // HR calibrates across departments, then proposes the increment
+  await asUser(farzana, () => appraisals.advanceCycle(cycle.id)); // calibration
+  await asUser(farzana, () =>
+    appraisals.calibrate(rafiAppraisal, {
+      rating: 3,
+      note: 'Sales rated everyone 4 or 5; moderated to match the other departments.',
+    }),
+  );
+  const structure = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('salary_structures')
+      .select('id')
+      .where('company_id', '=', company.id)
+      .where('is_active', '=', true)
+      .executeTakeFirst(),
+  );
+  if (structure) {
+    const proposal = await asUser(farzana, () =>
+      get(ProposalsService).propose(rafiAppraisal, {
+        kind: 'increment',
+        newGross: '33000',
+        structureId: structure.id,
+        justification:
+          'Rating 3/5 after calibration; 10% increment per the appraisal policy, from 1 September.',
+      }),
+    );
+    console.log(
+      `  demo performance seeded: KPI library, cycle "${cycle.name}" in calibration, Rafi rated 4 / calibrated 3, increment proposal ${proposal.effectiveFrom} waiting for the MD (approve it and run October payroll to see the arrear)`,
+    );
+    void anisur;
+    return;
+  }
+  console.log(
+    '  demo performance seeded: KPI library, cycle in calibration, Rafi rated 4 / calibrated 3 (no salary structure yet, so no increment proposal)',
+  );
+}
+
+/**
+ * Recruitment (WP29): a hiring pipeline a demo can walk through — an approved plan, an
+ * approved post, its opening, applicants with consent and CVs, an interview with
+ * scorecards, and an offer waiting for the candidate's answer. Nobody is hired in the seed,
+ * so the "hire" step stays something to try.
+ */
+async function seedDemoRecruitment(
+  get: Get,
+  tenantId: string,
+  logins: Map<string, string>,
+  asSystem: <T>(
+    tenantId: string,
+    work: () => Promise<T>,
+    userId?: string,
+  ) => Promise<T>,
+) {
+  const db = currentDb!;
+  const company = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('companies')
+      .select('id')
+      .where('legal_name', '=', 'Demo Trading Ltd')
+      .executeTakeFirstOrThrow(),
+  );
+  const done = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('job_openings')
+      .select('id')
+      .where('company_id', '=', company.id)
+      .executeTakeFirst(),
+  );
+  if (done) {
+    console.log('  demo recruitment already seeded');
+    return;
+  }
+  const [anisur, farzana, tanvir, rafi] = [
+    'anisur.rahman@demo.test',
+    'farzana.akter@demo.test',
+    'tanvir.hossain@demo.test',
+    'rafi@demo.test',
+  ].map((e) => logins.get(e)!);
+  const asUser = async <T>(userId: string, work: () => Promise<T>) => {
+    const access = await asSystem(
+      tenantId,
+      () => get(AccessService).load(userId),
+      userId,
+    );
+    return db.withTenant({ tenantId, userId, access }, work);
+  };
+
+  // the org ids the post needs
+  const org = await asSystem(tenantId, async () => {
+    const department = await db.tx
+      .selectFrom('departments')
+      .select(['id', 'code'])
+      .where('company_id', '=', company.id)
+      .execute();
+    const designation = await db.tx
+      .selectFrom('designations')
+      .select(['id', 'code'])
+      .where('company_id', '=', company.id)
+      .execute();
+    const grade = await db.tx
+      .selectFrom('grades')
+      .select(['id', 'code', 'salary_min', 'salary_max'])
+      .where('company_id', '=', company.id)
+      .execute();
+    const branch = await db.tx
+      .selectFrom('branches')
+      .select(['id', 'code'])
+      .where('company_id', '=', company.id)
+      .execute();
+    return { department, designation, grade, branch };
+  });
+  const pick = <T extends { code: string; id: string }>(
+    rows: T[],
+    ...codes: string[]
+  ) => (rows.find((r) => codes.includes(r.code)) ?? rows[0]).id;
+  const departmentId = pick(org.department, 'SALES', 'SALES-DHK');
+  const designationId = pick(org.designation, 'SE', 'EXE');
+  // a Sales Executive sits in the lowest grade; the offer's salary is taken from that
+  // grade's own range, so it is inside it however the demo grades change
+  const grade =
+    org.grade.find((g) => g.code === 'G1') ?? org.grade[0];
+  const gradeId = grade.id;
+  const offerSalary = grade.salary_min
+    ? String(
+        Math.round(
+          (Number(grade.salary_min) +
+            (Number(grade.salary_max ?? grade.salary_min) -
+              Number(grade.salary_min)) /
+              2) /
+            500,
+        ) * 500,
+      )
+    : '28000';
+  const branchId = pick(org.branch, 'DHK', 'HO');
+
+  // the plan for 2026-27, approved by the MD
+  const plan = await asUser(anisur, () =>
+    get(ManpowerService).savePlan(company.id, {
+      note: 'Sales push for the Eid season; one more route in Dhaka north.',
+      lines: [{ departmentId, designationId, headcount: 4 }],
+    }),
+  );
+  await asUser(anisur, () => get(ManpowerService).approve(plan.plan!.id));
+
+  // Tanvir asks for the post; HR and the MD approve it
+  const request = await asUser(tanvir, () =>
+    get(PositionsService).raise(company.id, {
+      departmentId,
+      designationId,
+      gradeId,
+      branchId,
+      headcount: 1,
+      reason:
+        'Mirpur and Uttara routes cannot be covered by the two executives we have.',
+    }),
+  );
+  const approvals = get(ApprovalsService);
+  for (const who of [farzana, anisur])
+    await asUser(who, () =>
+      approvals.decide(
+        request.approvalRequestId!,
+        'approve',
+        'Within the approved plan',
+      ),
+    );
+
+  // HR opens it and advertises it
+  const opening = await asUser(farzana, () =>
+    get(OpeningsService).open(request.id, {
+      title: 'Sales Executive (Dhaka north)',
+      titleBn: 'বিক্রয় নির্বাহী (ঢাকা উত্তর)',
+      description:
+        'Route sales to retail shops in Mirpur and Uttara, with collection of dues.',
+      requirements: [
+        'Retail sales experience',
+        'Dealer handling',
+        'Collection follow-up',
+        'Motorcycle licence',
+      ],
+      closingOn: '2026-12-15',
+    }),
+  );
+  await asUser(farzana, () =>
+    get(OpeningsService).addPosting(opening.id, {
+      channel: 'facebook',
+      reference: 'Demo Trading Facebook page',
+    }),
+  );
+
+  const applicants = get(ApplicantsService);
+  const add = (dto: Parameters<ApplicantsService['addApplicant']>[1]) =>
+    asUser(farzana, () => applicants.addApplicant(company.id, dto));
+
+  const shahidul = await add({
+    fullNameEn: 'Md. Shahidul Islam',
+    fullNameBn: 'মোঃ শহিদুল ইসলাম',
+    phone: '01711-556677',
+    email: 'shahidul.islam@example.com',
+    district: 'Dhaka',
+    dateOfBirth: '1997-03-14',
+    gender: 'male',
+    source: 'facebook',
+    consent: true,
+    cvText: [
+      'Name: Md. Shahidul Islam',
+      "Father's Name: Abdul Karim",
+      'Date of Birth: 14-03-1997',
+      'Gender: Male',
+      'Religion: Islam',
+      'Marital Status: Married',
+      'Mobile: 01711-556677',
+      '',
+      'EXPERIENCE',
+      'Sales Executive, Padma Agro Ltd, Dhaka (2021 to date)',
+      '  - Visited 60 retail shops in Mirpur every month; orders and collection.',
+      '  - Handled dealer pricing within the approved discount limit.',
+      '  - Motorcycle licence; own bike.',
+      '',
+      'EDUCATION',
+      'B.Com (Marketing), National University, 2019',
+    ].join('\n'),
+  });
+  const nasrin = await add({
+    fullNameEn: 'Nasrin Akter',
+    phone: '01819-334455',
+    district: 'Gazipur',
+    dateOfBirth: '2000-07-02',
+    gender: 'female',
+    source: 'website',
+    consent: true,
+    cvText: [
+      'Name: Nasrin Akter',
+      'Gender: Female',
+      'Age: 26 years',
+      '',
+      'EXPERIENCE',
+      'Showroom Sales Assistant, a mobile phone shop, Gazipur (1 year)',
+      '  - Counter sales and stock checking.',
+      '',
+      'EDUCATION',
+      'BBA (Marketing), Gazipur',
+    ].join('\n'),
+  });
+  const rakib = await add({
+    fullNameEn: 'Rakib Hasan',
+    phone: '01533-221100',
+    district: 'Dhaka',
+    source: 'referral',
+    sourceDetail: 'Referred by Rafi',
+    referredBy: await asSystem(tenantId, async () => {
+      const user = await db.tx
+        .selectFrom('users')
+        .select('employee_id')
+        .where('id', '=', rafi)
+        .executeTakeFirst();
+      return user?.employee_id ?? null;
+    }).then((id) => id ?? undefined),
+    consent: true,
+    cvText: 'Office assistant for 8 months. Photocopying and filing.',
+  });
+
+  // all three apply
+  const applications: Record<string, string> = {};
+  for (const [who, applicant] of Object.entries({
+    shahidul,
+    nasrin,
+    rakib,
+  })) {
+    const application = await asUser(farzana, () =>
+      applicants.apply(opening.id, { applicantId: applicant.id }),
+    );
+    applications[who] = application.id;
+  }
+
+  // Shahidul is shortlisted and interviewed; Nasrin is rejected after screening
+  await asUser(farzana, () =>
+    applicants.move(applications.shahidul, {
+      to: 'shortlisted',
+      note: 'Route experience in exactly the area we need',
+    }),
+  );
+  await asUser(farzana, () =>
+    applicants.move(applications.nasrin, {
+      to: 'rejected',
+      note: 'No route sales or collection experience',
+    }),
+  );
+  const interview = await asUser(farzana, () =>
+    get(InterviewsService).schedule(applications.shahidul, {
+      scheduledAt: '2026-11-20T04:00:00.000Z',
+      kind: 'in_person',
+      place: 'Demo Trading Ltd, Gulshan-2',
+      panelUserIds: [tanvir, farzana],
+    }),
+  );
+  await asUser(tanvir, () =>
+    get(InterviewsService).score(interview.id, {
+      scores: { 'Route knowledge': 5, Communication: 4, 'Collection': 4 },
+      overall: 4,
+      recommendation: 'hire',
+      notes: 'Knows the Mirpur shops by name; handled a dealer objection well.',
+    }),
+  );
+  await asUser(farzana, () =>
+    get(InterviewsService).score(interview.id, {
+      scores: { Documents: 5, Attitude: 4 },
+      overall: 4,
+      recommendation: 'hire',
+      notes: 'Papers in order; licence seen.',
+    }),
+  );
+  await asUser(farzana, () =>
+    get(InterviewsService).finish(interview.id, { outcome: 'proceed' }),
+  );
+
+  // an offer inside the grade range, sent and waiting for his answer
+  const offer = await asUser(farzana, () =>
+    get(OffersService).make(applications.shahidul, {
+      branchId,
+      departmentId,
+      designationId,
+      gradeId,
+      grossSalary: offerSalary,
+      joiningOn: '2026-12-15',
+      validUntil: '2026-12-05',
+      probationMonths: 6,
+      terms: 'Mobile and fuel allowance as per company policy.',
+    }),
+  );
+  await asUser(farzana, () => get(OffersService).send(offer.id));
+
+  console.log(
+    `  demo recruitment seeded: plan 2026-27 approved, opening ${opening.number}, 3 applicants with consent (${shahidul.name} interviewed and holding a sent offer, ${nasrin.name} rejected, ${rakib.name} waiting to be screened)`,
+  );
+}
+
+/**
+ * Support tickets (WP28): three tickets on the demo customers, one of each kind the
+ * screens must show — waiting on the customer, past its SLA, and closed. The overdue one
+ * is backdated so the breach is visible without waiting for the job.
+ */
+async function seedDemoSupport(
+  get: Get,
+  tenantId: string,
+  logins: Map<string, string>,
+  asSystem: <T>(
+    tenantId: string,
+    work: () => Promise<T>,
+    userId?: string,
+  ) => Promise<T>,
+) {
+  const db = currentDb!;
+  const company = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('companies')
+      .select('id')
+      .where('legal_name', '=', 'Demo Trading Ltd')
+      .executeTakeFirstOrThrow(),
+  );
+  const done = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('support_tickets')
+      .select('id')
+      .where('company_id', '=', company.id)
+      .executeTakeFirst(),
+  );
+  if (done) {
+    console.log('  demo support already seeded');
+    return;
+  }
+  const [rafi, mitu, anisur] = [
+    'rafi@demo.test',
+    'mitu@demo.test',
+    'anisur.rahman@demo.test',
+  ].map((e) => logins.get(e)!);
+  const asUser = async <T>(userId: string, work: () => Promise<T>) => {
+    const access = await asSystem(
+      tenantId,
+      () => get(AccessService).load(userId),
+      userId,
+    );
+    return db.withTenant({ tenantId, userId, access }, work);
+  };
+  const customers = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('customers')
+      .select(['id', 'name'])
+      .where('company_id', '=', company.id)
+      .execute(),
+  );
+  const customer = (name: string) =>
+    customers.find((c) => c.name.includes(name))!.id;
+
+  const categories = (
+    await asUser(anisur, () =>
+      get(SupportSettingsService).categories(company.id),
+    )
+  ).categories;
+  const category = (code: string) =>
+    categories.find((c) => c.code === code)!.id;
+  const tickets = get(TicketsService);
+
+  // 1. Meghna Dealers (Rafi): two leaking cans; answered, now waiting for their photo
+  const leak = await asUser(rafi, () =>
+    tickets.create(company.id, {
+      customerId: customer('Meghna Dealers'),
+      categoryId: category('DELIVERY'),
+      subject: 'Two cans leaked on the Khatunganj delivery',
+      description:
+        'Driver delivered 40 cans of rice bran oil on Tuesday; 2 cans were leaking. The shop wants them replaced.',
+      source: 'phone',
+    }),
+  );
+  await asUser(rafi, () =>
+    tickets.addMessage(leak.id, {
+      kind: 'reply',
+      body: 'Sorry about that. We will replace both cans with the next delivery van.',
+    }),
+  );
+  await asUser(rafi, () =>
+    tickets.waitForCustomer(leak.id, {
+      question:
+        'Could you send a photo of the two cans and the challan number, so the depot can replace them?',
+    }),
+  );
+
+  // 2. Sylhet Agro (Mitu): a billing question nobody has answered, already past its SLA
+  const billing = await asUser(anisur, () =>
+    tickets.create(company.id, {
+      customerId: customer('Sylhet Agro'),
+      categoryId: category('BILLING'),
+      subject: 'VAT amount on the October invoice does not match their books',
+      description:
+        'Their accounts office says the VAT on invoice MF/2026-27/00014 is Tk 1,200 more than they calculated.',
+      source: 'email',
+      assigneeId: mitu,
+      priority: 'high',
+    }),
+  );
+  await asSystem(tenantId, () =>
+    db.tx
+      .updateTable('support_tickets')
+      .set({
+        sla_from: sql`now() - interval '3 days'`,
+        first_response_due_at: sql`now() - interval '2 days'`,
+        resolution_due_at: sql`now() - interval '1 day'`,
+      })
+      .where('id', '=', billing.id)
+      .execute(),
+  );
+
+  // 3. Bogura Traders (Mitu): a quality complaint, answered, resolved and closed
+  const quality = await asUser(mitu, () =>
+    tickets.create(company.id, {
+      customerId: customer('Bogura Traders'),
+      categoryId: category('QUALITY'),
+      subject: 'Mustard oil smell complained about by two retailers',
+      description:
+        'Two retailers in Satmatha returned 6 bottles of mustard oil saying the smell is off.',
+      source: 'walk_in',
+    }),
+  );
+  await asUser(mitu, () =>
+    tickets.addMessage(quality.id, {
+      kind: 'note',
+      body: 'Batch MO-2609 checked at the mill: within specification, but the bottles stood in the sun.',
+    }),
+  );
+  await asUser(mitu, () =>
+    tickets.resolve(quality.id, {
+      resolution:
+        '6 bottles replaced free of charge and the retailers were shown how to store the oil out of the sun.',
+    }),
+  );
+  await asUser(mitu, () => tickets.close(quality.id));
+
+  console.log(
+    '  demo support seeded: 3 tickets (one waiting on the customer, one past its SLA, one closed)',
   );
 }
 

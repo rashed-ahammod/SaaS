@@ -10,6 +10,7 @@ For the people who run the ERP in production and answer its alerts. Each alert i
 | [Incident response](incident-response.md) | The API is down or failing (`ApiDown`, `HighErrorRate`, `SlowApi`), suspected tampering or data leak (`AuditChainBroken`), telling tenants |
 | [Background jobs](background-jobs.md) | `BackgroundJobFailing`, `BackgroundJobStale`, outbox dead letters, e-mail / SMS not delivered, AI failing |
 | [Gate 1: parallel payroll](gate-1-parallel-payroll.md) | Onboarding a pilot company: two months of payroll run alongside its old system |
+| [Gate 3: sales and appraisal](gate-3-sales-and-appraisal.md) | Accepting Phase 3 for a pilot: a quarter of its sales pipeline and one appraisal cycle run in the system |
 
 ## On call
 

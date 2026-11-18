@@ -20,7 +20,13 @@ import {
 } from "@/components/portal/sales";
 import { Detail, PageHeader, Panel, Table } from "@/components/portal/kit";
 import { usePortal } from "@/components/portal/portal-context";
-import { Badge, Button, ErrorBox, Loading } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  ErrorBox,
+  Loading,
+} from "@/components/ui";
 import { useApi } from "@/lib/api";
 import type { Customer } from "@/lib/crm-types";
 import { formatTaka } from "@/lib/format";
@@ -86,6 +92,9 @@ export default function CustomerPage({
                 {t("cr.assign")}
               </Button>
             )}
+            <ButtonLink variant="ghost" href={`/portal/crm/customers/${id}/360`}>
+              {t("su.c360")}
+            </ButtonLink>
           </>
         }
       />

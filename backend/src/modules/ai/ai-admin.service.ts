@@ -50,6 +50,9 @@ export class AiAdminService {
       payrollExplanationsEnabled: row?.payroll_explain_enabled ?? true,
       bankMatchSuggestionsEnabled: row?.bank_match_enabled ?? true,
       documentReaderEnabled: row?.document_reader_enabled ?? true,
+      cvScreeningEnabled: row?.cv_screening_enabled ?? true,
+      reviewDraftEnabled: row?.review_draft_enabled ?? true,
+      salesAssistEnabled: row?.sales_assist_enabled ?? true,
       monthlyQuota: row?.monthly_quota ?? TIER_QUOTA[tenant.plan_tier],
       extraCredits: row?.extra_credits ?? 0,
       updatedAt: row?.updated_at ?? null,
@@ -68,6 +71,12 @@ export class AiAdminService {
         dto.bankMatchSuggestionsEnabled ?? before.bankMatchSuggestionsEnabled,
       document_reader_enabled:
         dto.documentReaderEnabled ?? before.documentReaderEnabled,
+      cv_screening_enabled:
+        dto.cvScreeningEnabled ?? before.cvScreeningEnabled,
+      review_draft_enabled:
+        dto.reviewDraftEnabled ?? before.reviewDraftEnabled,
+      sales_assist_enabled:
+        dto.salesAssistEnabled ?? before.salesAssistEnabled,
       updated_by: requestContext.get().userId ?? null,
       updated_at: this.clock.now(),
     };
@@ -87,6 +96,9 @@ export class AiAdminService {
         payrollExplanationsEnabled: before.payrollExplanationsEnabled,
         bankMatchSuggestionsEnabled: before.bankMatchSuggestionsEnabled,
         documentReaderEnabled: before.documentReaderEnabled,
+        cvScreeningEnabled: before.cvScreeningEnabled,
+        reviewDraftEnabled: before.reviewDraftEnabled,
+        salesAssistEnabled: before.salesAssistEnabled,
       },
       after: {
         enabled: values.enabled,
@@ -94,6 +106,9 @@ export class AiAdminService {
         payrollExplanationsEnabled: values.payroll_explain_enabled,
         bankMatchSuggestionsEnabled: values.bank_match_enabled,
         documentReaderEnabled: values.document_reader_enabled,
+        cvScreeningEnabled: values.cv_screening_enabled,
+        reviewDraftEnabled: values.review_draft_enabled,
+        salesAssistEnabled: values.sales_assist_enabled,
       },
     });
     return this.settings();
