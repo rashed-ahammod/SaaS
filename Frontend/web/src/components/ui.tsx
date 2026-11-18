@@ -136,9 +136,23 @@ export function Field({
 const inputClass =
   "block w-full min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/30";
 
+/**
+ * A text input. A field that does not say what it holds is one the browser will fill with
+ * whatever it last remembered for a nameless box: that is how the workspace typed at sign-in
+ * ("demo") reappeared in the search box of every list, and every list then looked empty. So
+ * autofill is off unless the caller asks for it by name (the sign-in fields do).
+ */
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
+  const unnamed = props.autoComplete === undefined;
   return (
-    <input {...props} className={`${inputClass} ${props.className ?? ""}`} />
+    <input
+      autoComplete={props.autoComplete ?? "off"}
+      {...(unnamed
+        ? { "data-1p-ignore": "true", "data-lpignore": "true" }
+        : {})}
+      {...props}
+      className={`${inputClass} ${props.className ?? ""}`}
+    />
   );
 }
 

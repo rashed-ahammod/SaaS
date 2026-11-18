@@ -152,8 +152,10 @@ function LoginForm() {
             <h2 className="mb-3 text-lg font-semibold">{t("login.title")}</h2>
             <Field label={t("login.workspace")} hint={t("login.workspaceHint")}>
               <Input
+                name="workspace"
                 value={workspace}
                 onChange={(e) => setWorkspace(e.target.value)}
+                autoComplete="organization"
                 autoCapitalize="none"
                 autoCorrect="off"
                 required
