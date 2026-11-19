@@ -222,6 +222,43 @@ describe('the cycle', () => {
     expect(again.appraisals).toHaveLength(opened.appraisals.length);
   });
 
+  it('the Dept Head reads the cycles they rate in, over their own people only', async () => {
+    // A Dept Head's grant is held over their department, so a question asked
+    // about the company alone is false for them. The list of cycles used to ask
+    // exactly that and refuse them, although their menu offers the screen and
+    // they cannot reach their team's appraisals without picking a cycle.
+    const list = (
+      await co.salesHead.api.get(`${c}/appraisal-cycles`).expect(200)
+    ).body.cycles;
+    expect(list).toHaveLength(1);
+
+    const all = (await co.hr.api.get(`/appraisal-cycles/${cycleId}`).expect(200))
+      .body.appraisals;
+    const mine = (
+      await co.salesHead.api.get(`/appraisal-cycles/${cycleId}`).expect(200)
+    ).body.appraisals;
+    // HR sees the company; the Sales head sees Sales, and is counted over it
+    expect(mine.length).toBeLessThan(all.length);
+    expect(mine.map((a: { employeeId: string }) => a.employeeId)).toContain(
+      co.rafi.employeeId,
+    );
+    expect(mine.map((a: { employeeId: string }) => a.employeeId)).not.toContain(
+      co.hr.employeeId,
+    );
+    expect(list[0].appraisals).toBe(mine.length);
+
+    // the employee reaches their OWN appraisal through the same screen, and
+    // sees that one row of the cycle and nothing else
+    const his = (await co.rafi.api.get(`${c}/appraisal-cycles`).expect(200)).body
+      .cycles;
+    expect(his[0].appraisals).toBe(1);
+    const hisCycle = (
+      await co.rafi.api.get(`/appraisal-cycles/${cycleId}`).expect(200)
+    ).body.appraisals;
+    expect(hisCycle).toHaveLength(1);
+    expect(hisCycle[0].employeeId).toBe(co.rafi.employeeId);
+  });
+
   it('does not open the self-review until every appraisal has its goals', async () => {
     await co.hr.api
       .post(`/appraisal-cycles/${cycleId}/advance`)

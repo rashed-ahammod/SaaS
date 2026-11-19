@@ -24,6 +24,7 @@ import { DatabaseService } from '../../platform/db/database.service.js';
 import { MSG } from '../../platform/i18n/messages.js';
 import { AccessService } from '../identity/access/access.service.js';
 import { OrgLookupService } from '../org/org-lookup.service.js';
+import { RecruitmentAccess } from './recruitment-access.js';
 import type { PlanDto } from './dto/recruitment.dto.js';
 
 export interface PlanCheck {
@@ -48,6 +49,7 @@ export class ManpowerService {
     private readonly clock: Clock,
     private readonly access: AccessService,
     private readonly org: OrgLookupService,
+    private readonly scope: RecruitmentAccess,
   ) {}
 
   fiscalYear(): string {
@@ -56,7 +58,10 @@ export class ManpowerService {
 
   async plan(companyId: string, fiscalYear?: string) {
     await this.org.assertCompanyExists(companyId);
-    this.access.assert('recruitment.view', { companyId });
+    // A Dept Head's grant is held over their department, so asking about the
+    // company refused them the plan their own position requests are checked
+    // against. They see their own departments' lines, and nobody else's.
+    const scope = await this.scope.departmentScope(companyId);
     const fy = fiscalYear ?? this.fiscalYear();
     const plan = await this.db.tx
       .selectFrom('manpower_plans')
@@ -78,6 +83,9 @@ export class ManpowerService {
         'g.name_en as designation_name',
       ])
       .where('l.plan_id', '=', plan.id)
+      .$if(!scope.all, (qb) =>
+        qb.where('l.department_id', 'in', scope.departmentIds),
+      )
       .orderBy('d.name')
       .execute();
     const used = await Promise.all(

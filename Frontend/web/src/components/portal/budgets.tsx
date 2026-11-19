@@ -20,7 +20,7 @@ import {
   type BudgetLine,
   type Position,
 } from "@/lib/budget-types";
-import { formatTaka, num } from "@/lib/format";
+import { dhakaNow, formatTaka, num } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import {
   ActionMessage,
@@ -38,7 +38,7 @@ const budgetable = (a: { type?: string; role: string | null }) =>
 
 /** "2026-27" for today (July to June). */
 export function currentFiscalYear(): string {
-  const now = new Date();
+  const now = dhakaNow();
   const y = now.getFullYear();
   const start = now.getMonth() + 1 >= 7 ? y : y - 1;
   return `${start}-${String(start + 1).slice(2)}`;

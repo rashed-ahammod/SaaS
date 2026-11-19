@@ -150,6 +150,18 @@ describe('the manpower plan', () => {
     await co.md.api.post(`/manpower-plans/${planId}/approve`).expect(409);
   });
 
+  it('the Dept Head reads their own departments’ lines, and only those', async () => {
+    // Their grant is held over their department, so asking about the company
+    // refused them the plan their own position requests are checked against.
+    const mine = (
+      await co.salesHead.api.get(`${c}/manpower-plan`).expect(200)
+    ).body;
+    expect(mine.lines).toHaveLength(1);
+    expect(mine.lines[0].departmentId).toBe(co.departments.salesDhaka);
+    // and someone with no recruitment grant at all still gets nothing
+    await co.accounts.api.get(`${c}/manpower-plan`).expect(403);
+  });
+
   it('shows how much of each planned post is left', async () => {
     const plan = (await co.hr.api.get(`${c}/manpower-plan`).expect(200)).body;
     const line = plan.lines[0];
@@ -289,6 +301,19 @@ describe('the opening', () => {
         .expect(201)
     ).body;
     expect(posted.postings).toHaveLength(1);
+  });
+});
+
+describe('who sees an opening', () => {
+  it('the Dept Head sees their own department’s; a role with no grant sees none', async () => {
+    const mine = (
+      await co.salesHead.api.get(`${c}/job-openings`).expect(200)
+    ).body.openings;
+    expect(mine.map((o: { id: string }) => o.id)).toContain(openingId);
+    const hr = (await co.hr.api.get(`${c}/job-openings`).expect(200)).body
+      .openings;
+    expect(hr.length).toBeGreaterThanOrEqual(mine.length);
+    await co.accounts.api.get(`${c}/job-openings`).expect(403);
   });
 });
 

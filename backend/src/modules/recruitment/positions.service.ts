@@ -40,6 +40,7 @@ import { defaultChain, step } from '../approvals/chains.js';
 import { AccessService } from '../identity/access/access.service.js';
 import { OrgLookupService } from '../org/org-lookup.service.js';
 import { ManpowerService } from './manpower.service.js';
+import { RecruitmentAccess } from './recruitment-access.js';
 import type {
   PositionRequestDto,
   PositionQueryDto,
@@ -59,6 +60,7 @@ export class PositionsService implements OnModuleInit {
     private readonly approvals: ApprovalsService,
     private readonly handlers: ApprovalHandlers,
     private readonly manpower: ManpowerService,
+    private readonly scope: RecruitmentAccess,
   ) {}
 
   onModuleInit() {
@@ -85,7 +87,7 @@ export class PositionsService implements OnModuleInit {
 
   async list(companyId: string, query: PositionQueryDto) {
     await this.org.assertCompanyExists(companyId);
-    const scope = this.scopeOf(companyId);
+    const scope = await this.scope.departmentScope(companyId);
     let q = this.db.tx
       .selectFrom('position_requests as p')
       .innerJoin('departments as d', 'd.id', 'p.department_id')
@@ -147,10 +149,12 @@ export class PositionsService implements OnModuleInit {
       .executeTakeFirst();
     return {
       ...this.toRequest(request),
-      departmentName: names.departments.get(request.department_id) ?? null,
-      designationName: names.designations.get(request.designation_id) ?? null,
-      gradeName: names.grades.get(request.grade_id) ?? null,
-      branchName: names.branches.get(request.branch_id) ?? null,
+      // the NAME, not the lookup's record (the screen prints these)
+      departmentName: names.departments.get(request.department_id)?.name ?? null,
+      designationName:
+        names.designations.get(request.designation_id)?.nameEn ?? null,
+      gradeName: names.grades.get(request.grade_id)?.name ?? null,
+      branchName: names.branches.get(request.branch_id)?.name ?? null,
       opening: opening ?? null,
     };
   }
@@ -207,7 +211,8 @@ export class PositionsService implements OnModuleInit {
       // a replacement is about that employee, which also gives the chain its department
       subjectEmployeeId: dto.replacementFor ?? null,
       companyId,
-      summary: `New position ${request.number}: ${dto.headcount} x ${names.designations.get(dto.designationId) ?? 'post'} in ${names.departments.get(dto.departmentId) ?? 'department'}${check.withinPlan ? '' : ' - OUTSIDE the manpower plan'}`,
+      // the approver reads this sentence: names, not "[object Object]"
+      summary: `New position ${request.number}: ${dto.headcount} x ${names.designations.get(dto.designationId)?.nameEn ?? 'post'} in ${names.departments.get(dto.departmentId)?.name ?? 'department'}${check.withinPlan ? '' : ' - OUTSIDE the manpower plan'}`,
       snapshot: {
         number: request.number,
         headcount: dto.headcount,
@@ -333,29 +338,6 @@ export class PositionsService implements OnModuleInit {
     )
       return;
     throw new ForbiddenException(MSG.FORBIDDEN);
-  }
-
-  private scopeOf(companyId: string): {
-    all: boolean;
-    departmentIds: string[];
-  } {
-    const company = { companyId };
-    if (
-      this.access.allows('recruitment.view', company) ||
-      this.access.allows('recruitment.manage', company) ||
-      this.access.allows('recruitment.plan', company)
-    )
-      return { all: true, departmentIds: [] };
-    const filter = this.access.scopeFilter('recruitment.view');
-    const own = this.access.scopeFilter('recruitment.request_own');
-    const departmentIds = [
-      ...new Set([
-        ...(filter.all ? [] : filter.departmentIds),
-        ...(own.all ? [] : own.departmentIds),
-      ]),
-    ];
-    if (!departmentIds.length) throw new ForbiddenException(MSG.FORBIDDEN);
-    return { all: false, departmentIds };
   }
 
   private async nextNumber(companyId: string): Promise<string> {

@@ -169,7 +169,8 @@ npm run dev                # http://localhost:3001
 
 `.env.local` needs only `BACKEND_URL=http://localhost:3000`. Leave `ENQUIRY_FORMS` out
 unless you are working on the public enquiry form — `Frontend/web/README.md` explains how
-to create the service key for it.
+to create the service key for it. Once the line is there, `npm run db:seed` rewrites it
+each time, because a reseed gives the company a new id and the old key stops existing.
 
 The API must be running, or every page shows a connection error.
 
@@ -342,6 +343,8 @@ before telling anyone it is live.
 | `test:int` fails on a missing table | run `npm run db:setup` once, then re-run; the test migrations are applied automatically |
 | `npm run e2e` skips tasks | the AI task is skipped with AI off; the enquiry-form task is skipped without a `demo` form in `ENQUIRY_FORMS` |
 | A seeded login stops working | the e2e run or your own testing changed the demo data: `npm run db:reset`, `db:migrate`, `db:seed` |
+| The demo's months look wrong, or `npm run e2e` fails on periods, due dates or ages | `DEV_CLOCK` is not set in `backend/.env`. The demo is one story told on one day; the seed warns when it runs without that clock |
+| The enquiry form says "not found" after a reseed | paste the `ENQUIRY_FORMS=` line the seed prints into `Frontend/web/.env.local` (it rewrites the line by itself when it is already there), then **restart the app** — a running Next server keeps the environment it started with |
 
 ---
 

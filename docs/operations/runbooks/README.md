@@ -9,6 +9,7 @@ For the people who run the ERP in production and answer its alerts. Each alert i
 | [Backup and restore](backup-and-restore.md) | Daily backups, the monthly restore drill, restoring after data loss, alerts `BackupMissing`, `WalArchivingFailing`, `DiskFilling` |
 | [Incident response](incident-response.md) | The API is down or failing (`ApiDown`, `HighErrorRate`, `SlowApi`), suspected tampering or data leak (`AuditChainBroken`), telling tenants |
 | [Background jobs](background-jobs.md) | `BackgroundJobFailing`, `BackgroundJobStale`, outbox dead letters, e-mail / SMS not delivered, AI failing |
+| [Rule values, VAT and the calendar](rule-values-and-vat.md) | Before a pilot is paid from the system: turning the placeholder labour, tax and VAT values into confirmed ones, and proving them |
 | [Gate 1: parallel payroll](gate-1-parallel-payroll.md) | Onboarding a pilot company: two months of payroll run alongside its old system |
 | [Gate 3: sales and appraisal](gate-3-sales-and-appraisal.md) | Accepting Phase 3 for a pilot: a quarter of its sales pipeline and one appraisal cycle run in the system |
 

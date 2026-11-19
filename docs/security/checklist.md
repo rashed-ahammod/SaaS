@@ -39,8 +39,14 @@ CI build, a script, or a document), and what is still open.
 
 ## Open items before the first pilot (owners)
 
-1. **Penetration test:** vendor, test window, fixes and retest. *(Owner: founder.)*
-2. **Hosting:**
+1. **Rule values, VAT rates and the compliance calendar:** every labour and tax value in the
+   system is still marked "verify", and the VAT rates, the Mushak note numbers and the
+   calendar's due dates are placeholders with no such guard. Nobody is paid from this system
+   until they are confirmed and proved:
+   [rule-values-and-vat.md](../operations/runbooks/rule-values-and-vat.md).
+   *(Owner: founder, with the pilot's accountant, labour counsel and VAT practitioner.)*
+2. **Penetration test:** vendor, test window, fixes and retest. *(Owner: founder.)*
+3. **Hosting:**
    - TLS certificates and HTTPS only;
    - encrypted disks;
    - a secret store for `FIELD_ENCRYPTION_KEY`, `JWT_SECRET`, `BACKUP_ENCRYPTION_KEY`, the
@@ -50,12 +56,42 @@ CI build, a script, or a document), and what is still open.
    - Prometheus and Alertmanager with an on-call phone.
 
    *(Owner: operations.)*
-3. **Recovery targets per tier:** the acceptable data loss and downtime (guide §27). The drill
+4. **Recovery targets per tier:** the acceptable data loss and downtime (guide §27). The drill
    measured a 7-second restore for the demo data, but a pilot's database will be larger.
    *(Owner: founder.)*
-4. **Counsel review:** the consent notices, the retention periods, and Bangladesh's data
+5. **Counsel review:** the consent notices, the retention periods, and Bangladesh's data
    protection law in force (spec §11). *(Owner: founder.)*
-5. **Leaked password:** the PostgreSQL admin password committed in the backend repository's
-   history (commit `0983e3c`) must be changed. Rewriting history is not enough once the
-   repository has been shared. *(Owner: whoever runs the database.)*
-6. **Step-up for vendor bank detail changes:** to be added when procurement is built (Phase 2).
+6. **Leaked password** (checked 2026-11-19, and narrower than it reads below):
+   - **Not in this repository.** Commit `0983e3c` is not in `SaaS`'s history: it belonged to the
+     old nested `backend/` repository, whose history did not come across in `4545eb3
+     Consolidate full ERP stack into a single repository`. Across the whole history of
+     `backend/.env.example` and `infra/docker-compose.yml` there is no non-placeholder admin
+     password, and the one in `backend/.env` today appears in no commit. At HEAD only
+     `change-me` and CI's throwaway service password are committed.
+   - **Still to answer:** was that old backend repository ever pushed anywhere - including a
+     repository since deleted? If it was, treat the password as public: change it on every
+     database that ever used it, **Supabase included**, and anywhere it was reused.
+     *(Owner: whoever runs the database.)*
+   - **The developer machine was assessed on 2026-11-19** and the leak of its password alone
+     would not let an outsider in. Three independent barriers, of which the password is the
+     last: Windows Firewall has no rule for 5432 and defaults to blocking inbound;
+     `pg_hba.conf` admits `127.0.0.1` and `::1` only, with scram-sha-256, so a remote host is
+     refused **even with the right password**; and only `postgres` is a superuser. Whoever can
+     use that password is already running code on the machine, where they could read
+     `backend/.env` anyway.
+   - **What would change that**, in order of likelihood: reusing the password on a service that
+     IS reachable (Supabase, Render); widening `pg_hba.conf` to let a colleague connect;
+     opening 5432 in the firewall; or publishing the port from a container. Note
+     `listen_addresses = *`, so pg_hba and the firewall are the only things holding the line.
+     If a superuser connection is ever reachable the severity is high, not moderate: `COPY ...
+     FROM PROGRAM` runs commands as the Postgres service account.
+   - **The project's own roles are not the problem**: `erp_owner`, `erp_app` and `erp_worker`
+     carry 24-character passwords and are scoped to this project. The short one is the
+     machine-wide `postgres` superuser, which other projects on that machine also use - so
+     changing it, or setting `listen_addresses = 'localhost'`, is done by the machine's owner
+     at the keyboard, with pgAdmin and any Docker or WSL project that connects over a LAN
+     address fixed in the same sitting.
+   - CI runs gitleaks on every push, so a future commit of a real secret is caught there.
+7. ~~**Step-up for vendor bank detail changes**~~ - **done** with procurement (WP17): a new
+   vendor bank account needs a fresh 2FA code (`@RequireStepUp()` on
+   `POST /vendors/:id/bank-accounts`).

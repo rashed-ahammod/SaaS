@@ -58,6 +58,18 @@ import type {
   CalibrateDto,
 } from './dto/performance.dto.js';
 
+/**
+ * Whose appraisals a performance screen may show: the whole company, the
+ * departments a Dept Head leads, or just the viewer's own appraisal.
+ */
+interface PerformanceScope {
+  all: boolean;
+  /** When not all: these departments. */
+  departmentIds: string[];
+  /** When not all: these employees — an employee's own appraisal. */
+  employeeIds: string[];
+}
+
 @Injectable()
 export class AppraisalsService {
   constructor(
@@ -74,14 +86,18 @@ export class AppraisalsService {
 
   async cycles(companyId: string) {
     await this.org.assertCompanyExists(companyId);
-    this.assertSee(companyId);
+    // A cycle belongs to the company, not to a department, so a Dept Head —
+    // whose grant is held over their department — was refused the list of the
+    // very cycles they rate their team in. The calendar is the same for all of
+    // them; what differs is whose appraisals they are counted over.
+    const scope = await this.assertSee(companyId);
     const rows = await this.db.tx
       .selectFrom('appraisal_cycles')
       .selectAll()
       .where('company_id', '=', companyId)
       .orderBy('period_from', 'desc')
       .execute();
-    const counts = await this.counts(rows.map((r) => r.id));
+    const counts = await this.counts(rows.map((r) => r.id), scope);
     return {
       cycles: rows.map((c) => ({
         ...this.toCycle(c),
@@ -126,7 +142,7 @@ export class AppraisalsService {
 
   async cycle(cycleId: string) {
     const cycle = await this.findCycle(cycleId);
-    this.assertSee(cycle.company_id);
+    const scope = await this.assertSee(cycle.company_id);
     const appraisals = await this.db.tx
       .selectFrom('appraisals as a')
       .innerJoin('employees as e', 'e.id', 'a.employee_id')
@@ -143,6 +159,21 @@ export class AppraisalsService {
         'd.name as department_name',
       ])
       .where('a.cycle_id', '=', cycleId)
+      // the same scope as the list of cycles: a Dept Head reads their own
+      // departments' appraisals here, an employee only their own, never the
+      // whole company's
+      .$if(!scope.all, (qb) =>
+        qb.where((eb) =>
+          eb.or([
+            ...(scope.departmentIds.length
+              ? [eb('a.department_id', 'in', scope.departmentIds)]
+              : []),
+            ...(scope.employeeIds.length
+              ? [eb('a.employee_id', 'in', scope.employeeIds)]
+              : []),
+          ]),
+        ),
+      )
       .orderBy('d.name')
       .orderBy('e.full_name_en')
       .execute();
@@ -318,7 +349,10 @@ export class AppraisalsService {
   async myTeam(cycleId: string) {
     const cycle = await this.findCycle(cycleId);
     const me = this.access.current().employeeId;
-    if (!me) throw new ForbiddenException(MSG.FORBIDDEN);
+    // "My team" is the appraisals this person manages. A login with no employee
+    // record of its own — the workspace owner — manages nobody, which is an
+    // empty team, not a refusal: the screen is in their menu and says so.
+    if (!me) return { cycle: this.toCycle(cycle), appraisals: [] };
     const rows = await this.db.tx
       .selectFrom('appraisals as a')
       .innerJoin('employees as e', 'e.id', 'a.employee_id')
@@ -797,7 +831,16 @@ export class AppraisalsService {
     throw new ForbiddenException(MSG.FORBIDDEN);
   }
 
-  private assertSee(companyId: string) {
+  /**
+   * May this user see this company's appraisals at all, and whose?
+   *
+   * `{ all: true }` for a company-wide grant (Admin, HR, an auditor). A Dept
+   * Head holds performance.view and performance.rate over their department, so
+   * a question asked about the company alone is false for them by design
+   * (access-grants.spec.ts pins that); they are answered for the departments
+   * they lead instead. An employee's own appraisal has its own route.
+   */
+  private async assertSee(companyId: string): Promise<PerformanceScope> {
     const resource = { companyId };
     if (
       this.access.allows('performance.view', resource) ||
@@ -805,16 +848,72 @@ export class AppraisalsService {
       this.access.allows('performance.rate', resource) ||
       this.access.allows('performance.own', resource)
     )
-      return;
-    throw new ForbiddenException(MSG.FORBIDDEN);
+      return { all: true, departmentIds: [], employeeIds: [] };
+    const granted = [
+      ...new Set(
+        (['performance.view', 'performance.rate', 'performance.manage'] as const)
+          .map((k) => this.access.scopeFilter(k))
+          .flatMap((f) => (f.all ? [] : f.departmentIds)),
+      ),
+    ];
+    // their departments, of THIS company: a cycle belongs to the company, so a
+    // head of another company must not pass this gate and read its cycles
+    const departmentIds = await this.org.departmentsOfCompany(
+      companyId,
+      granted,
+    );
+    // An employee holds performance.own over themself. They reach their own
+    // appraisal through the cycle, so they are let in and shown that one row —
+    // the appraisal is theirs, and the cycle's name and dates are the company's
+    // own calendar, which they are being appraised against.
+    const own = this.access.scopeFilter('performance.own');
+    const employeeIds =
+      !departmentIds.length && !own.all
+        ? await this.ownAppraisalEmployees(companyId, own.employeeIds)
+        : [];
+    if (!departmentIds.length && !employeeIds.length)
+      throw new ForbiddenException(MSG.FORBIDDEN);
+    return { all: false, departmentIds, employeeIds };
   }
 
-  private async counts(cycleIds: string[]): Promise<Map<string, number>> {
+  /** Of these employees, the ones employed by this company (never another's). */
+  private async ownAppraisalEmployees(
+    companyId: string,
+    employeeIds: string[],
+  ): Promise<string[]> {
+    if (!employeeIds.length) return [];
+    const rows = await this.db.tx
+      .selectFrom('employees')
+      .select('id')
+      .where('company_id', '=', companyId)
+      .where('id', 'in', employeeIds)
+      .execute();
+    return rows.map((r) => r.id);
+  }
+
+  private async counts(
+    cycleIds: string[],
+    scope: PerformanceScope,
+  ): Promise<Map<string, number>> {
     if (!cycleIds.length) return new Map();
     const rows = await this.db.tx
       .selectFrom('appraisals')
       .select(['cycle_id', (eb) => eb.fn.countAll<string>().as('n')])
       .where('cycle_id', 'in', cycleIds)
+      // a Dept Head is told how many of their own people are in the cycle, an
+      // employee about their own appraisal — not how many the company has
+      .$if(!scope.all, (qb) =>
+        qb.where((eb) =>
+          eb.or([
+            ...(scope.departmentIds.length
+              ? [eb('department_id', 'in', scope.departmentIds)]
+              : []),
+            ...(scope.employeeIds.length
+              ? [eb('employee_id', 'in', scope.employeeIds)]
+              : []),
+          ]),
+        ),
+      )
       .groupBy('cycle_id')
       .execute();
     return new Map(rows.map((r) => [r.cycle_id, Number(r.n)]));

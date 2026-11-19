@@ -11,6 +11,7 @@ import { ManpowerService } from './manpower.service.js';
 import { OffersService } from './offers.service.js';
 import { OpeningsService } from './openings.service.js';
 import { PositionsService } from './positions.service.js';
+import { RecruitmentAccess } from './recruitment-access.js';
 import { RecruitmentController } from './recruitment.controller.js';
 
 /**
@@ -35,6 +36,7 @@ import { RecruitmentController } from './recruitment.controller.js';
   ],
   controllers: [RecruitmentController],
   providers: [
+    RecruitmentAccess,
     ManpowerService,
     PositionsService,
     OpeningsService,

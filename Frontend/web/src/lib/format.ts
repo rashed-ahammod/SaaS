@@ -123,8 +123,41 @@ export function formatMinutes(minutes: number, lang: Lang): string {
   return lang === "bn" ? num(`${h} ঘ ${m} মি`, lang) : `${h}h ${m}m`;
 }
 
+/**
+ * Now, as the app should believe it.
+ *
+ * Normally the machine's clock. In development the demo is one story told on one
+ * day, and the API is pinned to that day (DEV_CLOCK): the app has to agree with
+ * it, or the two disagree about what "today" means — a claim dated today is
+ * refused as being in the future, a month the API has not reached yet looks
+ * empty. NEXT_PUBLIC_DEV_CLOCK is inlined at build time and is never set in
+ * production.
+ */
+export function dhakaNow(): Date {
+  const pinned = process.env.NEXT_PUBLIC_DEV_CLOCK;
+  if (!pinned || !onOwnMachine()) return new Date();
+  const at = new Date(pinned);
+  return Number.isNaN(at.getTime()) ? new Date() : at;
+}
+
+/**
+ * Whether this page is being served from the developer's own machine.
+ *
+ * The demo clock is a development setting, and the backend refuses to start with
+ * it in production. The app cannot refuse to start, and a wrong "today" is the
+ * kind of fault nobody reports and everybody works around, so it is ignored
+ * anywhere but localhost — a setting left behind in a hosting dashboard cannot
+ * freeze the date for real users. NODE_ENV cannot stand in for this: the e2e
+ * suite runs a production build on localhost, and needs the clock honoured.
+ */
+function onOwnMachine(): boolean {
+  if (typeof window === 'undefined') return process.env.NODE_ENV !== 'production';
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+}
+
 /** Today's date in Dhaka as YYYY-MM-DD. */
-export function dhakaToday(now: Date = new Date()): string {
+export function dhakaToday(now: Date = dhakaNow()): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Dhaka",
     year: "numeric",

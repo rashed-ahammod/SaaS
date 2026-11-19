@@ -338,6 +338,15 @@ export const en = {
   "g.close.s3":
     "Closing locks the period; after that, a correction belongs to the next month.",
 
+  "g.gate2.purpose":
+    "Whether this company’s books are really running in the ERP: the opening balances, a closed month, and the old system agreeing with ours.",
+  "g.gate2.s1":
+    "Each criterion says what has to be true, and the figures behind the answer.",
+  "g.gate2.s2":
+    "The work that moves the gate is done on the month-end close and the opening-balances screens.",
+  "g.gate2.s3":
+    "Passing Gate 2 is a human decision, taken with this report in hand.",
+
   "g.opening.purpose":
     "The balances this company starts from in the ERP, imported once and signed off.",
   "g.vendors.purpose":
@@ -832,6 +841,15 @@ export const bn: Record<GuideKey, string> = {
     "তালিকায় প্রতিটি যাচাই থাকে — ব্যাংক মিলেছে, ভ্যাট রিটার্ন জমা হয়েছে, বেতন বসেছে, অবচয় হয়েছে।",
   "g.close.s2": "যেকোনো ক্রমে টিক দিন, তবে সব শেষ হলেই মাস বন্ধ হয়।",
   "g.close.s3": "বন্ধ করলে সময়কাল লক হয়; এরপর সংশোধন পরের মাসের ঘরে যায়।",
+
+  "g.gate2.purpose":
+    "এই কোম্পানির খাতা সত্যিই ইআরপি-তে চলছে কিনা: প্রারম্ভিক ব্যালেন্স, বন্ধ হয়েছে এমন একটি মাস, আর পুরনো সিস্টেমের সঙ্গে মিলে যাওয়া।",
+  "g.gate2.s1":
+    "প্রতিটি শর্ত বলে কী সত্য হওয়া দরকার, আর উত্তরের পেছনের হিসাব।",
+  "g.gate2.s2":
+    "গেট ২ এগিয়ে নেওয়ার কাজ হয় মাস-শেষের ক্লোজ ও প্রারম্ভিক ব্যালেন্সের পাতায়।",
+  "g.gate2.s3":
+    "গেট ২ উত্তীর্ণ বলা মানুষের সিদ্ধান্ত, এই প্রতিবেদন হাতে নিয়েই নেওয়া হয়।",
 
   "g.opening.purpose":
     "ইআরপিতে কোম্পানি যে স্থিতি নিয়ে শুরু করে — একবার আনা হয় আর স্বাক্ষর হয়।",

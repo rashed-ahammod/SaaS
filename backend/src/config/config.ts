@@ -61,6 +61,24 @@ const envSchema = z.object({
   // to make manual testing easier.
   SECURITY_MFA_ENFORCED: z.enum(['true', 'false']).default('true'),
 
+  // The demo scenario's "today" (development only; refused in production).
+  //
+  // The dev seed writes one story — September's payroll, October's bills and
+  // invoices, the October VAT return, a part-punched October — and that story
+  // only hangs together when "now" is the day it was written for. Left unset,
+  // the API runs on the real clock and the demo drifts a month further out of
+  // shape every month: invoices land in the wrong period, a return that must
+  // not be filable yet can be filed, a calendar's "days left" is overdue.
+  // Set it, and the demo (and the e2e suite) behave the same on any day.
+  // An ISO date-time with an offset, e.g. 2026-10-29T10:30:00+06:00.
+  DEV_CLOCK: z
+    .string()
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), {
+      message:
+        'must be an ISO date-time with an offset, e.g. 2026-10-29T10:30:00+06:00',
+    })
+    .optional(),
+
   // Where uploaded files are kept.
   //   local  a folder on disk (FILE_STORAGE_DIR). One API instance only: two
   //          instances cannot share it, and a container without a mounted
@@ -187,6 +205,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
       /** Mandatory 2FA for privileged roles + step-up codes for high-risk actions. */
       mfaEnforced: e.SECURITY_MFA_ENFORCED === 'true',
     },
+    /**
+     * The fixed "now" the demo scenario is told against, or null for the real
+     * clock. Only business time comes from here (dates, periods, due dates and
+     * ages): tokens are signed and checked against the machine's own clock, so
+     * a pinned demo clock cannot expire a session.
+     *
+     * Development only, and that is load-bearing in both directions. Production
+     * refuses to start with it set. Tests ignore it: they read the same .env
+     * through dotenv, so a developer's demo clock would otherwise quietly pin
+     * time inside the suite - the tests that assume the real clock failed, and
+     * CI, which has no .env, still passed. A test that wants a fixed clock says
+     * so itself, with ManualClock.
+     */
+    devClock:
+      e.DEV_CLOCK && e.NODE_ENV === 'development' ? new Date(e.DEV_CLOCK) : null,
     fieldEncryptionKey: Buffer.from(e.FIELD_ENCRYPTION_KEY, 'base64'),
     fileStorageDir: e.FILE_STORAGE_DIR,
     /** Which FileStorage to build. See platform.module.ts. */
@@ -239,6 +272,8 @@ const PUBLIC_KEYS = new Set(['AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=']);
  */
 export function productionProblems(e: z.infer<typeof envSchema>): string[] {
   const p: string[] = [];
+  if (e.DEV_CLOCK)
+    p.push('DEV_CLOCK pins the demo clock and is for development only');
   if (e.SECURITY_MFA_ENFORCED !== 'true')
     p.push('SECURITY_MFA_ENFORCED must be true');
   if (e.AI_PROVIDER === 'fake') p.push('AI_PROVIDER=fake is for tests only');

@@ -6,6 +6,7 @@ export const en = {
   // navigation
   "cl.nav.close": "Month-end close",
   "cl.nav.migration": "Opening and old system",
+  "cl.nav.gate2": "Gate 2 report",
   "cl.nav.receivables": "Receivables",
   // reports
   "cl.r.cf": "Cash flow",
@@ -136,6 +137,7 @@ export const en = {
 export const bn: Record<keyof typeof en, string> = {
   "cl.nav.close": "মাস-শেষের ক্লোজ",
   "cl.nav.migration": "প্রারম্ভিক ও পুরনো সিস্টেম",
+  "cl.nav.gate2": "গেট ২ প্রতিবেদন",
   "cl.nav.receivables": "প্রাপ্য",
   "cl.r.cf": "নগদ প্রবাহ",
   "cl.r.dept": "বিভাগভিত্তিক ব্যয়",

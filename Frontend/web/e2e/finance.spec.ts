@@ -320,7 +320,11 @@ test.describe("procurement (WP17)", () => {
         page.getByText("Does not match: cannot be paid"),
       ).toBeVisible();
       await expect(page.getByText("billed more than received")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Pay" })).toHaveCount(0);
+      // scoped to the page and matched exactly: the sidebar's collapsible
+      // "Payroll" group is a button too, and an unanchored "Pay" matches it
+      await expect(
+        page.getByRole("main").getByRole("button", { name: "Pay", exact: true }),
+      ).toHaveCount(0);
       expect(errors).toEqual([]);
     });
   });
@@ -598,6 +602,7 @@ test.describe("bank reconciliation (WP20)", () => {
         await books
           .getByRole("row")
           .filter({ hasText: "Sylhet Agro" })
+          .first()
           .getByRole("checkbox")
           .check();
         await expect(
@@ -987,11 +992,15 @@ test.describe("Commission and Gate 3 (WP31)", () => {
     }) => {
       const errors = await open(page, "/portal/sales/commission");
       await expect(
-        page.getByRole("heading", { name: "Commission scheme" }),
+        page.getByRole("heading", { name: "Commission scheme", level: 1 }),
       ).toBeVisible();
       // the demo scheme: 2% of collection, 3% above target
       await expect(page.getByText("SALES-2026")).toBeVisible();
-      await expect(page.getByText("Money collected")).toBeVisible();
+      // the basis, as the scheme states it: the same words appear in the
+      // panel's own sentence and in the "Earned on" dropdown
+      await expect(
+        page.getByRole("definition").filter({ hasText: "Money collected" }),
+      ).toBeVisible();
 
       // October was calculated and posted by the seed
       const row = page.getByRole("row").filter({ hasText: "2026-10" });
@@ -1084,13 +1093,19 @@ test.describe("Performance (WP30)", () => {
       await expect(
         page.getByRole("heading", { name: "Calibration across departments" }),
       ).toBeVisible();
+      // "Sales Dhaka" also names the department of an employee row further down,
+      // so the spread row is taken from the calibration table itself
       await expect(
-        page.getByRole("row").filter({ hasText: "Sales Dhaka" }),
+        page
+          .getByRole("row")
+          .filter({ hasText: "Sales Dhaka" })
+          .first(),
       ).toBeVisible();
 
       // Rafi's appraisal carries both numbers: the manager's 4 and HR's calibrated 3
       await page.getByRole("link", { name: /Rafi/ }).first().click();
-      await expect(page.getByText("Weighted score")).toBeVisible();
+      // the term appears in the summary and again in the rating panel
+      await expect(page.getByText("Weighted score").first()).toBeVisible();
       await expect(page.getByText("Calibrated", { exact: false }).first()).toBeVisible();
       await expect(
         page.getByRole("heading", { name: "Increments & promotions" }),
@@ -1127,7 +1142,7 @@ test.describe("Performance (WP30)", () => {
       await expect(row).toBeVisible();
       await row.first().click();
       await expect(page.getByText("Collection of dues within 45 days")).toBeVisible();
-      await expect(page.getByText("Weights")).toBeVisible();
+      await expect(page.getByText("Weights", { exact: true })).toBeVisible();
       // the feedback he wrote during the year is on the same page
       await expect(page.getByText(/Khatunganj/)).toBeVisible();
       expect(errors).toEqual([]);
@@ -1144,7 +1159,10 @@ test.describe("Performance (WP30)", () => {
       await page.getByRole("row").filter({ hasText: "2025-26 annual" }).click();
       await page.getByRole("link", { name: /Rafi/ }).first().click();
       await expect(page.getByRole("heading", { name: "Self-review" })).toBeVisible();
-      await expect(page.getByText(/আদায় ভালো হয়েছে|Collection/)).toBeVisible();
+      // the goal is named in the goals table and again in his self-review
+      await expect(
+        page.getByText(/আদায় ভালো হয়েছে|Collection/).first(),
+      ).toBeVisible();
       // the concern note was not shared with him
       await expect(page.getByText(/Route reports were missing/)).toHaveCount(0);
       expect(errors).toEqual([]);
@@ -1183,7 +1201,10 @@ test.describe("Hiring (WP29)", () => {
       await page.getByRole("button", { name: "Screen the CV" }).click();
       await expect(page.getByText("Removed before the model saw the CV")).toBeVisible();
       // the reasons are shown next to the score, which is the point of the feature
-      await expect(page.getByText(/No evidence for|evidence for/)).toBeVisible();
+      // one reason per requirement the CV does not evidence
+      await expect(
+        page.getByText(/No evidence for|evidence for/).first(),
+      ).toBeVisible();
       expect(errors).toEqual([]);
     });
 
@@ -1191,8 +1212,9 @@ test.describe("Hiring (WP29)", () => {
       page,
     }) => {
       const errors = await open(page, "/portal/hiring/plan");
+      // the page heading and the panel heading carry the same words
       await expect(
-        page.getByRole("heading", { name: "Manpower plan" }),
+        page.getByRole("heading", { name: "Manpower plan", level: 1 }),
       ).toBeVisible();
       await expect(page.getByText("Approved").first()).toBeVisible();
       // HR may read the plan but not change it: no save form for them

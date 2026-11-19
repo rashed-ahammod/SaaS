@@ -9,7 +9,7 @@ import { Global, Module, OnApplicationShutdown } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { APP_CONFIG, loadConfig, type AppConfig } from '../config/config.js';
 import { AuditService } from './audit/audit.service.js';
-import { Clock } from './clock.js';
+import { Clock, ManualClock } from './clock.js';
 import { FieldEncryption } from './crypto/field-encryption.js';
 import { DatabaseService, WORKER_DB } from './db/database.service.js';
 import { HealthController } from './http/health.controller.js';
@@ -39,7 +39,14 @@ import {
         new DatabaseService(config, 'erp_worker'),
       inject: [APP_CONFIG],
     },
-    Clock,
+    // The real clock, unless this is a development run telling the demo's story
+    // on its own day (config.devClock; refused in production).
+    {
+      provide: Clock,
+      useFactory: (config: AppConfig) =>
+        config.devClock ? new ManualClock(config.devClock) : new Clock(),
+      inject: [APP_CONFIG],
+    },
     {
       provide: FieldEncryption,
       useFactory: (config: AppConfig) =>

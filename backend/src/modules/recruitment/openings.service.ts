@@ -30,6 +30,7 @@ import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import { AccessService } from '../identity/access/access.service.js';
 import { OrgLookupService } from '../org/org-lookup.service.js';
 import { PositionsService } from './positions.service.js';
+import { RecruitmentAccess } from './recruitment-access.js';
 import type {
   CloseOpeningDto,
   OpeningDto,
@@ -47,11 +48,15 @@ export class OpeningsService {
     private readonly org: OrgLookupService,
     private readonly outbox: OutboxService,
     private readonly positions: PositionsService,
+    private readonly scope: RecruitmentAccess,
   ) {}
 
   async list(companyId: string, query: OpeningQueryDto) {
     await this.org.assertCompanyExists(companyId);
-    this.assertSee(companyId);
+    // A Dept Head holds recruitment.view over their own department, not the
+    // company, so they are not asked about the company: they are shown the
+    // openings of the departments they lead.
+    const scope = await this.scope.departmentScope(companyId);
     let q = this.db.tx
       .selectFrom('job_openings as o')
       .innerJoin('position_requests as p', 'p.id', 'o.position_request_id')
@@ -72,6 +77,8 @@ export class OpeningsService {
       .where('o.company_id', '=', companyId)
       .orderBy('o.created_at', 'desc')
       .limit(300);
+    if (!scope.all)
+      q = q.where('p.department_id', 'in', scope.departmentIds);
     if (query.state) q = q.where('o.state', '=', query.state);
     const rows = await q.execute();
     const counts = await this.applicationCounts(rows.map((r) => r.id));
@@ -135,10 +142,13 @@ export class OpeningsService {
         headcount: request.headcount,
         employmentType: request.employment_type,
       },
-      departmentName: names.departments.get(request.department_id) ?? null,
-      designationName: names.designations.get(request.designation_id) ?? null,
-      gradeName: names.grades.get(request.grade_id) ?? null,
-      branchName: names.branches.get(request.branch_id) ?? null,
+      // the NAME, not the record the lookup holds: these four went out as
+      // objects, and the screen that prints them crashed on every opening
+      departmentName: names.departments.get(request.department_id)?.name ?? null,
+      designationName:
+        names.designations.get(request.designation_id)?.nameEn ?? null,
+      gradeName: names.grades.get(request.grade_id)?.name ?? null,
+      branchName: names.branches.get(request.branch_id)?.name ?? null,
       postings: postings.map((p) => ({
         id: p.id,
         channel: p.channel,

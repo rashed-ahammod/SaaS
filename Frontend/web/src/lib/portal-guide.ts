@@ -210,15 +210,6 @@ export const GROUPS: ScreenGroup[] = [
         steps: 4,
         next: ["runs"],
       },
-      {
-        id: "gate3",
-        href: "/portal/gate-3",
-        key: "cm.nav.gate3",
-        needs: ["gate3.view"],
-        icon: "shield",
-        steps: 3,
-        next: ["cycles", "commission"],
-      },
     ],
   },
   {
@@ -329,6 +320,15 @@ export const GROUPS: ScreenGroup[] = [
         next: ["invoices", "gate3"],
       },
       {
+        id: "gate3",
+        href: "/portal/gate-3",
+        key: "cm.nav.gate3",
+        needs: ["gate3.view"],
+        icon: "shield",
+        steps: 3,
+        next: ["cycles", "commission"],
+      },
+      {
         id: "territories",
         href: "/portal/crm/territories",
         key: "cr.nav.territories",
@@ -387,6 +387,9 @@ export const GROUPS: ScreenGroup[] = [
         id: "cycles",
         href: "/portal/performance/cycles",
         key: "pf.nav.cycles",
+        // performance.own belongs here: an employee reaches their own appraisal
+        // through this screen (the cycle, then their row), and has no other way
+        // to it. What each role sees of a cycle is scoped by the API.
         needs: [
           "performance.view",
           "performance.manage",
@@ -475,6 +478,15 @@ export const GROUPS: ScreenGroup[] = [
         needs: ["ledger.setup"],
         icon: "upload",
         next: ["accounts"],
+      },
+      {
+        id: "gate2",
+        href: "/portal/gate-2",
+        key: "cl.nav.gate2",
+        needs: ["ledger.view"],
+        icon: "shield",
+        steps: 3,
+        next: ["close", "opening"],
       },
       {
         id: "vendors",

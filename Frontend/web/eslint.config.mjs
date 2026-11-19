@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright's own output. A failed run saves the pages it captured, which
+    // are bundled JavaScript: lint them and every real finding is buried under
+    // thousands from the app's own dependencies.
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 

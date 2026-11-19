@@ -9,7 +9,12 @@ services:
     image: postgres:18
     environment:
       POSTGRES_PASSWORD: postgres # local only
-    ports: ["5432:5432"]
+    # Bound to loopback on purpose. "5432:5432" publishes on every interface, and
+    # Docker Desktop opens the firewall for a published port, so the plain
+    # password above would be reachable from the whole network - including the
+    # office wifi. The host still reaches it at localhost, which is all the
+    # commands above need.
+    ports: ["127.0.0.1:5432:5432"]
     volumes: [pgdata:/var/lib/postgresql]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -18,7 +23,8 @@ services:
   # Needed from WP4 (BullMQ jobs). Not used by WP0 yet.
   redis:
     image: redis:8
-    ports: ["6379:6379"]
+    # loopback only, for the same reason: Redis has no password here
+    ports: ["127.0.0.1:6379:6379"]
 
 volumes:
   pgdata:

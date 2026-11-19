@@ -13,7 +13,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api } from "@/lib/api";
+import { api, isMfaSetupRequired } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 export interface Company {
@@ -29,6 +29,12 @@ interface Portal {
   setCompanyId: (id: string) => void;
   /** Holds at least one of the permissions. */
   can: (...permissions: string[]) => boolean;
+  /**
+   * The API refuses every business route until this user sets 2FA up, so the
+   * portal would otherwise draw its whole menu over empty screens and say
+   * nothing. The shell turns this into one banner that explains it.
+   */
+  mfaSetupRequired: boolean;
   reloadCompanies: () => Promise<void>;
 }
 
@@ -39,11 +45,13 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const { me } = useSession();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyId, setCompanyIdState] = useState<string | null>(null);
+  const [mfaSetupRequired, setMfaSetupRequired] = useState(false);
 
   const reloadCompanies = useCallback(async () => {
-    const list = await api
-      .get<Company[]>("/companies")
-      .catch(() => [] as Company[]);
+    const list = await api.get<Company[]>("/companies").catch((e: unknown) => {
+      setMfaSetupRequired(isMfaSetupRequired(e));
+      return [] as Company[];
+    });
     setCompanies(list);
     let saved: string | null = null;
     try {
@@ -78,8 +86,9 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       can: (...permissions: string[]) =>
         permissions.some((p) => me.permissions?.includes(p)),
       reloadCompanies,
+      mfaSetupRequired,
     }),
-    [companies, companyId, me.permissions, reloadCompanies],
+    [companies, companyId, me.permissions, reloadCompanies, mfaSetupRequired],
   );
   return (
     <PortalContext.Provider value={value}>{children}</PortalContext.Provider>

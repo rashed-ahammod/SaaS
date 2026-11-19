@@ -13,7 +13,7 @@ import {
 import { usePortal } from "@/components/portal/portal-context";
 import { Badge, Button, Field, Input, Select } from "@/components/ui";
 import { api, saveDownload, useApi } from "@/lib/api";
-import { formatDate, formatTaka, num } from "@/lib/format";
+import { dhakaNow, formatDate, formatTaka, num } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { Batch } from "@/lib/portal-types";
 
@@ -37,7 +37,7 @@ interface Reconciliation {
 }
 
 const firstOfMonth = () => {
-  const d = new Date();
+  const d = dhakaNow();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 };
 

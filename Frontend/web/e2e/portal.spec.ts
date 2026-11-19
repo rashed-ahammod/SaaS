@@ -1235,7 +1235,10 @@ test.describe("Time: the work HR, a Dept Head and an Admin actually do", () => {
       await expect(page.getByText("Asked by")).toBeVisible();
       await expect(page.getByText("Mahmudul Hasan Rafi").first()).toBeVisible();
       await expect(page.getByText("Leave type")).toBeVisible();
-      await expect(page.getByText("Family matter in Cumilla")).toBeVisible();
+      // the reason the demo's leave request carries, in the words the employee used
+      await expect(
+        page.getByText("Sister's wedding in Sylhet"),
+      ).toBeVisible();
       await expect(page.getByText("Sent for approval")).toBeVisible();
       await expect(page.getByText(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/)).toHaveCount(0);
       await expect(page.getByText("Leave Type Id")).toHaveCount(0);

@@ -154,25 +154,54 @@ export function useApi<T>(path: string | null) {
     data?: T;
     error?: ApiError;
     loading: boolean;
-  }>({ loading: path !== null });
+    /** The path this data or error came from, so a changed path is not read as loaded. */
+    from: string | null;
+  }>({ loading: path !== null, from: path });
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (path === null) return;
     let alive = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- show the loading state while the request runs
-    setState((s) => ({ ...s, loading: true, error: undefined }));
+    setState((s) => ({ ...s, loading: true, error: undefined, from: path }));
     api
       .get<T>(path)
-      .then((data) => alive && setState({ data, loading: false }))
-      .catch((error: ApiError) => alive && setState({ error, loading: false }));
+      .then((data) => alive && setState({ data, loading: false, from: path }))
+      .catch(
+        (error: ApiError) =>
+          alive && setState({ error, loading: false, from: path }),
+      );
     return () => {
       alive = false;
     };
   }, [path, tick]);
 
   const reload = useCallback(() => setTick((n) => n + 1), []);
-  return { ...state, reload };
+  return { ...apiState(path, state), reload };
+}
+
+/**
+ * What the page sees, from the path it asked for and the state held for the
+ * path that was asked for before it.
+ *
+ * The effect that starts a request runs after the render that changed the
+ * path, so for one render the state still belongs to the old path. On a page
+ * whose path starts as null — waiting for the company — that render reported
+ * loading false with no data and no error, and a page that reads `data!` on it
+ * crashed (the Gate 3 and manpower-plan screens did). A state from another
+ * path is therefore loading, and the old path's data is not this path's
+ * answer.
+ */
+export function apiState<T>(
+  path: string | null,
+  state: { data?: T; error?: ApiError; loading: boolean; from: string | null },
+): { data?: T; error?: ApiError; loading: boolean } {
+  const stale = state.from !== path;
+  return {
+    data: stale ? undefined : state.data,
+    error: stale ? undefined : state.error,
+    loading: path !== null && (stale || state.loading),
+  };
 }
 
 /** Save a downloaded file (blob) on the phone. */

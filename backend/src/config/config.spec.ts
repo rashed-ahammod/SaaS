@@ -47,6 +47,13 @@ describe('production start-up checks (WP12)', () => {
     ],
     ['no metrics token', { METRICS_TOKEN: '' }, /METRICS_TOKEN/],
     [
+      // the demo scenario's clock: in production it would freeze every date the
+      // business runs on, which is worse than any wrong date it could fix
+      'the demo clock',
+      { DEV_CLOCK: '2026-10-29T10:30:00+06:00' },
+      /DEV_CLOCK/,
+    ],
+    [
       'a short n8n webhook secret',
       {
         OUTBOX_WEBHOOK_BASE_URL: 'http://n8n:5678/webhook/x/erp',
@@ -67,5 +74,32 @@ describe('production start-up checks (WP12)', () => {
         SECURITY_MFA_ENFORCED: 'false',
       }),
     ).not.toThrow();
+  });
+
+  it('ignores the demo clock under test, so a local .env cannot pin the suite', () => {
+    // the integration tests read the same .env through dotenv: a clock meant for
+    // the demo used to pin time inside them, and CI (which has no .env) passed
+    expect(
+      loadConfig({
+        ...good,
+        NODE_ENV: 'test',
+        DEV_CLOCK: '2026-10-29T10:30:00+06:00',
+      }).devClock,
+    ).toBeNull();
+  });
+
+  it('reads the demo clock in development, and refuses nonsense', () => {
+    const dev = {
+      ...good,
+      NODE_ENV: 'development',
+      DEV_CLOCK: '2026-10-29T10:30:00+06:00',
+    };
+    expect(loadConfig(dev).devClock?.toISOString()).toBe(
+      '2026-10-29T04:30:00.000Z',
+    );
+    expect(loadConfig({ ...good, NODE_ENV: 'development' }).devClock).toBeNull();
+    expect(() => loadConfig({ ...dev, DEV_CLOCK: 'last Tuesday' })).toThrow(
+      /DEV_CLOCK/,
+    );
   });
 });

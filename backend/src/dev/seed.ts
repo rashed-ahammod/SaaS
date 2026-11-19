@@ -32,8 +32,13 @@
  * Payroll (demo): Bangladesh salary heads and the standard structure (Basic 60%),
  * salaries for everyone (Rafi's July increment), July-August tax figures from the
  * old system (YTD openings), Rafi's commission, Mitu's salary advance waiting for
- * Tanvir, September attendance locked (Mitu absent on 17 Sep) and the September
- * run calculated, waiting for HR to clear flags and submit (try it in Postman).
+ * Tanvir, September attendance locked (Mitu absent on 17 Sep), and September's run
+ * taken all the way through: HR answered its flags, Accounts verified, the MD
+ * approved. That is what gives the demo payslips, a tax certificate, a PF
+ * statement and a salary tax challan - all of which read approved runs only.
+ * October has no run on purpose: payroll refuses a month whose attendance is not
+ * locked, and October is half punched and not over yet. Locking it and running it
+ * is the exercise to try in Postman.
  *
  * Consent (demo, WP12): every employee's signed biometric consent form recorded by HR,
  * and Rafi agreed to phone location in the app.
@@ -184,11 +189,13 @@ import { PayrollVariablesService } from '../modules/payroll/payroll-variables.se
 import {
   addDays,
   businessDate,
+  todayInDhaka,
   weekdayOf,
   type BusinessDate,
 } from '../platform/dates/business-date.js';
 import { publishRulePack } from '../modules/rules/rule-pack-admin.js';
-import { readFileSync } from 'node:fs';
+import { Clock } from '../platform/clock.js';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { BranchesService } from '../modules/org/branches.service.js';
 import { CompaniesService } from '../modules/org/companies.service.js';
 import { DepartmentsService } from '../modules/org/departments.service.js';
@@ -217,6 +224,25 @@ async function main() {
     const config = app.get<AppConfig>(APP_CONFIG);
     if (config.isProduction)
       throw new Error('Refusing to seed a production database');
+
+    // The story below is told on one day: September's payroll is the month just
+    // closed, October's bills and invoices are "this month", the October return
+    // is not due yet. The services stamp today's date on whatever they create,
+    // so seeding on any other day quietly bends the story out of shape — an
+    // invoice in the wrong period, a commission run with nothing in it.
+    if (config.devClock)
+      console.log(
+        `  demo clock: ${config.devClock.toISOString()} (DEV_CLOCK) - the day this story is told on`,
+      );
+    else
+      console.warn(
+        [
+          '  WARNING: DEV_CLOCK is not set, so this runs on the real clock.',
+          '  The demo story is written for late October 2026 and will not hang',
+          '  together on another day: periods, due dates and ages will disagree',
+          '  with it, and the e2e suite will fail on that. See backend/.env.example.',
+        ].join('\n'),
+      );
     const db = app.get(DatabaseService);
     currentDb = db;
     const get = <T>(cls: new (...args: never[]) => T) =>
@@ -664,6 +690,7 @@ async function seedDemoAttendance(get: Get) {
   }
 
   // Rafi's phone, registered and approved
+  const now = get(Clock).now();
   const rafi = employees.find((e) => e.full_name_en === 'Mahmudul Hasan Rafi')!;
   await db.tx
     .insertInto('employee_devices')
@@ -672,7 +699,24 @@ async function seedDemoAttendance(get: Get) {
       device_id: 'demo-install-rafi-a15',
       name: 'Samsung Galaxy A15',
       status: 'active',
-      approved_at: new Date(),
+      approved_at: now,
+    })
+    .execute();
+
+  // Mitu's new phone, registered and waiting for HR. The register opens on the
+  // queue of phones waiting to be allowed, and with nothing in it the screen
+  // showed no rows and no columns at all - a reviewer could not tell an empty
+  // queue from a broken screen.
+  const mituPhone = employees.find(
+    (e) => e.full_name_en === 'Sharmin Sultana Mitu',
+  )!;
+  await db.tx
+    .insertInto('employee_devices')
+    .values({
+      employee_id: mituPhone.id,
+      device_id: 'demo-install-mitu-a05',
+      name: 'Samsung Galaxy A05',
+      status: 'pending',
     })
     .execute();
 
@@ -900,7 +944,7 @@ async function seedDemoLeave(
   );
 }
 
-/** Payroll setup, the September 2026 run calculated (waiting for HR to clear flags and submit). */
+/** Payroll setup and the September 2026 run, taken through to approved and paid. */
 async function seedDemoPayroll(
   get: Get,
   tenantId: string,
@@ -1062,16 +1106,73 @@ async function seedDemoPayroll(
       .execute();
   });
 
-  // the September run, calculated
+  // September: the month that is finished and paid. A pilot's data always has
+  // one of these behind it, and without it half the screens have nothing to
+  // show: payslips, the tax certificate, the PF statement and the salary tax
+  // challan all read APPROVED runs only, so on a demo whose single run was
+  // still waiting they were simply empty.
   const runs = get(PayrollRunsService);
-  const run = await asSystem(
+  const approvals = get(ApprovalsService);
+  const september = await asSystem(
     tenantId,
     () => runs.createRun(company.id, { runType: 'regular', period: '2026-09' }),
     hr,
   );
-  const calculated = await asSystem(tenantId, () => runs.calculate(run.id), hr);
+  const calculated = await asSystem(
+    tenantId,
+    () => runs.calculate(september.id),
+    hr,
+  );
+
+  // HR answers every flag, because a run cannot be submitted with one open
+  const flags = await asSystem(tenantId, () =>
+    db.tx
+      .selectFrom('payroll_flags')
+      .select(['id', 'code'])
+      .where('run_id', '=', september.id)
+      .where('cleared_at', 'is', null)
+      .execute(),
+  );
+  for (const flag of flags)
+    await asSystem(
+      tenantId,
+      () =>
+        runs.clearFlag(flag.id, {
+          reason: `Checked against the attendance register: ${flag.code}`,
+        }),
+      hr,
+    );
+
+  // HR prepares, Accounts verifies, the MD approves - never the same person
+  // twice, which is why these are three different logins
+  const submitted = await asSystem(
+    tenantId,
+    () => runs.submit(september.id),
+    hr,
+  );
+  for (const approver of [
+    'sujit.das@demo.test',
+    'anisur.rahman@demo.test',
+  ] as const)
+    await asSystem(
+      tenantId,
+      () =>
+        approvals.decide(
+          submitted.approvalRequestId!,
+          'approve',
+          approver === 'sujit.das@demo.test'
+            ? 'Totals and the bank file agree'
+            : 'Approved for payment',
+        ),
+      logins.get(approver),
+    );
+
+  // There is deliberately no run for October: payroll refuses a month whose
+  // attendance is not locked, and at the story's "now" October is half punched
+  // and not over. Running one is the exercise - lock October at month end, then
+  // create and calculate it - and it starts from a month that is already done.
   console.log(
-    `  demo payroll seeded: September run ${run.id} calculated for ${calculated.headcount} employees, ${calculated.openFlags} flag(s) to clear`,
+    `  demo payroll seeded: September run ${september.id} approved and paid for ${calculated.headcount} employees (${flags.length} flag(s) answered by HR, verified by Accounts, approved by the MD)`,
   );
 }
 
@@ -3406,6 +3507,43 @@ async function seedDemoCrm(
   console.log(
     "  demo CRM seeded: Rafi and Mitu sell (territory CTG is Rafi's), 6 leads (one became Karim Stores, one disqualified), 4 customers with credit terms",
   );
+
+  // The public enquiry form (/enquiry/demo) is held by the Next.js server, which
+  // needs this company's id and a crm.capture key. Both are made here, so a
+  // reseed cannot leave the form pointing at a company that no longer exists —
+  // which is what it did: the key and id were pasted in by hand once, and every
+  // reset after that left the form answering "not found" with nothing to say why.
+  const enquiryKey = await asSystem(tenantId, () =>
+    get(ServiceKeysService).createKey({
+      name: 'Public enquiry form (demo)',
+      permissions: ['crm.capture'],
+      companyId: company.id,
+    }),
+  );
+  const forms = JSON.stringify({
+    demo: {
+      companyId: company.id,
+      serviceKey: enquiryKey.authorizationHeader,
+      nameEn: 'Demo Trading Ltd',
+      nameBn: 'ডেমো ট্রেডিং লিমিটেড',
+    },
+  });
+  const line = `ENQUIRY_FORMS=${forms}`;
+  console.log(`  enquiry form key (shown once): ${line}`);
+  // Keep an existing setting in step. A file that does not name ENQUIRY_FORMS is
+  // left alone: not every machine wants the public form switched on.
+  const envLocal = '../Frontend/web/.env.local';
+  if (existsSync(envLocal)) {
+    const before = readFileSync(envLocal, 'utf8');
+    if (/^ENQUIRY_FORMS=/m.test(before)) {
+      writeFileSync(
+        envLocal,
+        before.replace(/^ENQUIRY_FORMS=.*$/m, line),
+        'utf8',
+      );
+      console.log(`  rewrote ENQUIRY_FORMS in ${envLocal}`);
+    }
+  }
 }
 
 
@@ -3852,7 +3990,9 @@ async function seedDemoRecruitment(
         'Collection follow-up',
         'Motorcycle licence',
       ],
-      closingOn: '2026-12-15',
+      // relative, like the quotation validity: a demo seeded later must not
+      // advertise a post that closed before it was created
+      closingOn: addDays(todayInDhaka(), 26),
     }),
   );
   await asUser(farzana, () =>
@@ -3931,7 +4071,23 @@ async function seedDemoRecruitment(
       return user?.employee_id ?? null;
     }).then((id) => id ?? undefined),
     consent: true,
-    cvText: 'Office assistant for 8 months. Photocopying and filing.',
+    // a real CV carries the person at the top of it, which is exactly what the
+    // blind-CV pass has to take off before any model reads it: with none of it
+    // present there was nothing to remove, and the screen could not show what
+    // it had protected
+    cvText: [
+      'Name: Rakib Hasan',
+      'Gender: Male',
+      'Age: 23 years',
+      'Phone: 01533-221100',
+      '',
+      'EXPERIENCE',
+      'Office Assistant, a small printing press, Dhaka (8 months)',
+      '  - Photocopying, filing and tea.',
+      '',
+      'EDUCATION',
+      'HSC (Commerce), Dhaka College',
+    ].join('\n'),
   });
 
   // all three apply
@@ -3996,8 +4152,8 @@ async function seedDemoRecruitment(
       designationId,
       gradeId,
       grossSalary: offerSalary,
-      joiningOn: '2026-12-15',
-      validUntil: '2026-12-05',
+      joiningOn: addDays(todayInDhaka(), 26),
+      validUntil: addDays(todayInDhaka(), 16),
       probationMonths: 6,
       terms: 'Mobile and fuel allowance as per company policy.',
     }),
@@ -4459,7 +4615,10 @@ async function seedDemoSales(
     async () =>
       quotes.create(company.id, {
         customerId: await customer('Karim Stores'),
-        validUntil: '2026-11-15',
+        // relative to the day the demo is seeded: a fixed date here refused the
+        // whole sales step once it had passed (validUntil cannot precede the
+        // quotation date, and these quotations are dated today)
+        validUntil: addDays(todayInDhaka(), 14),
         language: 'bn',
         terms:
           'Delivery to the Uttara shops within 3 days; payment by cheque within 30 days',
@@ -4523,7 +4682,10 @@ async function seedDemoSales(
     quotes.create(company.id, {
       customerId: await customer('Meghna Dealers'),
       opportunityId: eid.id,
-      validUntil: '2026-11-20',
+      // relative to the day the demo is seeded: a fixed date here refused the
+      // whole sales step once it had passed (validUntil cannot precede the
+      // quotation date, and these quotations are dated today)
+      validUntil: addDays(todayInDhaka(), 21),
       lines: [
         {
           productId: product['SOY-1L'],
@@ -4539,7 +4701,10 @@ async function seedDemoSales(
   let sylhet: Q = await asUser(mitu, async () =>
     quotes.create(company.id, {
       customerId: await customer('Sylhet Agro Ltd'),
-      validUntil: '2026-11-30',
+      // relative to the day the demo is seeded: a fixed date here refused the
+      // whole sales step once it had passed (validUntil cannot precede the
+      // quotation date, and these quotations are dated today)
+      validUntil: addDays(todayInDhaka(), 30),
       lines: [
         { productId: product['MUS-500'], quantity: '2400', unitPrice: '125' },
       ],

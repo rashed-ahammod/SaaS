@@ -180,6 +180,28 @@ export class OrgLookupService {
     return (await this.departments.findDepartment(departmentId)).company_id;
   }
 
+  /**
+   * Of these departments, the ones that belong to this company.
+   *
+   * A department-scoped grant (a Dept Head's) names departments but not their
+   * company, so a screen that filters by such a scope must keep the company in
+   * the question too — otherwise a head of one company passes the gate of
+   * another and reads what that company holds at company level.
+   */
+  async departmentsOfCompany(
+    companyId: string,
+    departmentIds: string[],
+  ): Promise<string[]> {
+    if (!departmentIds.length) return [];
+    const rows = await this.db.tx
+      .selectFrom('departments')
+      .select('id')
+      .where('company_id', '=', companyId)
+      .where('id', 'in', departmentIds)
+      .execute();
+    return rows.map((r) => r.id);
+  }
+
   /** Head and parent of a department (approval routing: "dept_head" steps). */
   async departmentHeadInfo(
     departmentId: string,

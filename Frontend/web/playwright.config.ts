@@ -10,6 +10,17 @@ import { defineConfig, devices } from '@playwright/test';
  *   cd backend && npm run db:seed && npm run start      (API on :3000)
  *   cd Frontend/web && npm run build && npm run start   (app on :3001)
  *   npm run e2e
+ *
+ * Two things the suite needs, or it fails on the setup rather than the code:
+ *   - DEV_CLOCK in backend/.env. The demo is one story told on one day; without
+ *     its clock the API runs on the real one and the data drifts out of the story
+ *     (periods, due dates, ages).
+ *   - a built app, not `next dev`: dev keeps an HMR connection open, so
+ *     waitForLoadState('networkidle') never settles and every test times out.
+ *   - the app STARTED AFTER the seed. `db:seed` rewrites ENQUIRY_FORMS in
+ *     .env.local (a reseed gives the company a new id and a new service key),
+ *     and a Next server already running holds the env it started with: the
+ *     public enquiry form then posts to a company that no longer exists.
  */
 export default defineConfig({
   testDir: './e2e',

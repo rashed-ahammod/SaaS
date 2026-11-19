@@ -42,7 +42,8 @@ function readCollapsed(): string[] {
 export function PortalShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const { me, signOut } = useSession();
-  const { can, companies, company, setCompanyId } = usePortal();
+  const { can, companies, company, setCompanyId, mfaSetupRequired } =
+    usePortal();
   const pathname = usePathname();
   const [drawer, setDrawer] = useState(false);
   const [collapsed, setCollapsed] = useState<string[]>([]);
@@ -240,6 +241,24 @@ export function PortalShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-5 sm:py-6">
+          {/*
+            A privileged role that has not set 2FA up is refused every business
+            route, so the menu draws over screens that are empty for a reason the
+            screens themselves cannot know. Say it once, here, with the way out.
+          */}
+          {mfaSetupRequired ? (
+            <div className="mb-4">
+              <Alert kind="warning">
+                {t("p.mfaNeeded")}{" "}
+                <Link
+                  href="/profile?setup2fa=1"
+                  className="font-semibold underline"
+                >
+                  {t("p.mfaNeededAction")}
+                </Link>
+              </Alert>
+            </div>
+          ) : null}
           {company || !companies.length ? (
             <>
               <Breadcrumbs />

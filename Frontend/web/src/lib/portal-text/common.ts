@@ -9,6 +9,9 @@ export const en = {
     "Your role has no screens in the HR & Admin portal. Use the employee app.",
   "p.noCompany":
     "No company is set up yet. An Admin creates it first (Organization).",
+  "p.mfaNeeded":
+    "Two-step verification is required for your role. Until you set it up, every screen here stays empty.",
+  "p.mfaNeededAction": "Set up two-step verification",
   // navigation
   "p.nav.dashboard": "Dashboard",
   "p.nav.people": "People",
@@ -98,6 +101,9 @@ export const bn: Record<CommonKey, string> = {
     "আপনার দায়িত্বে এইচআর ও অ্যাডমিন পোর্টালের কোনো স্ক্রিন নেই। কর্মী অ্যাপ ব্যবহার করুন।",
   "p.noCompany":
     "এখনো কোনো কোম্পানি তৈরি হয়নি। অ্যাডমিন আগে তৈরি করবেন (প্রতিষ্ঠান)।",
+  "p.mfaNeeded":
+    "আপনার দায়িত্বের জন্য দুই ধাপের যাচাই বাধ্যতামূলক। সেটআপ না করা পর্যন্ত এখানকার প্রতিটি স্ক্রিন খালি দেখাবে।",
+  "p.mfaNeededAction": "দুই ধাপের যাচাই চালু করুন",
   "p.nav.dashboard": "ড্যাশবোর্ড",
   "p.nav.people": "জনবল",
   "p.nav.employees": "কর্মী",
