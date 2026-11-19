@@ -318,6 +318,7 @@ Then upload a document, and confirm the file appears in the Supabase bucket.
 | An email: *Cronjob disabled automatically … Response data too big* | the pinger was not reaching the API at all — Render served its own HTML error page (suspended service, failed deploy or crash loop), which is far larger than the 31 bytes `/health` returns. Re-enable the job, switch it to HEAD (3.5), then find the outage in Render → Events and in the free instance hours |
 | The whole app says "The server cannot be reached" for a few minutes | the API was redeploying. A free service has no zero-downtime deploy, so it is briefly gone. Expected right after a push that touches `backend/` |
 | Everything times out, dashboard says paused | Supabase paused the project. Restore it, then fix the pinger |
+| Render event: *Instance failed … Exited with status 1* | the process died. `main.ts` prints the stack for an unhandled rejection, an uncaught exception or a failed start, so the Logs tab at that minute names the cause. A clean stop logs `SIGTERM received, shutting down.` instead |
 | `Refusing to start in production: …` | read the list it prints: that is `config.ts` naming the exact variable |
 | `/health/ready` says migrations missing | you deployed before running `npm run db:migrate` |
 | 500 on a page showing an NID, TIN or bank account | the rows were sealed with a different `FIELD_ENCRYPTION_KEY`. See 6.8 |
