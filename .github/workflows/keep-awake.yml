@@ -1,0 +1,54 @@
+# Backup uptime pinger (deploy-free.md Phase 3.5). The primary pinger is
+# cron-job.org; this exists so that one pinger failing does not let the API
+# sleep (scheduled jobs stop) or Supabase pause the project after a week.
+#
+# Needs one repository variable (Settings -> Secrets and variables -> Actions
+# -> Variables): PING_URL = https://<your-api>.onrender.com/health
+#
+# HEAD, not GET: a HEAD response has no body, so no pinger can ever fail with
+# "Response data too big" when Render serves its own HTML error page instead of
+# the API. Express answers HEAD on the GET route, so it still runs SELECT 1 and
+# still counts as database activity for Supabase.
+#
+# GitHub's cron is best-effort: runs are often 10-30 minutes late and the
+# schedule is disabled automatically after 60 days with no commits. That is why
+# this is the backup and cron-job.org is the primary.
+name: keep-awake
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: keep-awake
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: HEAD the health endpoint
+        env:
+          PING_URL: ${{ vars.PING_URL }}
+        run: |
+          set -u
+          if [ -z "${PING_URL}" ]; then
+            echo "::error::Repository variable PING_URL is not set. Set it to https://<your-api>.onrender.com/health (Settings -> Secrets and variables -> Actions -> Variables)."
+            exit 1
+          fi
+          # A cold free Render instance takes about a minute to wake, so allow
+          # a generous timeout and two more tries before calling it down.
+          for attempt in 1 2 3; do
+            code=$(curl --head --silent --show-error --output /dev/null \
+                        --location --max-time 120 \
+                        --write-out '%{http_code}' "${PING_URL}" || echo "000")
+            echo "attempt ${attempt}: HTTP ${code}"
+            if [ "${code}" = "200" ]; then
+              echo "API is awake."
+              exit 0
+            fi
+            [ "${attempt}" -lt 3 ] && sleep 30
+          done
+          echo "::error::${PING_URL} did not answer 200 after 3 attempts. Check the Render dashboard: Events (failed deploy or crash loop) and free instance hours (750/month for the whole workspace; one always-awake service uses about 730)."
+          exit 1

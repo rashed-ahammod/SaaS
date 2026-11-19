@@ -166,9 +166,26 @@ applied. The log line `Scheduled jobs run in this process (N jobs)` confirms the
 jobs started.
 
 **3.5 Keep it awake.** cron-job.org (free, no card): a job every 10 minutes
-calling `https://<your-api>.onrender.com/health`. This does three things at once:
-the API does not sleep, so the jobs actually run; the first user of the day does
-not wait a minute; and the database activity stops Supabase pausing the project.
+calling `https://<your-api>.onrender.com/health`, with **request method HEAD**.
+This does three things at once: the API does not sleep, so the jobs actually run;
+the first user of the day does not wait a minute; and the database activity stops
+Supabase pausing the project.
+
+Use HEAD, not GET. A HEAD response has no body, so the pinger cannot fail with
+*Response data too big* on the day Render answers with its own HTML error page
+instead of the API — which is what happened on 19 Nov 2026: 26 failures in a row
+and cron-job.org disabled the job itself, leaving nothing pinging at all. Express
+answers HEAD on the GET route, so it still runs `SELECT 1` and still counts as
+database activity. Also set the job's timeout to its maximum (30s).
+
+**Backup pinger.** `.github/workflows/keep-awake.yml` in this repository does the
+same HEAD check every 15 minutes, so one pinger disabling itself does not put the
+API back to sleep. It needs one repository variable: **Settings → Secrets and
+variables → Actions → Variables → `PING_URL`** = the same `/health` URL. Without
+it the job fails on purpose rather than pretending to work. GitHub's cron is
+best-effort — runs are often 10–30 minutes late, and the schedule is disabled
+after 60 days with no commits to the repository — which is why cron-job.org stays
+the primary. Check both after any API deploy.
 
 750 free instance hours a month are shared by the whole workspace, and one
 service awake all month uses about 730. So keep **one** free service on Render.
@@ -297,7 +314,8 @@ Then upload a document, and confirm the file appears in the Supabase bucket.
 | `Tenant or user not found` | `PG_USER_SUFFIX` missing or wrong. The pooler needs `erp_app.<project-ref>` |
 | `no pg_hba.conf entry … no encryption` / connection closed at once | `PG_SSL=off`. Supabase requires TLS |
 | `ENETUNREACH` with an IPv6 address in the message | you used `db.<ref>.supabase.co`. Use the pooler host |
-| First request fails, the next works | the API was asleep. Check the cron-job.org pinger |
+| First request fails, the next works | the API was asleep. Check the cron-job.org pinger, and the `keep-awake` workflow's last run |
+| An email: *Cronjob disabled automatically … Response data too big* | the pinger was not reaching the API at all — Render served its own HTML error page (suspended service, failed deploy or crash loop), which is far larger than the 31 bytes `/health` returns. Re-enable the job, switch it to HEAD (3.5), then find the outage in Render → Events and in the free instance hours |
 | The whole app says "The server cannot be reached" for a few minutes | the API was redeploying. A free service has no zero-downtime deploy, so it is briefly gone. Expected right after a push that touches `backend/` |
 | Everything times out, dashboard says paused | Supabase paused the project. Restore it, then fix the pinger |
 | `Refusing to start in production: …` | read the list it prints: that is `config.ts` naming the exact variable |
