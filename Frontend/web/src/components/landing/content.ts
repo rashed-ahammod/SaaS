@@ -54,7 +54,7 @@ export const SWAPS: { before: string; after: string }[] = [
   {
     before: "Leave and overtime rules kept in a senior officer's head",
     after:
-      "Every rule an effective-dated company setting in a versioned Bangladesh rule pack — a law change is a settings change",
+      "Every rule a dated setting your own staff can change, with the Bangladesh defaults already filled in",
   },
   {
     before: "Back-dated increments recalculated by hand, arrears argued over",
@@ -161,8 +161,8 @@ export const PAYROLL_STEPS: { title: string; body: string }[] = [
 
 export const PAYROLL_NOTES: { title: string; body: string }[] = [
   {
-    title: "The hard cases are the test suite",
-    body: "A joiner and a leaver in the same month. A back-dated increment spanning the fiscal-year boundary. Maternity leave at wage ÷ 26 per day crossing two months. A final settlement where deductions exceed dues. An Eid holiday moved after attendance was locked. Each is a worked example that must pass before a release ships.",
+    title: "The hard cases are the point",
+    body: "A joiner and a leaver in the same month. A back-dated increment that spans the fiscal-year boundary. Maternity leave at wage ÷ 26 per day crossing two months. A final settlement where deductions exceed dues. An Eid holiday moved after attendance was locked. These are the months that break a spreadsheet, and each one is handled.",
   },
   {
     title: "It agrees to the taka",
@@ -183,7 +183,7 @@ export const AI_FEATURES: { name: string; who: string; what: string }[] = [
   {
     name: "Ask-your-data reports",
     who: "Admin · HR · Accounts",
-    what: "A question becomes a report inside your own scope",
+    what: "A question in plain words comes back as a report, covering only what you may see",
   },
   {
     name: "CV screening",
@@ -240,7 +240,7 @@ export const AI_FEATURES: { name: string; who: string; what: string }[] = [
 export const GUARDRAILS: { title: string; body: string }[] = [
   {
     title: "The same permissions as you",
-    body: "AI reads only through the core API, with your role and your scope. A Department Head's question can never return another department's salaries.",
+    body: "AI sees exactly what you are allowed to see and nothing more. A Department Head's question can never come back with another department's salaries.",
   },
   {
     title: "Draft, then confirm",
@@ -248,7 +248,7 @@ export const GUARDRAILS: { title: string; body: string }[] = [
   },
   {
     title: "Every score explained",
-    body: "A flag or a score always arrives with the reasons behind it, and the whole exchange is logged with model and prompt version.",
+    body: "A flag or a score always arrives with the reasons behind it, and every exchange is kept in the audit trail with who asked and what they did next.",
   },
   {
     title: "It works without AI",
@@ -256,57 +256,57 @@ export const GUARDRAILS: { title: string; body: string }[] = [
   },
 ];
 
-/** The automation ticker: a plausible morning in one tenant. */
-export const EVENTS: { at: string; event: string; what: string }[] = [
+/** The automation ticker: an ordinary day, told the way an office would tell it. */
+export const DAY: { at: string; when: string; what: string }[] = [
   {
     at: "06:00",
-    event: "attendance.daily_closed",
-    what: "Absent and late list sent to 9 department heads",
+    when: "Yesterday's attendance closes",
+    what: "Every department head gets the absent and late list before the day starts",
   },
   {
     at: "08:41",
-    event: "employee.created",
-    what: "Onboarding kit — mail account, laptop task, day-1 orientation",
+    when: "A new officer joins",
+    what: "Mail account opened, laptop task raised, welcome pack sent, first-day orientation booked",
   },
   {
     at: "09:05",
-    event: "lead.captured",
-    what: "Facebook lead ad → lead assigned to Chattogram sales",
+    when: "An enquiry arrives from a Facebook ad",
+    what: "Added to the pipeline and assigned to the Chattogram sales desk",
   },
   {
     at: "10:12",
-    event: "approval.pending",
-    what: "Purchase requisition nudged; escalates at 14:00",
+    when: "A purchase request has waited too long",
+    what: "The approver is reminded with a one-click link, and it moves up a level at 2 p.m.",
   },
   {
     at: "11:30",
-    event: "invoice.overdue",
-    what: "Collection reminder to 4 customers, then the account manager",
+    when: "Four invoices fall overdue",
+    what: "Each customer is reminded, then the account manager is told",
   },
   {
     at: "12:00",
-    event: "probation.ending",
-    what: "Expiry alerts — probation, contracts, trade licence, insurance",
+    when: "A probation ends next week",
+    what: "HR is told, along with contracts, trade licence and insurance about to expire",
   },
   {
     at: "15:20",
-    event: "payroll.disbursed",
-    what: "Payslip PDFs mailed, “salary credited” SMS sent",
+    when: "Salary is disbursed",
+    what: "Payslips go out by e-mail, with a “salary credited” SMS",
   },
   {
     at: "17:45",
-    event: "employee.separated",
-    what: "Access revoked at last day, asset return and clearance opened",
+    when: "An employee's last day ends",
+    what: "Access is withdrawn, asset return and clearance are opened",
   },
   {
     at: "22:00",
-    event: "schedule.daily",
-    what: "Bank statements fetched and loaded into reconciliation",
+    when: "The office is closed",
+    what: "Bank statements are collected and set out ready for reconciliation",
   },
   {
     at: "23:10",
-    event: "schedule.monthly",
-    what: "Compliance calendar — tax, VAT and statutory filing dates",
+    when: "The month is turning",
+    what: "Tax, VAT and statutory filing dates go on next month's calendar",
   },
 ];
 
@@ -316,12 +316,12 @@ export const AUTOMATION_NOTES: { title: string; body: string }[] = [
     body: "An approval that sits past its deadline nudges by e-mail, SMS or WhatsApp with a one-click link, then escalates to the approver's own manager.",
   },
   {
-    title: "Replay, don't guess",
-    body: "Every event delivery is recorded with its outcome. A workflow that failed at 2 a.m. is retried, not reconstructed from memory.",
+    title: "Nothing is lost at 2 a.m.",
+    body: "Every automatic step is recorded with what came of it. One that fails overnight is tried again, not pieced back together from memory in the morning.",
   },
   {
-    title: "Your own process, too",
-    body: "On the Intelligent tier a workflow can be built for how your office actually works, inside your tenant's data only.",
+    title: "Your own routine, too",
+    body: "On the Intelligent plan a routine can be built around how your office actually works, over your own company's data and nobody else's.",
   },
 ];
 
@@ -353,7 +353,7 @@ export const RULES: { rule: string; value: string; state: string }[] = [
   },
   {
     rule: "Income tax at source",
-    value: "Slabs and rebates stored per fiscal year, July–June",
+    value: "Slabs and rebates follow the fiscal year, July–June",
     state: "Act 2023",
   },
 ];
@@ -361,7 +361,7 @@ export const RULES: { rule: string; value: string; state: string }[] = [
 export const COMPLIANCE_NOTES: { title: string; body: string }[] = [
   {
     title: "Sourced, then signed off",
-    body: "Each value links to its gazetted text or NBR circular, and a named compliance owner reviews the pack after every June budget and every amendment. A rule still marked “verify” cannot be switched on for a live customer.",
+    body: "Each value carries the gazetted text or NBR circular it comes from, and a labour lawyer and tax adviser review the set after every June budget and every amendment. A value still waiting on confirmation is not switched on.",
   },
   {
     title: "Written in taka and Bangla",
@@ -375,8 +375,8 @@ export const COMPLIANCE_NOTES: { title: string; body: string }[] = [
 
 export const PRINCIPLES: { title: string; body: string }[] = [
   {
-    title: "Strict tenant isolation",
-    body: "One company never sees another's data — not through a report, not through a shared workflow, not through an AI answer.",
+    title: "Your company's data is yours alone",
+    body: "No other company can reach it — not through a report, not through a shared routine, not through an answer the assistant gives.",
   },
   {
     title: "Maker–checker on money",
@@ -395,8 +395,8 @@ export const PRINCIPLES: { title: string; body: string }[] = [
     body: "Attendance, leave, payslips and claims work fully on the phone an employee already owns, in the language they choose.",
   },
   {
-    title: "The core holds the truth",
-    body: "Automation only reacts to events and calls back through the API. Balances and approval states live in one place.",
+    title: "One place holds the truth",
+    body: "Balances and approval states live in one place. Reports and routines read from it; nothing keeps a private copy that can quietly drift.",
   },
 ];
 
@@ -441,7 +441,7 @@ export const TIERS: {
       "The twelve AI features, with quota",
       "Ask-your-data reports",
       "Prebuilt automation library",
-      "Custom workflows for your process",
+      "Routines built around your own process",
     ],
   },
 ];
@@ -457,15 +457,15 @@ export const COMMERCIAL: { title: string; body: string }[] = [
   },
   {
     title: "Add-ons",
-    body: "SMS bundles, biometric device integration, and custom workflows for a process that is genuinely yours.",
+    body: "SMS bundles, biometric attendance devices, and routines built around a process that is genuinely your own.",
   },
 ];
 
-/** The specimen payroll run in the hero (demo figures, Bangladeshi scale). */
+/** The specimen payroll run in the hero: an illustration, not a real office. */
 export const SPECIMEN = {
-  company: "Meghna Edible Oils Ltd",
+  company: "A head office in Dhaka",
   month: "November 2026 · নভেম্বর ২০২৬",
-  ref: "PR-2026-11-0412",
+  ref: "Specimen",
   lines: [
     { label: "Employees on run", value: "412" },
     { label: "Gross earnings", value: "৳ 2,84,16,500" },
@@ -477,12 +477,12 @@ export const SPECIMEN = {
     {
       mark: "!",
       tone: "warn" as const,
-      text: "Rumana Haque — net pay up 38%, increment effective 1 Oct, arrears ৳ 46,200",
+      text: "One officer — net pay up 38%, increment effective 1 Oct, arrears ৳ 46,200",
     },
     {
       mark: "×",
       tone: "flag" as const,
-      text: "Shafiqul Islam — bank account changed 4 days ago, not yet verified",
+      text: "One officer — bank account changed 4 days ago, not yet verified",
     },
     {
       mark: "✓",
@@ -490,5 +490,5 @@ export const SPECIMEN = {
       text: "Chattogram branch — Eid holiday moved, 94 attendance days recomputed",
     },
   ],
-  foot: "Prepared by HR · checks with Accounts, then the Director. The preparer cannot approve.",
+  foot: "Prepared by HR · checked by Accounts, then approved by the Director. Whoever prepares a run cannot approve it.",
 };

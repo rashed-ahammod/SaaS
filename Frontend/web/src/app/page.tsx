@@ -16,7 +16,7 @@ import {
   AUTOMATION_NOTES,
   COMMERCIAL,
   COMPLIANCE_NOTES,
-  EVENTS,
+  DAY,
   GUARDRAILS,
   MODULES,
   PAYROLL_NOTES,
@@ -53,9 +53,9 @@ export const metadata: Metadata = {
 
 const STATS = [
   { to: 8, caption: "modules on one system of record" },
-  { to: 16, caption: "statutory rules shipped as defaults" },
+  { to: 16, caption: "statutory values set up and ready" },
   { to: 12, caption: "AI features, each inside a screen" },
-  { to: 10, caption: "automations running on events" },
+  { to: 10, caption: "routine jobs that run themselves" },
 ];
 
 export default function LandingPage() {
@@ -269,7 +269,7 @@ export default function LandingPage() {
           mark="The answer"
           bn="সমাধান"
           title="One system of record, and every rule a setting"
-          lead="All money, balances and approval states live in the core. Leave rules, salary heads, tax slabs, holidays, approval chains and numbering formats are company settings with sensible defaults — so a law change is a configuration change, not a code release."
+          lead="Money, balances and approval states live in one place. Leave rules, salary heads, tax slabs, holidays, approval chains and document numbering are settings your own staff can change — so an amendment is an afternoon’s work, not a new version of the software."
         />
 
         {/* the ledger: today on the left, the answer on the right */}
@@ -327,7 +327,7 @@ export default function LandingPage() {
           ))}
         </Rows>
 
-        {/* the eight modules as a spec sheet */}
+        {/* the eight modules, as a ruled matrix */}
         <Reveal className="mt-20">
           <div className="flex items-baseline gap-4">
             <h3 className="text-xl font-semibold text-paper">
@@ -477,11 +477,12 @@ export default function LandingPage() {
 
         <Reveal delay={80}>
           <p className="mt-10 max-w-3xl text-sm leading-relaxed text-faint">
-            A CV, a receipt or a lead e-mail can carry hidden instructions, so
-            outside content is treated as data and can never trigger an action.
-            Protected characteristics are stripped before any scoring of
-            people, and a feature that falls below its measured bar in
-            production is switched off until it is fixed.
+            A CV, a receipt or an e-mail from outside can carry hidden
+            instructions, so anything that arrives from outside is read as
+            information and can never set an action going on its own.
+            Protected characteristics are removed before any scoring of
+            people, and every one of these features can be switched off by
+            you.
           </p>
         </Reveal>
       </Band>
@@ -493,30 +494,30 @@ export default function LandingPage() {
           mark="Automation"
           bn="অটোমেশন"
           title="The dull half of the month runs itself"
-          lead="The core emits an event; workflows react and call back through the API. They never hold the truth, so a failed workflow can be replayed without corrupting a balance."
+          lead="Work that always follows the same rule does not need a person to carry it. The chasing, the filing and the reminding happen on their own, and the office is told only when something needs a decision."
         />
 
         <Reveal className="mt-14">
           <div className="border border-line bg-ink-2">
             <div className="flex items-center gap-3 border-b border-line px-5 py-3">
               <span className="blink size-1.5 rounded-full bg-accent" />
-              <Label>Event stream · one morning, one tenant</Label>
+              <Label>An ordinary day, start to finish</Label>
             </div>
             <div className="ticker-frame h-[21rem] overflow-hidden sm:h-[24rem]">
               <div className="ticker">
                 {[0, 1].map((copy) => (
                   <ul key={copy} aria-hidden={copy === 1}>
-                    {EVENTS.map((entry) => (
+                    {DAY.map((entry) => (
                       <li
-                        key={entry.event + entry.at}
-                        className="grid grid-cols-[3.2rem_1fr] items-baseline gap-x-4 gap-y-1 border-b border-line px-5 py-3.5 sm:grid-cols-[3.5rem_12rem_1fr]"
+                        key={entry.when + entry.at}
+                        className="grid grid-cols-[3.2rem_1fr] items-baseline gap-x-4 gap-y-1 border-b border-line px-5 py-3.5 sm:grid-cols-[3.5rem_15rem_1fr]"
                       >
                         <span className="font-ledger text-[11px] tabular-nums text-faint">
                           {entry.at}
                         </span>
-                        <code className="font-ledger text-[11px] text-accent">
-                          {entry.event}
-                        </code>
+                        <span className="text-sm font-semibold text-paper">
+                          {entry.when}
+                        </span>
                         <span className="col-span-2 text-sm text-muted sm:col-span-1">
                           {entry.what}
                         </span>
@@ -544,14 +545,14 @@ export default function LandingPage() {
           index={6}
           mark="Bangladesh compliance"
           bn="শ্রম আইন ও কর"
-          title="The amendment ships as a rule pack, not a support ticket"
-          lead="Statutory values are effective-dated settings, published as a versioned Bangladesh rule pack that each company accepts from a date of its own. The 2025 Ordinance already changed six of them."
+          title="An amendment is an afternoon’s settings work, not a support ticket"
+          lead="Every statutory value is a setting with a date it takes effect from, and each company adopts a change from the date that applies to it. The 2025 Ordinance already moved six of the values below."
         />
 
         <Reveal className="mt-14">
           <div className="flex flex-wrap items-baseline justify-between gap-3 border border-b-0 border-line px-5 py-3">
-            <Label tone="paper">Bangladesh Labour rule pack</Label>
-            <Label>v2026.1 · effective 10 Apr 2026</Label>
+            <Label tone="paper">Bangladesh statutory defaults</Label>
+            <Label>Each value carries its own effective date</Label>
           </div>
         </Reveal>
 
@@ -621,7 +622,7 @@ export default function LandingPage() {
           mark="Plans"
           bn="প্ল্যান"
           title="Priced per active employee, per month"
-          lead="Three tiers, each a superset of the one before. Taka price points are being validated with prospects before they are fixed, so the plans below show what you get rather than a number we would have to change."
+          lead="Three plans, each one everything in the plan before it. What you pay follows your active headcount and the plan you need, so the price comes with a conversation rather than off a chart."
         />
 
         <div className="mt-14 grid border-t border-l border-line lg:grid-cols-3">
@@ -724,9 +725,10 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="mt-5 max-w-sm text-sm leading-relaxed text-faint">
-                A multi-tenant ERP and CRM portal for Bangladeshi corporate
-                head offices of 50–1,000 staff. Factory wage-board payroll is a
-                separate compliance package and out of scope.
+                HR, payroll, accounts and CRM for Bangladeshi corporate head
+                offices of 50–1,000 staff. Factory-floor wage-board payroll
+                needs a different system; this one is built for the head
+                office.
               </p>
             </div>
             <div className="grid gap-8 sm:grid-cols-3 lg:col-span-7">
