@@ -43,3 +43,245 @@ body {
   color: #0f172a;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ------------------------------------------------------------------------
+ * Public landing page (/landing) only. Scoped to .landing, so the app's own
+ * light screens are untouched. Every animation here is decoration: with
+ * JavaScript off the page reads normally, and the reduce-motion block at the
+ * end switches all of it off.
+ * --------------------------------------------------------------------- */
+
+/* The app is light; this one page is dark, including behind an overscroll. */
+body:has(.landing) {
+  background: #070b14;
+  color: #cbd5e1;
+}
+
+.landing {
+  scroll-behavior: smooth;
+}
+
+/* Reveal on scroll: motion.tsx flips data-reveal to "in" when seen. */
+.landing [data-reveal] {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.landing [data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Headline and figures: a moving emerald-to-sky wash. */
+.landing-gradient-text {
+  background: linear-gradient(100deg, #34d399, #2dd4bf 35%, #38bdf8 70%, #34d399);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: landing-wash 9s ease-in-out infinite;
+}
+@keyframes landing-wash {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* "nine spreadsheets": the line draws itself once the hero settles. */
+.landing-strike::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 56%;
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  background: #fb7185;
+  transform-origin: left;
+  transform: scaleX(0);
+  animation: landing-strike 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.1s forwards;
+}
+@keyframes landing-strike {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Slow coloured clouds behind the hero and the closing call to action. */
+.landing-aurora {
+  background:
+    radial-gradient(42rem 26rem at 18% 12%, rgba(16, 185, 129, 0.24), transparent 65%),
+    radial-gradient(38rem 24rem at 82% 8%, rgba(56, 189, 248, 0.2), transparent 62%),
+    radial-gradient(34rem 22rem at 55% 78%, rgba(45, 212, 191, 0.16), transparent 60%);
+  filter: blur(8px);
+  animation: landing-drift 22s ease-in-out infinite alternate;
+}
+.landing-aurora-soft {
+  opacity: 0.6;
+}
+@keyframes landing-drift {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, 1.5%, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(-1%, 2%, 0) scale(1.02);
+  }
+}
+
+/* Faint graph paper, fading out downwards. */
+.landing-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: radial-gradient(70% 60% at 50% 25%, #000 25%, transparent 75%);
+}
+
+/* The AI section's breathing halo. */
+.landing-orb {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.16), transparent 62%);
+  animation: landing-breathe 11s ease-in-out infinite;
+}
+@keyframes landing-breathe {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.08);
+    opacity: 1;
+  }
+}
+
+/* The payroll card hovering beside the headline. */
+.landing-float {
+  animation: landing-float 7s ease-in-out infinite;
+}
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(-9px);
+  }
+  50% {
+    transform: translateY(9px);
+  }
+}
+
+/* The live dot in every section label. */
+.landing-blink {
+  animation: landing-blink 2.4s ease-in-out infinite;
+}
+@keyframes landing-blink {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
+  }
+  60% {
+    opacity: 0.5;
+    box-shadow: 0 0 0 7px rgba(52, 211, 153, 0);
+  }
+}
+
+/* Cards: lift and light up under the pointer. */
+.landing-lift {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease,
+    background-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+@media (hover: hover) {
+  .landing-lift:hover {
+    transform: translateY(-5px);
+    background-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.75);
+  }
+}
+
+/* A sheen that crosses a panel as the pointer passes over it. */
+@media (hover: hover) {
+  .landing-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.07) 50%,
+      transparent 65%
+    );
+    transform: translateX(-120%);
+    transition: transform 0.9s ease;
+    pointer-events: none;
+  }
+  .landing-panel:hover::after {
+    transform: translateX(120%);
+  }
+}
+
+/* The two rows of automation cards, sliding in opposite directions. */
+.landing-marquee {
+  animation: landing-marquee 46s linear infinite;
+}
+.landing-marquee[data-reverse="yes"] {
+  animation-direction: reverse;
+}
+@media (hover: hover) {
+  .landing-marquee:hover {
+    animation-play-state: paused;
+  }
+}
+@keyframes landing-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.landing-fade-x {
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  overflow: hidden;
+}
+
+/* Nothing above is load-bearing, so a reader who asked for calm gets it. */
+@media (prefers-reduced-motion: reduce) {
+  .landing {
+    scroll-behavior: auto;
+  }
+  .landing [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .landing [class*="landing-"] {
+    animation: none !important;
+  }
+  .landing-strike::after {
+    transform: scaleX(1);
+  }
+  .landing-lift:hover {
+    transform: none;
+  }
+  .landing-marquee {
+    transform: none;
+  }
+  /* The rows no longer slide, so let them be swiped instead. */
+  .landing-fade-x {
+    overflow-x: auto;
+    mask-image: none;
+  }
+}

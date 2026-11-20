@@ -15,8 +15,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // every page except the login, offline and public enquiry pages, the API, Next.js files and public assets
+  // every page except the landing, login, offline and public enquiry pages, the API, Next.js files and public assets
   matcher: [
-    "/((?!login|offline|enquiry|api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons|fonts).*)",
+    "/((?!landing|login|offline|enquiry|api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons|fonts).*)",
   ],
 };
