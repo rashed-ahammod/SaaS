@@ -107,7 +107,7 @@ export default function AssistantPage() {
       <div>
         <PageTitle>{t("ai.title")}</PageTitle>
         <Alert kind="info">{t("ai.unavailable")}</Alert>
-        <ButtonLink href="/" variant="secondary" className="w-full">
+        <ButtonLink href="/home" variant="secondary" className="w-full">
           {t("nav.home")}
         </ButtonLink>
       </div>

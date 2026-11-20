@@ -8,7 +8,7 @@ export default function OfflinePage() {
         No internet connection. Please check mobile data or Wi-Fi and try again.
       </p>
       <Link
-        href="/"
+        href="/home"
         className="mt-2 rounded-xl bg-emerald-700 px-4 py-2.5 font-semibold text-white"
       >
         আবার চেষ্টা করুন / Try again

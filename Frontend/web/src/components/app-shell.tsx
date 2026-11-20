@@ -69,7 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [isApprover, pathname]);
 
   const items = [
-    { href: "/", key: "home", label: t("nav.home") },
+    { href: "/home", key: "home", label: t("nav.home") },
     { href: "/attendance", key: "attendance", label: t("nav.attendance") },
     { href: "/leave", key: "leave", label: t("nav.leave") },
     { href: "/payslips", key: "payslips", label: t("nav.payslips") },
@@ -113,10 +113,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]">
         <ul className="mx-auto flex max-w-lg">
           {items.map((item) => {
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
+            const active = pathname.startsWith(item.href);
             return (
               <li key={item.href} className="flex-1">
                 <Link

@@ -1,7 +1,8 @@
 /**
- * Public landing page (/landing): what the product is for, the problem a
- * Bangladeshi head office has today, and how this portal answers it. No
- * sign-in — src/proxy.ts lets this path through.
+ * Public landing page, the front door at /: what the product is for, the
+ * problem a Bangladeshi head office has today, and how this portal answers
+ * it. No sign-in — src/proxy.ts lets this one path through; the employee
+ * app starts at /home.
  *
  * Dark theme, laid out mobile-first. The movement lives in
  * src/components/landing/motion.tsx and in the landing block of globals.css;

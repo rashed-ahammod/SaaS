@@ -68,7 +68,7 @@ for (const [user, label] of ROLES) {
 
 /** The employee app (PWA) screens, for the people who use it most. */
 const APP_SCREENS = [
-  "/",
+  "/home",
   "/attendance",
   "/leave",
   "/leave/apply",

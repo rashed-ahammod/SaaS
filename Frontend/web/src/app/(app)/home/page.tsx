@@ -1,6 +1,6 @@
 "use client";
 /**
- * Home: today's attendance with the punch button, leave balances, the latest
+ * The employee home (/home): today's attendance with the punch button, leave balances, the latest
  * payslip, (for managers) how many requests wait for approval, and the AI
  * assistant when the company has it switched on (hidden otherwise, WP11).
  */

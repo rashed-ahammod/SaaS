@@ -41,7 +41,7 @@ function LoginForm() {
   /** Only paths inside this app (never another site) after login. */
   const goNext = () =>
     router.replace(
-      next && next.startsWith("/") && !next.startsWith("//") ? next : "/",
+      next && next.startsWith("/") && !next.startsWith("//") ? next : "/home",
     );
 
   async function send(url: string, body: object) {

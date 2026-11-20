@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "My Office · আমার অফিস",
     short_name: "My Office",
     description: "Attendance, leave, payslips and approvals",
-    start_url: "/",
+    start_url: "/home",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

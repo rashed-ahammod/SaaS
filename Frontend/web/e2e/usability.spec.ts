@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { USERS } from "./users";
 
 /** Open the app as an already signed-in user, in the given language. */
-async function open(page: Page, path = "/", lang: "bn" | "en" = "en") {
+async function open(page: Page, path = "/home", lang: "bn" | "en" = "en") {
   await page.addInitScript((l) => localStorage.setItem("erp-lang", l), lang);
   await page.goto(path);
 }
@@ -18,7 +18,7 @@ test.describe("employee (Rafi)", () => {
   test("task 1: see today, balances and the latest payslip, in Bangla", async ({
     page,
   }) => {
-    await open(page, "/", "bn");
+    await open(page, "/home", "bn");
     await expect(
       page.getByRole("heading", { name: /আসসালামু আলাইকুম/ }),
     ).toBeVisible();
@@ -145,7 +145,7 @@ test.describe("employee (Rafi)", () => {
   test("task 7: ask the assistant a policy question in Bangla, and rate the answer", async ({
     page,
   }) => {
-    await open(page, "/", "bn");
+    await open(page, "/home", "bn");
     await expect(
       page.getByRole("heading", { name: /আসসালামু আলাইকুম/ }),
     ).toBeVisible();
@@ -477,7 +477,7 @@ test.describe("procurement: Rafi", () => {
   test("task 15: he follows his purchase requests and starts one (then cancels it)", async ({
     page,
   }) => {
-    await open(page, "/");
+    await open(page, "/home");
     await page.getByRole("link", { name: /Purchase requests/ }).click();
     await expect(
       page.getByText("Furniture for the new sales officers"),

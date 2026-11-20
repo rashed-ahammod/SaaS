@@ -61,7 +61,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <Alert kind="info">{t("p.noAccess")}</Alert>
-        <Link href="/" className="font-semibold text-emerald-800 underline">
+        <Link href="/home" className="font-semibold text-emerald-800 underline">
           {t("p.employeeApp")}
         </Link>
       </div>
@@ -151,7 +151,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </p>
         {menu}
         <Link
-          href="/"
+          href="/home"
           className="mt-4 px-2 text-sm text-slate-500 hover:text-slate-800"
         >
           ← {t("p.employeeApp")}
@@ -180,7 +180,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
               </button>
             </div>
             {menu}
-            <Link href="/" className="mt-4 px-2 text-sm text-slate-500">
+            <Link href="/home" className="mt-4 px-2 text-sm text-slate-500">
               ← {t("p.employeeApp")}
             </Link>
           </div>
