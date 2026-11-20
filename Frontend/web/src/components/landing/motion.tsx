@@ -1,9 +1,10 @@
 "use client";
 /**
- * Movement for the public landing page (/landing). Everything here is cosmetic:
- * with JavaScript off, or with "reduce motion" switched on in the operating
- * system, the page still shows every word (the rules at the end of globals.css
- * make sure of it).
+ * Movement for the landing page (/). It is deliberately small: rules draw
+ * themselves, rows arrive, figures count, and the payroll rail fills as you
+ * read down it. Nothing here carries meaning on its own — with JavaScript off,
+ * or "reduce motion" set in the operating system, the page reads exactly the
+ * same (see the landing block at the end of globals.css).
  */
 import Link from "next/link";
 import {
@@ -19,7 +20,7 @@ const calmer = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** True once the element has been scrolled into view, and then it stays true. */
-function useSeen<T extends HTMLElement>(margin = "0px 0px -12% 0px") {
+function useSeen<T extends HTMLElement>(margin = "0px 0px -10% 0px") {
   const ref = useRef<T | null>(null);
   const [seen, setSeen] = useState(false);
   useEffect(() => {
@@ -37,7 +38,7 @@ function useSeen<T extends HTMLElement>(margin = "0px 0px -12% 0px") {
           observer.disconnect();
         }
       },
-      { rootMargin: margin, threshold: 0.08 },
+      { rootMargin: margin, threshold: 0.05 },
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -45,7 +46,7 @@ function useSeen<T extends HTMLElement>(margin = "0px 0px -12% 0px") {
   return { ref, seen };
 }
 
-/** Fades and lifts its children in when they reach the screen. */
+/** Brings its children in when they reach the screen. */
 export function Reveal({
   children,
   delay = 0,
@@ -71,11 +72,9 @@ export function Reveal({
 /** Counts up to a number the first time it is seen. */
 export function Counter({
   to,
-  suffix = "",
-  duration = 1300,
+  duration = 1100,
 }: {
   to: number;
-  suffix?: string;
   duration?: number;
 }) {
   const { ref, seen } = useSeen<HTMLSpanElement>();
@@ -90,23 +89,57 @@ export function Counter({
     const start = performance.now();
     const step = (now: number) => {
       const part = Math.min(1, (now - start) / duration);
-      // ease-out: quick at first, then settles on the number
       setShown(Math.round(to * (1 - Math.pow(1 - part, 3))));
       if (part < 1) frame = requestAnimationFrame(step);
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
   }, [seen, to, duration]);
+  return <span ref={ref}>{shown}</span>;
+}
+
+/**
+ * The payroll run sheet's left rail: a hairline that fills with the accent
+ * colour as the reader moves down the ten steps.
+ */
+export function Rail({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [part, setPart] = useState(0);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const box = node.getBoundingClientRect();
+      const mark = window.innerHeight * 0.55;
+      setPart(Math.max(0, Math.min(1, (mark - box.top) / box.height)));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
   return (
-    <span ref={ref}>
-      {shown}
-      {suffix}
-    </span>
+    <div
+      ref={ref}
+      className="landing-rail relative"
+      style={{ "--rail": `${part * 100}%` } as CSSProperties}
+    >
+      {children}
+    </div>
   );
 }
 
-/** A thin bar across the top showing how far down the page the reader is. */
-export function ScrollProgress() {
+/** A thin accent line across the top showing how far down the page we are. */
+export function Progress() {
   const [part, setPart] = useState(0);
   useEffect(() => {
     let frame = 0;
@@ -128,9 +161,9 @@ export function ScrollProgress() {
     };
   }, []);
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5">
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-50 h-px">
       <div
-        className="h-full w-full origin-left bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-400 transition-transform duration-150"
+        className="h-full w-full origin-left bg-accent"
         style={{ transform: `scaleX(${part})` }}
       />
     </div>
@@ -138,102 +171,124 @@ export function ScrollProgress() {
 }
 
 const SECTIONS = [
-  { href: "#problem", en: "The problem", bn: "সমস্যা" },
-  { href: "#solution", en: "The answer", bn: "সমাধান" },
-  { href: "#payroll", en: "Payroll", bn: "পেরোল" },
-  { href: "#ai", en: "AI", bn: "এআই" },
-  { href: "#automation", en: "Automation", bn: "অটোমেশন" },
-  { href: "#compliance", en: "Compliance", bn: "কমপ্লায়েন্স" },
-  { href: "#pricing", en: "Plans", bn: "প্ল্যান" },
+  { href: "#problem", label: "Problem" },
+  { href: "#answer", label: "Answer" },
+  { href: "#payroll", label: "Payroll" },
+  { href: "#ai", label: "AI" },
+  { href: "#automation", label: "Automation" },
+  { href: "#compliance", label: "Compliance" },
+  { href: "#plans", label: "Plans" },
 ];
 
-/** Top bar: see-through over the hero, frosted once the page moves. */
-export function LandingNav() {
+/** The top bar, and on wide screens the current section is marked. */
+export function Nav() {
   const [moved, setMoved] = useState(false);
   const [open, setOpen] = useState(false);
+  const [here, setHere] = useState("");
+
   useEffect(() => {
-    const onScroll = () => setMoved(window.scrollY > 24);
+    const onScroll = () => {
+      setMoved(window.scrollY > 16);
+      // back at the hero: no section is the current one
+      if (window.scrollY < 240) setHere("");
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const bands = SECTIONS.map((s) =>
+      document.querySelector(s.href),
+    ).filter((el): el is Element => el !== null);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const top = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (top?.target.id) setHere(`#${top.target.id}`);
+      },
+      { rootMargin: "-20% 0px -70% 0px" },
+    );
+    for (const band of bands) observer.observe(band);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-40 transition-all duration-500 ${
-        moved
-          ? "border-b border-white/10 bg-[#070b14]/85 shadow-lg shadow-black/30 backdrop-blur-xl"
-          : "border-b border-transparent"
+      className={`fixed inset-x-0 top-0 z-40 transition-colors duration-300 ${
+        moved ? "border-b border-line bg-ink/90 backdrop-blur-md" : ""
       }`}
     >
-      <nav className="mx-auto flex max-w-7xl items-center gap-3 px-5 py-3 sm:px-8 sm:py-4">
-        <a href="#top" className="flex items-center gap-2.5">
-          <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-base font-bold text-[#04130f] shadow-lg shadow-emerald-500/25">
+      <div className="mx-auto flex max-w-[76rem] items-stretch gap-4 px-5 sm:px-8">
+        <a href="#top" className="flex items-center gap-3 py-3.5">
+          <span className="grid size-8 place-items-center border border-line text-sm font-bold text-accent">
             অ
           </span>
-          <span className="flex flex-col leading-tight">
-            <span className="text-sm font-bold tracking-tight text-white">
-              Amar Office
-            </span>
-            <span className="text-[10px] font-semibold tracking-[0.18em] text-emerald-300/70 uppercase">
-              ERP · CRM
-            </span>
+          <span className="font-ledger text-[11px] tracking-[0.22em] text-paper uppercase">
+            Amar Office
           </span>
         </a>
 
-        <ul className="ml-auto hidden items-center gap-0.5 lg:flex">
+        <nav className="ml-auto hidden items-stretch lg:flex">
           {SECTIONS.map((item) => (
-            <li key={item.href}>
-              <a
-                href={item.href}
-                className="rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
-              >
-                {item.en}
-              </a>
-            </li>
+            <a
+              key={item.href}
+              href={item.href}
+              aria-current={here === item.href ? "true" : undefined}
+              className={`flex items-center border-b-2 px-3.5 font-ledger text-[10px] tracking-[0.16em] uppercase transition-colors ${
+                here === item.href
+                  ? "border-accent text-paper"
+                  : "border-transparent text-faint hover:text-paper"
+              }`}
+            >
+              {item.label}
+            </a>
           ))}
-        </ul>
+        </nav>
 
-        <Link
-          href="/login"
-          className="ml-auto rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#06120f] transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-400/25 lg:ml-3"
-        >
-          Sign in
-        </Link>
-
-        <button
-          type="button"
-          onClick={() => setOpen((was) => !was)}
-          aria-expanded={open}
-          aria-label="Sections"
-          className="rounded-xl border border-white/15 p-2 text-slate-200 transition hover:bg-white/5 lg:hidden"
-        >
-          <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
-            <path
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              d={open ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h16M4 17h16"}
-            />
-          </svg>
-        </button>
-      </nav>
+        <div className="ml-auto flex items-center gap-2 lg:ml-5">
+          <Link
+            href="/login"
+            className="border border-line px-4 py-2 font-ledger text-[10px] tracking-[0.18em] text-paper uppercase transition hover:border-accent hover:text-accent"
+          >
+            Sign in
+          </Link>
+          <button
+            type="button"
+            onClick={() => setOpen((was) => !was)}
+            aria-expanded={open}
+            aria-label="Sections"
+            className="border border-line p-2 text-muted transition hover:text-paper lg:hidden"
+          >
+            <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
+              <path
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                d={open ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h16M4 17h16"}
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
 
       <div
-        className={`overflow-hidden border-t border-white/10 bg-[#070b14]/95 backdrop-blur-xl transition-all duration-500 lg:hidden ${
+        className={`overflow-hidden border-t border-line bg-ink/95 backdrop-blur-md transition-[max-height] duration-400 lg:hidden ${
           open ? "max-h-96" : "max-h-0 border-t-transparent"
         }`}
       >
-        <ul className="grid grid-cols-2 gap-1 p-4">
+        <ul className="grid grid-cols-2">
           {SECTIONS.map((item) => (
-            <li key={item.href}>
+            <li key={item.href} className="border-r border-b border-line">
               <a
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm text-slate-300 transition active:bg-white/10"
+                className="block px-5 py-3.5 font-ledger text-[10px] tracking-[0.16em] text-muted uppercase active:text-accent"
               >
-                {item.en}
-                <span className="ml-1.5 text-xs text-slate-500">{item.bn}</span>
+                {item.label}
               </a>
             </li>
           ))}
