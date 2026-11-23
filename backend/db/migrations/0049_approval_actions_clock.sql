@@ -1,0 +1,26 @@
+-- =============================================================================
+-- 0049  Approval history: one instant per action, not one per transaction
+--
+-- approval_actions.created_at defaulted to now(), which in PostgreSQL is the
+-- START OF THE TRANSACTION and is therefore identical for every row written by
+-- the same statement batch. The final approval writes two rows in one
+-- transaction -- 'approve' and then 'execute' (the owning module applies the
+-- change in that same transaction, see approvals.service.ts) -- so both landed
+-- on the very same timestamp.
+--
+-- GET /approvals/requests/:id orders the history by created_at, so with the two
+-- rows tied the database was free to return them in either order: the audit
+-- trail could read submit, approve, execute, approve. It is a real defect in
+-- what the screen shows, and it made approvals.int-spec.ts fail at random
+-- (seen on CI 2026-11-23).
+--
+-- clock_timestamp() is the actual wall-clock reading at the moment of the
+-- INSERT, so every appended action gets its own instant and the order is the
+-- order things happened. For an append-only log that is also the more truthful
+-- value: these rows are events, not parts of one atomic fact.
+--
+-- Rows written before this migration keep their tied timestamps; the query now
+-- breaks a remaining tie on id so that at least the order it returns is stable.
+-- =============================================================================
+
+ALTER TABLE approval_actions ALTER COLUMN created_at SET DEFAULT clock_timestamp();
