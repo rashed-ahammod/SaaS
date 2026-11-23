@@ -2,8 +2,10 @@
 # cron-job.org; this exists so that one pinger failing does not let the API
 # sleep (scheduled jobs stop) or Supabase pause the project after a week.
 #
-# Needs one repository variable (Settings -> Secrets and variables -> Actions
-# -> Variables): PING_URL = https://<your-api>.onrender.com/health
+# Pings the deployed API's /health. The URL defaults to the current Render
+# service; override it without touching this file by setting a repository
+# variable (Settings -> Secrets and variables -> Actions -> Variables):
+# PING_URL = https://<your-api>.onrender.com/health
 #
 # HEAD, not GET: a HEAD response has no body, so no pinger can ever fail with
 # "Response data too big" when Render serves its own HTML error page instead of
@@ -30,7 +32,7 @@ jobs:
     steps:
       - name: HEAD the health endpoint
         env:
-          PING_URL: ${{ vars.PING_URL }}
+          PING_URL: ${{ vars.PING_URL || 'https://erp-api-s3uz.onrender.com/health' }}
         run: |
           set -u
           if [ -z "${PING_URL}" ]; then
