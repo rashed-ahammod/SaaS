@@ -1192,10 +1192,25 @@ test.describe("Time: the work HR, a Dept Head and an Admin actually do", () => {
 
   test.describe("Dept Head (Tanvir)", () => {
     test("an approval says what is being decided, in words, and who decides after him", async ({ browser }) => {
-      // Rafi asks for leave far ahead (a different week every run), so there is
+      // Rafi asks for leave far ahead (a different day every run), so there is
       // always something real in Tanvir's inbox; it is withdrawn again at the end
       // so the demo balance is left exactly as it was.
-      const day = 1 + (Math.floor(Date.now() / 60_000) % 20);
+      //
+      // The day has to be a WORKING one. 1 April 2027 is a Thursday, so the
+      // Bangladeshi weekend falls on the 2nd, 3rd, 9th, 10th, 16th and 17th --
+      // six of the twenty days this used to choose between. A single day on one
+      // of those counts no leave at all ("The selected dates contain no leave
+      // days"), the form stays where it is, and this test failed about three
+      // runs in ten. Weekends are left out here; a day that turns out to be a
+      // holiday, or that a previous run already asked for, is stepped over by
+      // trying the next one.
+      const workingDays: string[] = [];
+      for (let d = 1; d <= 20; d++) {
+        const date = new Date(Date.UTC(2027, 3, d));
+        if (date.getUTCDay() !== 5 && date.getUTCDay() !== 6)
+          workingDays.push(date.toISOString().slice(0, 10));
+      }
+      const firstTry = Math.floor(Date.now() / 60_000) % workingDays.length;
       const rafi = await browser.newContext({ storageState: USERS.rafi.state });
       const asRafi = await rafi.newPage();
       await asRafi.addInitScript(() => localStorage.setItem("erp-lang", "en"));
@@ -1205,10 +1220,20 @@ test.describe("Time: the work HR, a Dept Head and an Admin actually do", () => {
         .first()
         .getAttribute("value");
       await asRafi.locator("#leave-type").selectOption(casual!);
-      await asRafi.locator("#leave-from").fill(`2027-04-${String(day).padStart(2, "0")}`);
-      await asRafi.locator("#leave-to").fill(`2027-04-${String(day).padStart(2, "0")}`);
-      await asRafi.locator("#leave-reason").fill("Family matter in Cumilla");
-      await asRafi.getByRole("button", { name: "Submit" }).click();
+      for (let i = 0; i < 4; i++) {
+        const date = workingDays[(firstTry + i) % workingDays.length];
+        await asRafi.locator("#leave-from").fill(date);
+        await asRafi.locator("#leave-to").fill(date);
+        await asRafi.locator("#leave-reason").fill("Family matter in Cumilla");
+        await asRafi.getByRole("button", { name: "Submit" }).click();
+        // taken: the app goes back to the leave screen. refused: it stays, says
+        // why, and the next working day is tried.
+        const accepted = await asRafi
+          .waitForURL(/\/leave$/, { timeout: 8_000 })
+          .then(() => true)
+          .catch(() => false);
+        if (accepted) break;
+      }
       await expect(asRafi).toHaveURL(/\/leave$/);
 
       const tanvir = await browser.newContext({

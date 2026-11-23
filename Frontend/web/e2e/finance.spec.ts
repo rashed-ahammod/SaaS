@@ -1276,8 +1276,24 @@ test.describe("Support tickets and Customer 360 (WP28)", () => {
       await expect(page.getByRole("heading", { name: "SLA" })).toBeVisible();
       await expect(page.getByText("First response")).toBeVisible();
 
-      // it is waiting for the customer: record what they answered
-      const answer = `Photo sent on WhatsApp (${Date.now() % 100000})`; // runs repeat on the demo data
+      const stamp = Date.now() % 100000; // runs repeat on the demo data
+      // The answer can only be recorded while the ticket is WAITING for the
+      // customer, and on the demo data it is being worked on -- the screen
+      // offers "Ask the customer" instead. So ask first, which is also what
+      // makes this repeatable: recording the answer puts the ticket back to
+      // being worked on, exactly where this started, and the old version of
+      // this test could therefore only ever pass once.
+      const ask = page.getByRole("button", { name: "Ask the customer" });
+      if (await ask.first().isVisible()) {
+        await ask.first().click();
+        await page
+          .getByLabel("What to ask")
+          .fill(`A photo of the leaking cans, please (${stamp})`);
+        await ask.last().click();
+      }
+
+      // now it is waiting for the customer: record what they answered
+      const answer = `Photo sent on WhatsApp (${stamp})`;
       await page
         .getByRole("button", { name: "Record the customer’s answer" })
         .click();
