@@ -7,7 +7,10 @@
  *
  * In order, it checks:
  *   1. a valid access token                         -> else 401 AUTH_REQUIRED
- *   2. the login is still active                    -> else 401 AUTH_REQUIRED
+ *   2. the login is still active, and the token was issued after the user's
+ *      tokens_valid_from (sign-out moves it forward, which ends every session
+ *      that user holds at once, 0049)
+ *                                                   -> else 401 AUTH_REQUIRED
  *   3. privileged roles (Admin, System Admin, HR, Accounts) signed in with 2FA
  *                                                   -> else 403 AUTH_MFA_REQUIRED (spec §11)
  *   4. the permission named by @RequirePermission   -> else 403 FORBIDDEN
@@ -86,10 +89,18 @@ export class AuthGuard implements CanActivate {
       async () => {
         const user = await this.db.tx
           .selectFrom('users')
-          .select(['status'])
+          .select(['status', 'tokens_valid_from'])
           .where('id', '=', payload.sub)
           .executeTakeFirst();
         if (!user || user.status !== 'active') return null;
+        // Signed out since this token was issued (0049). `ims` is missing only
+        // on a token signed before this check existed; those are left alone and
+        // expire on their own within the half hour.
+        if (
+          payload.ims !== undefined &&
+          payload.ims < user.tokens_valid_from.getTime()
+        )
+          return null;
         return this.accessService.load(payload.sub);
       },
     );

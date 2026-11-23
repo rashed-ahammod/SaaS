@@ -18,6 +18,21 @@ export interface AccessTokenPayload {
   lang: 'bn' | 'en';
   /** This session passed two-factor authentication. */
   mfa: boolean;
+  /**
+   * When the token was issued, in milliseconds. AuthGuard refuses a token
+   * issued before the user's `tokens_valid_from`, which is how sign-out ends a
+   * session before it expires (0049).
+   *
+   * Why not the standard `iat` claim: it is in whole seconds, so a token signed
+   * in the same second as the sign-out that should have killed it cannot be
+   * told apart from the one the next login issues. Rounding either way gets one
+   * of the two wrong -- it either lets the dead token live for up to a second,
+   * or rejects the fresh one. Milliseconds make both comparisons exact.
+   *
+   * Optional, so that tokens signed before this was deployed keep working for
+   * the rest of their half hour instead of signing everybody out at once.
+   */
+  ims?: number;
 }
 
 export interface MfaTokenPayload {
@@ -43,6 +58,7 @@ export class TokenService {
       tid: user.tenant_id,
       lang: user.preferred_language,
       mfa,
+      ims: Date.now(),
     };
     return {
       accessToken: this.jwt.sign(payload, {

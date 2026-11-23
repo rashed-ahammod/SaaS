@@ -128,6 +128,50 @@ describe('login', () => {
     expect(me.body.mfa_secret).toBeUndefined();
   });
 
+  // 0049: a stateless JWT cannot be withdrawn, so sign-out moves
+  // users.tokens_valid_from forward and AuthGuard refuses anything older
+  it('sign-out ends the session, so a copy of the token stops working', async () => {
+    const token = await loginToken();
+    const auth = `Bearer ${token}`;
+    await http().get('/auth/me').set('Authorization', auth).expect(200);
+
+    await http()
+      .post('/auth/sign-out')
+      .set('Authorization', auth)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .expect(200, { signedOut: true });
+
+    // the same token, which has NOT expired, is now refused
+    const after = await http().get('/auth/me').set('Authorization', auth);
+    expect(after.status).toBe(401);
+    expect(after.body.code).toBe('AUTH_REQUIRED');
+
+    // signing in again works and the new token is accepted. The fresh token is
+    // fetched BEFORE the request is built: supertest starts the server for each
+    // request, so awaiting another one inside a chain pulls it out from under
+    // the first ("Cannot read properties of null (reading 'address')").
+    const fresh = await loginToken();
+    await http()
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${fresh}`)
+      .expect(200);
+  });
+
+  it('sign-out ends every session, not only the one that asked', async () => {
+    const phone = await loginToken();
+    const laptop = await loginToken();
+    await http()
+      .post('/auth/sign-out')
+      .set('Authorization', `Bearer ${phone}`)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .expect(200);
+    // the laptop's token was issued separately and is refused too
+    await http()
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${laptop}`)
+      .expect(401);
+  });
+
   it('gives the same answer for unknown workspace, unknown user and wrong password', async () => {
     const attempts = [
       { workspace: 'no-such-workspace', login: t.email, password: t.password },

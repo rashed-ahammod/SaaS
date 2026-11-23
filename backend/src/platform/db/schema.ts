@@ -48,6 +48,11 @@ export interface UsersTable {
   failed_login_count: Defaulted<number>;
   locked_until: Date | null;
   last_login_at: Date | null;
+  /**
+   * Access tokens issued before this moment are refused (0049). Sign-out moves
+   * it forward, which ends every session that user holds, on every device.
+   */
+  tokens_valid_from: Defaulted<Date>;
   created_at: Generated<Date>;
   created_by: Defaulted<string | null>;
   updated_at: Generated<Date>;
