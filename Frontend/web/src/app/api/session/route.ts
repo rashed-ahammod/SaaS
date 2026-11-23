@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest) {
   // Tell the API to end the session, not just drop the cookie: the token is a
   // signed JWT good for half an hour, so a copy of it taken from a shared
   // machine or a proxy log would otherwise keep working after the person
-  // believed they had signed out (backend migration 0049).
+  // believed they had signed out (backend migration 0050).
   //
   // Best effort, and deliberately so. The cookie is cleared whatever happens
   // here, because signing out of this browser must never fail just because the

@@ -430,7 +430,7 @@ export class AuthService {
 
   /**
    * Sign out: ends every session this user holds, on every device, at once
-   * (0049). The browser drops its cookie either way, but a copy of the token
+   * (0050). The browser drops its cookie either way, but a copy of the token
    * taken from a shared machine, a log or a stolen phone would otherwise keep
    * working until it expired, and the person signing out had no way to stop it.
    * It does not touch the remembered-device cookie: that outlives sign-out on

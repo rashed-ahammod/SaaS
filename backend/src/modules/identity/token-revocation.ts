@@ -1,5 +1,5 @@
 /**
- * Ending a user's sessions early (0049).
+ * Ending a user's sessions early (0050).
  *
  * An access token is a stateless JWT: once signed, nothing about it can be
  * changed. `users.tokens_valid_from` is how it is taken back — AuthGuard

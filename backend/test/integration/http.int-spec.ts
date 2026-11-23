@@ -128,7 +128,7 @@ describe('login', () => {
     expect(me.body.mfa_secret).toBeUndefined();
   });
 
-  // 0049: a stateless JWT cannot be withdrawn, so sign-out moves
+  // 0050: a stateless JWT cannot be withdrawn, so sign-out moves
   // users.tokens_valid_from forward and AuthGuard refuses anything older
   it('sign-out ends the session, so a copy of the token stops working', async () => {
     const token = await loginToken();

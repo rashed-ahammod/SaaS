@@ -96,7 +96,7 @@ describe("signing out", () => {
     expect(res.status).toBe(204);
     expect(res.cookies.get("erp_session")?.value).toBe("");
 
-    // the API call that makes a copied token useless (backend 0049)
+    // the API call that makes a copied token useless (backend 0050)
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toBe("http://api.internal:3000/auth/sign-out");
     expect(init?.method).toBe("POST");

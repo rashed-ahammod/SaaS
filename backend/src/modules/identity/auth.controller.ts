@@ -59,7 +59,7 @@ export class AuthController {
     return this.authService.me();
   }
 
-  // POST /auth/sign-out  — end every session this user holds (0049)
+  // POST /auth/sign-out  — end every session this user holds (0050)
   //
   // AllowWithoutMfa, because signing out must never be the one thing a user
   // cannot do: someone who suspects their token was copied has to be able to

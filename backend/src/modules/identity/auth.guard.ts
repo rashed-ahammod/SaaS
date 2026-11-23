@@ -9,7 +9,7 @@
  *   1. a valid access token                         -> else 401 AUTH_REQUIRED
  *   2. the login is still active, and the token was issued after the user's
  *      tokens_valid_from (sign-out moves it forward, which ends every session
- *      that user holds at once, 0049)
+ *      that user holds at once, 0050)
  *                                                   -> else 401 AUTH_REQUIRED
  *   3. privileged roles (Admin, System Admin, HR, Accounts) signed in with 2FA
  *                                                   -> else 403 AUTH_MFA_REQUIRED (spec §11)
@@ -93,7 +93,7 @@ export class AuthGuard implements CanActivate {
           .where('id', '=', payload.sub)
           .executeTakeFirst();
         if (!user || user.status !== 'active') return null;
-        // Signed out since this token was issued (0049). `ims` is missing only
+        // Signed out since this token was issued (0050). `ims` is missing only
         // on a token signed before this check existed; those are left alone and
         // expire on their own within the half hour.
         if (

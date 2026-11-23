@@ -21,7 +21,7 @@ export interface AccessTokenPayload {
   /**
    * When the token was issued, in milliseconds. AuthGuard refuses a token
    * issued before the user's `tokens_valid_from`, which is how sign-out ends a
-   * session before it expires (0049).
+   * session before it expires (0050).
    *
    * Why not the standard `iat` claim: it is in whole seconds, so a token signed
    * in the same second as the sign-out that should have killed it cannot be

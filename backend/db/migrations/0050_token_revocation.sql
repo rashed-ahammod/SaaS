@@ -1,5 +1,5 @@
 -- =============================================================================
--- 0049  Signing out ends the session, not just the cookie
+-- 0050  Signing out ends the session, not just the cookie
 --
 -- Access tokens are stateless JWTs with a 30-minute life (spec §11 session
 -- timeout), and until now nothing could end one early. Signing out only deleted
@@ -28,7 +28,7 @@ ALTER TABLE users
   ADD COLUMN tokens_valid_from timestamptz NOT NULL DEFAULT now();
 
 COMMENT ON COLUMN users.tokens_valid_from IS
-  'Access tokens issued before this moment are refused. Moved forward by sign-out. See 0049.';
+  'Access tokens issued before this moment are refused. Moved forward by sign-out. See 0050.';
 
 -- The API moves it forward on sign-out; it never reads past it, so SELECT is
 -- already covered by the table grant.
