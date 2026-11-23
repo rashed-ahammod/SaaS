@@ -118,8 +118,7 @@ export class OpeningsService {
     const applications = await this.db.tx
       .selectFrom('applications as a')
       .innerJoin('applicants as p', 'p.id', 'a.applicant_id')
-      .leftJoin('cv_screenings as s', 's.application_id', 'a.id')
-      .select([
+      .select((eb) => [
         'a.id',
         'a.state',
         'a.applied_on',
@@ -127,10 +126,22 @@ export class OpeningsService {
         'p.full_name_en',
         'p.district',
         'p.redacted_at',
-        's.score',
+        // The LATEST screening's score, as a subquery rather than a join.
+        // cv_screenings keeps every screening an application has had (0043 is
+        // INSERT-only, and the applicant's own screen lists the history), so a
+        // left join put the applicant in this list once per screening: screen
+        // one CV a second time and the opening showed that person twice.
+        eb
+          .selectFrom('cv_screenings as s')
+          .select('s.score')
+          .whereRef('s.application_id', '=', 'a.id')
+          .orderBy('s.created_at', 'desc')
+          .limit(1)
+          .as('score'),
       ])
       .where('a.opening_id', '=', openingId)
-      .orderBy('s.score', 'desc')
+      // not yet screened first (DESC puts the nulls there), then by score
+      .orderBy('score', 'desc')
       .orderBy('a.applied_on')
       .execute();
     return {
