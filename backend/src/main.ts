@@ -4,6 +4,7 @@ import { AppModule } from './app.module.js';
 import { configureApp } from './app.setup.js';
 import { APP_CONFIG, type AppConfig } from './config/config.js';
 import { startJobs } from './jobs.js';
+import { runMigrations } from './platform/db/migrator.js';
 
 /** Print the stack, not just the message: a bare "exited with status 1" in a
  *  host's event log tells you nothing (deploy-free.md Phase 7). */
@@ -19,6 +20,27 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get<AppConfig>(APP_CONFIG);
   configureApp(app, { hsts: config.isProduction });
+
+  // With RUN_MIGRATIONS_ON_BOOT the deploy migrates itself, before the port is
+  // opened and before any job runs. A free Render service has no shell, so
+  // otherwise every migration has to be applied by hand from a developer's
+  // machine -- which is how 0048 sat unapplied in production for three days
+  // while /health/ready reported "1 migration(s) not applied".
+  // runMigrations takes a pg_advisory_lock and records each file with its
+  // checksum, so concurrent starts are safe and re-running is a no-op. A
+  // failure here must stop the process: serving against a half-migrated
+  // database is worse than not starting.
+  if (config.runMigrationsOnBoot) {
+    const applied = await runMigrations(
+      config.db.connectionFor('erp_owner'),
+      (msg) => console.log(`[migrate] ${msg}`),
+    );
+    console.log(
+      applied.length
+        ? `[migrate] applied ${applied.length}: ${applied.join(', ')}`
+        : '[migrate] already up to date.',
+    );
+  }
 
   // With RUN_JOBS_IN_API the scheduled jobs (src/jobs.ts) run here instead of in
   // a worker process of its own. Only correct with a single API instance.

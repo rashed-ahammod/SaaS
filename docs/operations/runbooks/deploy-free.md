@@ -190,6 +190,25 @@ the primary. Check both after any API deploy.
 750 free instance hours a month are shared by the whole workspace, and one
 service awake all month uses about 730. So keep **one** free service on Render.
 
+**3.6 Let the deploy migrate itself.** A free Render service has no shell and no
+pre-deploy hook, so a migration can otherwise only be applied by hand, from a
+developer's machine pointed at the production database. That is how
+`0048_docs_showcase.sql` sat unapplied for three days while `/health/ready`
+answered `not ready: 1 migration(s) not applied`. Setting
+
+```
+RUN_MIGRATIONS_ON_BOOT=true
+```
+
+makes the API apply anything pending at start, before it opens its port and
+before any job runs. It needs no new credentials: `PG_OWNER_PASSWORD` is already
+required for the service to start at all. The migrator takes a
+`pg_advisory_lock` and records each file with its checksum, so two instances
+starting together is safe and a restart with nothing pending is a no-op. If a
+migration fails the process exits rather than serving against a half-migrated
+database -- which is what you want, because Render keeps the previous instance
+up until the new one is healthy.
+
 ## Phase 4: Vercel (the employee app)
 
 **4.1 Import** the repository on vercel.com. The one setting that matters:
@@ -320,7 +339,7 @@ Then upload a document, and confirm the file appears in the Supabase bucket.
 | Everything times out, dashboard says paused | Supabase paused the project. Restore it, then fix the pinger |
 | Render event: *Instance failed … Exited with status 1* | the process died. `main.ts` prints the stack for an unhandled rejection, an uncaught exception or a failed start, so the Logs tab at that minute names the cause. A clean stop logs `SIGTERM received, shutting down.` instead |
 | `Refusing to start in production: …` | read the list it prints: that is `config.ts` naming the exact variable |
-| `/health/ready` says migrations missing | you deployed before running `npm run db:migrate` |
+| `/health/ready` says migrations missing | you deployed before running `npm run db:migrate`. Set `RUN_MIGRATIONS_ON_BOOT=true` on Render and the deploy applies them itself (3.6) |
 | 500 on a page showing an NID, TIN or bank account | the rows were sealed with a different `FIELD_ENCRYPTION_KEY`. See 6.8 |
 | 500 on an upload | `S3_*` wrong, or the bucket is not called `erp-files` |
 | Build fails on `nest build` | Node version. `NODE_VERSION=24` on Render |

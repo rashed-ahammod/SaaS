@@ -116,6 +116,13 @@ const envSchema = z.object({
   // worker of its own. For a host whose free plan offers one web service only.
   // ONE API instance only: two would run every job twice.
   RUN_JOBS_IN_API: z.enum(['true', 'false']).default('false'),
+
+  // Apply pending migrations at API start, before the first request is served.
+  // A free Render service has no shell, so this is the only way a deploy can
+  // migrate itself; runMigrations takes a pg_advisory_lock, so two instances
+  // starting together is safe. Off by default: a platform WITH a shell or a
+  // pre-deploy hook should keep running npm run db:migrate there instead.
+  RUN_MIGRATIONS_ON_BOOT: z.enum(['true', 'false']).default('false'),
 });
 
 export type AppConfig = ReturnType<typeof loadConfig>;
@@ -250,6 +257,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     },
     /** Scheduled jobs run in this process, with no worker of its own. */
     runJobsInApi: e.RUN_JOBS_IN_API === 'true',
+    /** Apply pending migrations at start, before the port is opened. */
+    runMigrationsOnBoot: e.RUN_MIGRATIONS_ON_BOOT === 'true',
     ai: {
       provider: e.AI_PROVIDER,
       /** Optional: without it the Anthropic SDK uses ANTHROPIC_AUTH_TOKEN or an `ant auth login` profile. */
