@@ -61,6 +61,11 @@ const envSchema = z.object({
   // to make manual testing easier.
   SECURITY_MFA_ENFORCED: z.enum(['true', 'false']).default('true'),
 
+  // Turns the rate limiter off (app.module.ts). The integration tests make
+  // hundreds of logins from one IP and would otherwise trip the login limit.
+  // Refused in production, where it would remove the brute-force defence.
+  DISABLE_RATE_LIMIT: z.enum(['0', '1']).default('0'),
+
   // The demo scenario's "today" (development only; refused in production).
   //
   // The dev seed writes one story — September's payroll, October's bills and
@@ -285,7 +290,19 @@ export function productionProblems(e: z.infer<typeof envSchema>): string[] {
     p.push('DEV_CLOCK pins the demo clock and is for development only');
   if (e.SECURITY_MFA_ENFORCED !== 'true')
     p.push('SECURITY_MFA_ENFORCED must be true');
+  if (e.DISABLE_RATE_LIMIT === '1')
+    p.push(
+      'DISABLE_RATE_LIMIT turns off the login rate limit and is for the test suite only',
+    );
   if (e.AI_PROVIDER === 'fake') p.push('AI_PROVIDER=fake is for tests only');
+  // Salaries, NID numbers and bank details travel on this connection. A managed
+  // database is reached across a network nobody here controls, so production
+  // never speaks to it in the clear -- even though 'off' is the right default
+  // for a server on a private network with no published port.
+  if (e.PG_SSL === 'off')
+    p.push(
+      "PG_SSL must be 'require' or 'verify-full' in production (the database connection carries payroll and NID data)",
+    );
   if (!e.PUBLIC_APP_URL.startsWith('https://'))
     p.push('PUBLIC_APP_URL must be https:// (secure cookies, phone location)');
   if (/change-me|^ci-|ci-only|example|secret/i.test(e.JWT_SECRET))

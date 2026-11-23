@@ -40,6 +40,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { RequirePermission } from '../identity/access/decorators.js';
 import { AuthGuard } from '../identity/auth.guard.js';
 import { ServiceKeyGuard } from '../identity/service-key.guard.js';
@@ -98,6 +99,15 @@ export class CrmController {
   }
 
   // POST /companies/:companyId/leads/capture   (service key, not a user)
+  //
+  // The only route an anonymous stranger can reach the database through: the
+  // public enquiry form posts here with a service key the browser never sees.
+  // The form has its own limit, but that one lives in a Vercel function's
+  // memory, so a flood spread across cold starts slips past it. This limit is
+  // the one that holds: the API is a single instance, so its counter is the
+  // whole truth. 30 a minute per IP is far above a real sales enquiry rate and
+  // far below what makes a usable spam channel.
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @UseGuards(ServiceKeyGuard)
   @RequirePermission('crm.capture')
   @Post('companies/:companyId/leads/capture')
