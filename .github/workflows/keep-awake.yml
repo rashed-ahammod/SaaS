@@ -21,6 +21,9 @@ on:
     - cron: "*/15 * * * *"
   workflow_dispatch:
 
+# This job only makes an outbound HTTP request; it needs nothing from the repo.
+permissions: {}
+
 concurrency:
   group: keep-awake
   cancel-in-progress: false
