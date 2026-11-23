@@ -40,7 +40,7 @@ jobs:
       OUTBOX_WEBHOOK_SECRET: ci-only-outbox-webhook-secret-at-least-32-chars
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -62,7 +62,7 @@ jobs:
         working-directory: Frontend/web
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
