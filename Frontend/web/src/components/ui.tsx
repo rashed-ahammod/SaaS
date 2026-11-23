@@ -246,9 +246,20 @@ export function ErrorBox({
   onRetry?: () => void;
 }) {
   const { t } = useI18n();
+  // rule-pack errors name the value, the date and the pack; show them
+  const d = (error as ApiError).details as
+    { key?: string; date?: string; pack?: string } | undefined;
+  const where = d?.key
+    ? `${d.key}${
+        d.pack || d.date
+          ? ` (${[d.pack, d.date].filter(Boolean).join(", ")})`
+          : ""
+      }`
+    : null;
   return (
     <Alert kind="error">
       <p>{error.message || t("common.error")}</p>
+      {where && <p className="mt-1 font-mono text-xs opacity-80">{where}</p>}
       {onRetry && (
         <button className="mt-1 font-semibold underline" onClick={onRetry}>
           {t("common.retry")}

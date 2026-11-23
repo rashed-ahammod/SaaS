@@ -289,6 +289,10 @@ export function useAction() {
               missingPostingAccounts?: string[];
               available?: string;
               billNo?: string;
+              // rule pack (RULE_NOT_VERIFIED / RULE_NOT_FOUND): which value, when, which pack
+              key?: string;
+              date?: string;
+              pack?: string;
             }
           | undefined;
         const extra =
@@ -299,6 +303,15 @@ export function useAction() {
           details?.missingPostingAccounts?.join(", ") ??
           (details?.available !== undefined
             ? `${details.billNo ?? ""} ৳ ${details.available}`.trim()
+            : undefined) ??
+          (details?.key
+            ? `${details.key}${
+                details.pack || details.date
+                  ? ` (${[details.pack, details.date]
+                      .filter(Boolean)
+                      .join(", ")})`
+                  : ""
+              }`
             : undefined);
         setError([err.message, extra].filter(Boolean).join(": "));
         return undefined;
