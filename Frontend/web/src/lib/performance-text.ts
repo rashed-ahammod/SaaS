@@ -3,6 +3,9 @@
  * in i18n.tsx. Both languages carry every key.
  */
 export const en = {
+  // Name for the approval request this screen raises; without it the approval
+  // chains screen shows "appr.type.increment_proposal".
+  "appr.type.increment_proposal": "Salary increment",
   "pf.nav.group": "Performance",
   "pf.nav.cycles": "Appraisal cycles",
   "pf.nav.mine": "My appraisal",
@@ -141,6 +144,7 @@ export const en = {
 };
 
 export const bn: Record<keyof typeof en, string> = {
+  "appr.type.increment_proposal": "বেতন বৃদ্ধি",
   "pf.nav.group": "কর্মমূল্যায়ন",
   "pf.nav.cycles": "মূল্যায়ন চক্র",
   "pf.nav.mine": "আমার মূল্যায়ন",

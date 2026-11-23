@@ -3,6 +3,10 @@
  * in i18n.tsx. Both languages carry every key: TypeScript refuses a missing one.
  */
 export const en = {
+  // Names for the approval requests these screens raise. Without them the
+  // approval chains screen shows the raw key, e.g. "appr.type.job_offer".
+  "appr.type.job_offer": "Job offer",
+  "appr.type.new_position": "New position",
   "hr.nav.group": "Hiring & performance",
   "hr.nav.plan": "Manpower plan",
   "hr.nav.positions": "New positions",
@@ -201,6 +205,8 @@ export const en = {
 };
 
 export const bn: Record<keyof typeof en, string> = {
+  "appr.type.job_offer": "চাকরির প্রস্তাব",
+  "appr.type.new_position": "নতুন পদ",
   "hr.nav.group": "নিয়োগ ও মূল্যায়ন",
   "hr.nav.plan": "জনবল পরিকল্পনা",
   "hr.nav.positions": "নতুন পদ",
