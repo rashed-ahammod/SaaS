@@ -32,6 +32,12 @@ jobs:
       PG_WORKER_PASSWORD: ci-worker
       JWT_SECRET: ci-only-jwt-secret-at-least-32-characters-long
       FIELD_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+      # The integration tests exercise the AI reader and the outbox. Without
+      # these two the gateway answers AI_OFF and signCallbackToken gets an
+      # undefined secret, which failed 9 tests in bank/close/notifications.
+      # 'fake' is the deterministic in-process provider; no API key is used.
+      AI_PROVIDER: fake
+      OUTBOX_WEBHOOK_SECRET: ci-only-outbox-webhook-secret-at-least-32-chars
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
