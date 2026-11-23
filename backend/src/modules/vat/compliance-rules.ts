@@ -58,9 +58,6 @@ const RULES: Record<
 export const COMPLIANCE_KINDS = Object.keys(RULES) as ComplianceKind[];
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const lastDay = (y: number, m: number) =>
-  new Date(Date.UTC(y, m, 0)).getUTCDate();
-
 /** Due date of a kind for a period ("2026-10", "2026-27-H1", "2026-27"). */
 export function dueDateOf(kind: ComplianceKind, period: string): string {
   if (RULES[kind].every === 'month') {

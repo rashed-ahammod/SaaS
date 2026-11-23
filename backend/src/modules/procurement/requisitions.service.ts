@@ -783,8 +783,10 @@ export class RequisitionsService implements OnModuleInit {
     while (grew) {
       grew = false;
       for (const d of all)
-        if (d.parent_id && out.has(d.parent_id) && !out.has(d.id))
-          (out.add(d.id), (grew = true));
+        if (d.parent_id && out.has(d.parent_id) && !out.has(d.id)) {
+          out.add(d.id);
+          grew = true;
+        }
     }
     return [...out];
   }

@@ -8,7 +8,7 @@
     "mocks": "node scripts/mock-gateways.mjs",
     "push-statement": "node scripts/push-statement.mjs"
   },
-  "dependencies": {
+  "devDependencies": {
     "n8n": "2.49.2"
   }
 }
