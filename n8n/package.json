@@ -9,6 +9,6 @@
     "push-statement": "node scripts/push-statement.mjs"
   },
   "dependencies": {
-    "n8n": "2.43.6"
+    "n8n": "2.49.2"
   }
 }
