@@ -1458,9 +1458,13 @@ test.describe("Sales: quotations, orders, invoices, receipts (WP25-WP27)", () =>
     }) => {
       const errors = await open(page, "/portal/sales/quotations?state=");
       await page.getByRole("combobox", { name: "Status" }).selectOption("");
+      // the seeded over-limit quotation is the only Meghna one waiting for
+      // approval: the second half of this test leaves a cancelled Meghna
+      // quotation behind every run, and those would otherwise come first
       await page
         .getByRole("row")
         .filter({ hasText: "Meghna Dealers" })
+        .filter({ hasText: "In approval" })
         .first()
         .click();
       await expect(page.getByText("Above the limit")).toBeVisible();

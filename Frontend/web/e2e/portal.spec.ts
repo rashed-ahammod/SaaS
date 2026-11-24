@@ -1211,6 +1211,9 @@ test.describe("Time: the work HR, a Dept Head and an Admin actually do", () => {
           workingDays.push(date.toISOString().slice(0, 10));
       }
       const firstTry = Math.floor(Date.now() / 60_000) % workingDays.length;
+      // the day that was actually taken, so this test can find its own request
+      // again in Tanvir's inbox and in Rafi's list instead of guessing
+      let chosen = "";
       const rafi = await browser.newContext({ storageState: USERS.rafi.state });
       const asRafi = await rafi.newPage();
       await asRafi.addInitScript(() => localStorage.setItem("erp-lang", "en"));
@@ -1232,8 +1235,12 @@ test.describe("Time: the work HR, a Dept Head and an Admin actually do", () => {
           .waitForURL(/\/leave$/, { timeout: 8_000 })
           .then(() => true)
           .catch(() => false);
-        if (accepted) break;
+        if (accepted) {
+          chosen = date;
+          break;
+        }
       }
+      expect(chosen).not.toBe("");
       await expect(asRafi).toHaveURL(/\/leave$/);
 
       const tanvir = await browser.newContext({
@@ -1246,7 +1253,13 @@ test.describe("Time: the work HR, a Dept Head and an Admin actually do", () => {
       await page.addInitScript(() => localStorage.setItem("erp-lang", "en"));
       await page.goto("/portal/approvals");
 
-      const row = page.getByRole("row").filter({ hasText: "Leave" }).first();
+      // this test's own request, found by the date its summary carries: the
+      // seeded leave request ("Sister's wedding in Sylhet") is also a casual
+      // one waiting for Tanvir, and came first on some runs
+      const row = page
+        .getByRole("row")
+        .filter({ hasText: "Leave" })
+        .filter({ hasText: chosen });
       await expect(row).toBeVisible();
       await row.click();
 
@@ -1260,26 +1273,32 @@ test.describe("Time: the work HR, a Dept Head and an Admin actually do", () => {
       await expect(page.getByText("Asked by")).toBeVisible();
       await expect(page.getByText("Mahmudul Hasan Rafi").first()).toBeVisible();
       await expect(page.getByText("Leave type")).toBeVisible();
-      // the reason the demo's leave request carries, in the words the employee used
-      await expect(
-        page.getByText("Sister's wedding in Sylhet"),
-      ).toBeVisible();
+      // the reason in the words the employee used, on the request just made
+      await expect(page.getByText("Family matter in Cumilla")).toBeVisible();
       await expect(page.getByText("Sent for approval")).toBeVisible();
       await expect(page.getByText(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/)).toHaveCount(0);
       await expect(page.getByText("Leave Type Id")).toHaveCount(0);
       await expect(page.getByText(/^appr\.(f|act|because)\./)).toHaveCount(0);
       expect(errors).toEqual([]);
 
-      // put the demo data back
+      // Put the demo data back -- scoped to this one request and then checked.
+      // The reason box and the confirm button used to be picked page-wide with
+      // .last(), which filled a DIFFERENT request's box: the confirm stayed
+      // disabled, nothing was cancelled, and every run left another pending
+      // day holding Rafi's casual balance until he had none left.
       await asRafi.goto("/leave");
+      // the list writes a single-day request as e.g. "12 April 2027"
+      const dayLabel = `${Number(chosen.slice(8, 10))} April 2027`;
       const item = asRafi
         .getByRole("listitem")
-        .filter({ hasText: /Casual/ })
         .filter({ hasText: "Waiting" })
-        .first();
+        .filter({ hasText: dayLabel });
       await item.getByRole("button", { name: "Cancel request" }).click();
-      await asRafi.getByRole("textbox").last().fill("Not needed after all (e2e)");
-      await asRafi.getByRole("button", { name: /Cancel request|Confirm|Yes/ }).last().click();
+      await item
+        .getByLabel("Why do you cancel it?")
+        .fill("Not needed after all (e2e)");
+      await item.getByRole("button", { name: "Cancel request" }).click();
+      await expect(asRafi.getByText("Request cancelled.")).toBeVisible();
       await rafi.close();
       await tanvir.close();
     });
