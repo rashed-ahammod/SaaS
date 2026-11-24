@@ -394,7 +394,12 @@ export class ApprovalsService {
       .selectFrom('approval_actions')
       .selectAll()
       .where('request_id', '=', requestId)
+      // 0049 gives each action its own clock_timestamp(), so this is the order
+      // things happened. id only breaks a tie among rows written before that
+      // migration, which share a transaction timestamp -- arbitrary, but stable,
+      // so the same history never comes back in two different orders.
       .orderBy('created_at')
+      .orderBy('id')
       .execute();
 
     const now = this.clock.now();
