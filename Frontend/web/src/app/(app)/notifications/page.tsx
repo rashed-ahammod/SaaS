@@ -6,6 +6,7 @@ import {
   Card,
   Empty,
   ErrorBox,
+  IconTile,
   Loading,
   PageTitle,
 } from "@/components/ui";
@@ -70,15 +71,24 @@ export default function NotificationsPage() {
                 className="block w-full text-left"
                 onClick={() => open(n.id, n.link, n.read)}
               >
-                <Card className={n.read ? "opacity-70" : "ring-emerald-300"}>
-                  <div className="flex items-start gap-2">
-                    {!n.read && (
-                      <span
-                        aria-label={t("notif.unread")}
-                        className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-600"
-                      />
-                    )}
-                    <div className="min-w-0">
+                <Card
+                  className={
+                    n.read
+                      ? "bg-white/70"
+                      : "ring-emerald-300! active:bg-slate-50"
+                  }
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="relative">
+                      <IconTile name="bell" tone={n.read ? "slate" : "brand"} />
+                      {!n.read && (
+                        <span
+                          aria-label={t("notif.unread")}
+                          className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-600 ring-2 ring-white"
+                        />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
                       <p
                         className={`${n.read ? "" : "font-semibold"} break-words`}
                       >

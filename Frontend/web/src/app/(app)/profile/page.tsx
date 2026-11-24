@@ -45,6 +45,19 @@ function Profile() {
   const { me, profile, signOut } = useSession();
   const askedFor2fa = useSearchParams().get("setup2fa") === "1";
   const privileged = me.roles.some((r) => PRIVILEGED.includes(r.split(":")[0]));
+  // the name as this screen shows it, so the avatar matches it in both languages
+  const shownName = profile
+    ? lang === "bn"
+      ? (profile.fullNameBn ?? profile.fullNameEn)
+      : profile.fullNameEn
+    : "";
+  const initials =
+    shownName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || (profile?.employeeCode.slice(0, 2).toUpperCase() ?? "");
 
   return (
     <div className="space-y-4">
@@ -52,11 +65,15 @@ function Profile() {
 
       {profile && (
         <Card>
-          <p className="text-lg font-bold">
-            {lang === "bn"
-              ? (profile.fullNameBn ?? profile.fullNameEn)
-              : profile.fullNameEn}
-          </p>
+          <div className="mb-3 flex items-center gap-3">
+            <span
+              aria-hidden
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-xl font-bold text-white"
+            >
+              {initials}
+            </span>
+            <p className="text-lg font-bold">{shownName}</p>
+          </div>
           <Row label={t("me.code")} value={profile.employeeCode} />
           <Row
             label={t("me.joined")}

@@ -43,3 +43,6 @@ secrets/
 .DS_Store
 Thumbs.db
 .idea/
+
+# Screenshots and scratch output from an assistant session
+/Claude outputs/
