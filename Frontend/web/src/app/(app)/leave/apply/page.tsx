@@ -168,7 +168,7 @@ function ApplyLeave() {
 
   return (
     <div>
-      <PageTitle>
+      <PageTitle back="/leave">
         {resubmitId ? t("leave.resendTitle") : t("leave.apply")}
       </PageTitle>
       {returned.data?.decisionComment && (
@@ -320,6 +320,7 @@ function ApplyLeave() {
             </Button>
             <Button
               type="submit"
+              className="shadow-md"
               busy={busy === "apply"}
               disabled={!leaveTypeId || busy === "upload"}
             >

@@ -36,6 +36,7 @@ import { requestContext } from '../../platform/tenancy/request-context.js';
 import type { EnableMfaDto, LoginDto, VerifyMfaDto } from './dto/auth.dto.js';
 import { burnPasswordCheckTime, verifyPassword } from './password.js';
 import { AccessService } from './access/access.service.js';
+import { revokeTokensFor } from './token-revocation.js';
 import { TokenService } from './token.service.js';
 import { newTotpSecret, totpUri, verifyTotp } from './totp.js';
 import {
@@ -425,6 +426,27 @@ export class AuthService {
       after: { reason },
     });
     return { ok: false, error: lock ? 'locked' : 'invalid' };
+  }
+
+  /**
+   * Sign out: ends every session this user holds, on every device, at once
+   * (0050). The browser drops its cookie either way, but a copy of the token
+   * taken from a shared machine, a log or a stolen phone would otherwise keep
+   * working until it expired, and the person signing out had no way to stop it.
+   * It does not touch the remembered-device cookie: that outlives sign-out on
+   * purpose, which is what being remembered means (see trusted-devices).
+   *
+   * Safe to call twice; there is nothing to undo.
+   */
+  async signOut(): Promise<{ signedOut: true }> {
+    const user = await this.currentUser();
+    await revokeTokensFor(this.db, user.id);
+    await this.audit.record({
+      action: 'auth.signed_out',
+      entity: 'user',
+      entityId: user.id,
+    });
+    return { signedOut: true };
   }
 
   private async resetFailures(

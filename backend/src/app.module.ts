@@ -44,11 +44,24 @@ import { TenantTransactionInterceptor } from './platform/tenancy/tenant-transact
   imports: [
     PlatformModule,
     // Default rate limit for every route: 300 requests per minute per IP.
-    // Login routes set a stricter limit with @Throttle.
+    // Login routes set a stricter limit with @Throttle, and so does the public
+    // lead capture (crm.controller.ts).
+    //
+    // The counters live in THIS PROCESS's memory. ONE API instance only -- the
+    // same condition RUN_JOBS_IN_API already imposes. Run two and each keeps
+    // its own count, so every limit here silently becomes as many times looser
+    // as there are instances, with nothing failing to say so. Before scaling
+    // out, give ThrottlerModule a shared storage (its storage option) backed by
+    // PostgreSQL or Redis.
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60_000, limit: 300 }],
-      // Integration tests make many logins from one IP.
-      skipIf: () => process.env.DISABLE_RATE_LIMIT === '1',
+      // Integration tests make many logins from one IP. Never in production:
+      // this switch turns off the login rate limit and with it the only thing
+      // that makes password guessing slow, so it is ignored there whatever the
+      // environment says (and config.ts refuses to start if it is set).
+      skipIf: () =>
+        process.env.DISABLE_RATE_LIMIT === '1' &&
+        process.env.NODE_ENV !== 'production',
     }),
     IdentityModule,
     // Business modules, one per work package

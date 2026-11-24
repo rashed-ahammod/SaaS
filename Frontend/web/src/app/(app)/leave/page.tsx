@@ -11,6 +11,7 @@ import {
   Empty,
   ErrorBox,
   Field,
+  Icon,
   Loading,
   PageTitle,
   TextArea,
@@ -29,7 +30,12 @@ export default function LeavePage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        action={<ButtonLink href="/leave/apply">{t("leave.apply")}</ButtonLink>}
+        action={
+          <ButtonLink href="/leave/apply" size="sm">
+            <Icon name="plus" className="h-4 w-4" />
+            {t("leave.apply")}
+          </ButtonLink>
+        }
       >
         {t("leave.title")}
       </PageTitle>
@@ -42,27 +48,25 @@ export default function LeavePage() {
         ) : balances.error ? (
           <ErrorBox error={balances.error} onRetry={balances.reload} />
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="grid grid-cols-3 gap-2">
             {balances
               .data!.balances.filter((b) => b.usesBalance)
               .map((b) => (
                 <li
                   key={b.leaveTypeId}
-                  className="flex items-center justify-between py-2"
+                  className="rounded-xl bg-slate-50 px-3 py-3"
                 >
-                  <span>
+                  <span className="block text-2xl font-bold text-slate-900 tabular-nums">
+                    {formatDays(b.available, lang)}
+                  </span>
+                  <span className="block truncate text-sm text-slate-600">
                     {lang === "bn" ? (b.nameBn ?? b.nameEn) : b.nameEn}
                   </span>
-                  <span className="text-right">
-                    <span className="block text-lg font-bold tabular-nums">
-                      {formatDays(b.available, lang)}
+                  {b.pending > 0 && (
+                    <span className="mt-0.5 block text-xs font-medium text-amber-700">
+                      {t("leave.pending", { n: formatDays(b.pending, lang) })}
                     </span>
-                    {b.pending > 0 && (
-                      <span className="block text-xs text-amber-700">
-                        {t("leave.pending", { n: formatDays(b.pending, lang) })}
-                      </span>
-                    )}
-                  </span>
+                  )}
                 </li>
               ))}
           </ul>

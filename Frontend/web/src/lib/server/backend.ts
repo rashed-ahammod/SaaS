@@ -43,6 +43,37 @@ export function sessionCookieOptions(maxAgeSeconds: number) {
   };
 }
 
+const IPV4 = /^(\d{1,3}\.){3}\d{1,3}$/;
+
+/**
+ * The caller's IP address, for the API's audit entries and rate-limit keys, or
+ * "unknown".
+ *
+ * Vercel documents `x-forwarded-for` as "the public IP address of the client"
+ * and says it overwrites the header rather than forwarding an external one, to
+ * prevent spoofing — but it does not promise that for a request sent straight
+ * to the app, and it does not document the format. So nothing here trusts the
+ * shape of the value: we take the first entry and hand back only a well-formed
+ * IP literal. Anything else (a forged word, a header-injection attempt, an
+ * empty hop) becomes "unknown", which is honest, rather than being written into
+ * the audit log as though it were an address.
+ */
+export function clientIp(headers: Headers): string {
+  const candidate =
+    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    headers.get("x-real-ip")?.trim() ||
+    "";
+  if (IPV4.test(candidate))
+    return candidate.split(".").every((o) => Number(o) <= 255)
+      ? candidate
+      : "unknown";
+  // IPv6: hex groups and colons only, which is enough to keep anything that is
+  // not an address out without reimplementing the grammar.
+  if (/^[0-9a-f:]{2,45}$/i.test(candidate) && candidate.includes(":"))
+    return candidate;
+  return "unknown";
+}
+
 /** Headers copied from the browser request to the API request. */
 const FORWARDED_REQUEST_HEADERS = [
   "content-type",
@@ -65,9 +96,13 @@ export function forwardRequestHeaders(from: Headers, token?: string): Headers {
     const value = from.get(name);
     if (value) headers.set(name, value);
   }
-  // the API audits the client's IP and device
-  const ip = from.get("x-forwarded-for");
-  if (ip) headers.set("x-forwarded-for", ip);
+  // The API audits the client's IP and device. ONE resolved address, never the
+  // browser's header passed through: the API runs behind Render's proxy with
+  // Express `trust proxy: 1`, which counts hops from the right of the chain, so
+  // a caller who sent extra entries of their own could otherwise shift that
+  // count and decide which value was recorded as their IP.
+  const ip = clientIp(from);
+  if (ip !== "unknown") headers.set("x-forwarded-for", ip);
   const agent = from.get("user-agent");
   if (agent) headers.set("user-agent", agent);
   if (token) headers.set("authorization", `Bearer ${token}`);

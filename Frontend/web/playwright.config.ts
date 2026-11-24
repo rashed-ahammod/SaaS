@@ -4,6 +4,9 @@ import { defineConfig, devices } from '@playwright/test';
  * End-to-end checks against the running app and API with the demo data:
  *   - usability.spec.ts: the employee app's tasks, on a phone-sized browser;
  *   - portal.spec.ts: the HR & Admin portal (WP13), on a desktop browser;
+ *   - roles-portal.spec.ts: every screen in each role's own menu loads, desktop;
+ *   - portal-groups.spec.ts: the records behind those lists open, and no screen
+ *     shows an untranslated key (Payroll, Sales & CRM, Finance, Administration);
  *   - finance.spec.ts: the finance screens (Phase 2: books, vendors, bills, tax at source), desktop;
  *   - enquiry.spec.ts: the public enquiry form, on a phone, signed out.
  *
@@ -56,7 +59,11 @@ export default defineConfig({
     {
       name: 'desktop',
       dependencies: ['setup'],
-      testMatch: /(portal|finance).spec.ts/,
+      // The dots are escaped: unescaped, "portal.spec.ts" also matches
+      // "roles-portal.spec.ts" by accident, which is how that file came to run
+      // at all. Both are listed on purpose now, and portal-groups.spec.ts --
+      // which the old pattern would NOT have matched -- with them.
+      testMatch: /(portal|roles-portal|portal-groups|finance)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1400, height: 900 }, timezoneId: 'Asia/Dhaka' },
     },
   ],

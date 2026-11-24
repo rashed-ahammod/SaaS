@@ -7,9 +7,38 @@ on:
   push:
   pull_request:
 
+# Every push is tested, wherever it lands. A pull request whose branch lives in
+# THIS repository was already tested by that push, so the pull_request event
+# would run the whole matrix a second time on the same commit -- including the
+# backend job with its PostgreSQL service -- and a free account's Actions
+# minutes are finite. A pull request from a fork has no such push event here, so
+# that one does run. Each job repeats the condition below, because GitHub has no
+# workflow-level `if` and no YAML anchors in workflow files.
+#
+#   if: github.event_name != 'pull_request' ||
+#       github.event.pull_request.head.repo.full_name != github.repository
+
+# Read-only GITHUB_TOKEN for every job. Jobs that need more say so themselves
+# (codeql asks for security-events: write). Without this the token carries
+# whatever the repository's default is, which may include write access to the
+# code -- far more than a test run needs if a dependency were ever compromised.
+permissions:
+  contents: read
+
+# A second push to the same branch makes the first run's result irrelevant:
+# cancel it instead of paying for both. Never cancel on the default branch,
+# where every commit's result is a record worth keeping.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   backend:
     runs-on: ubuntu-latest
+    # fork pull requests only (see the note at the top)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     defaults:
       run:
         working-directory: backend
@@ -39,8 +68,8 @@ jobs:
       AI_PROVIDER: fake
       OUTBOX_WEBHOOK_SECRET: ci-only-outbox-webhook-secret-at-least-32-chars
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: npm
@@ -57,12 +86,16 @@ jobs:
 
   web:
     runs-on: ubuntu-latest
+    # fork pull requests only (see the note at the top)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     defaults:
       run:
         working-directory: Frontend/web
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: npm
@@ -77,23 +110,31 @@ jobs:
 
   codeql:
     runs-on: ubuntu-latest
+    # fork pull requests only (see the note at the top)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     permissions:
       security-events: write
       contents: read
     steps:
-      - uses: actions/checkout@v7
-      - uses: github/codeql-action/init@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
         with:
           languages: javascript-typescript
           queries: security-and-quality
-      - uses: github/codeql-action/analyze@v4
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
 
   secrets:
     runs-on: ubuntu-latest
+    # fork pull requests only (see the note at the top)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v3
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

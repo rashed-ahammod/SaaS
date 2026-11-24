@@ -452,6 +452,38 @@ describe('CV screening is blind (acceptance)', () => {
     expect(weak.reasons.join(' ').toLowerCase()).toContain('no evidence');
   });
 
+  // cv_screenings keeps every screening an application has had, on purpose: the
+  // applicant's own screen lists them as a history. The opening's list of
+  // applicants joined that table, so each screening put the applicant in the
+  // list again -- screen one CV twice and the opening showed that person twice,
+  // with the same name, district and date.
+  it('screening the same CV again does not list the applicant twice', async () => {
+    const listed = async () =>
+      (await co.hr.api.get(`/job-openings/${openingId}`).expect(200)).body
+        .applications as Array<{
+        id: string;
+        screeningScore: number | null;
+      }>;
+
+    const before = await listed();
+    await co.hr.api
+      .post(`/applications/${application.rakib}/screen`)
+      .expect(200);
+    const after = await listed();
+
+    expect(after).toHaveLength(before.length);
+    // one row per application, however many times it has been screened
+    expect(new Set(after.map((a) => a.id)).size).toBe(after.length);
+    // and the score shown is the one from the latest screening
+    const history = (
+      await co.hr.api.get(`/applications/${application.rakib}`).expect(200)
+    ).body.screenings as Array<{ score: number }>;
+    expect(history.length).toBeGreaterThan(1);
+    expect(after.find((a) => a.id === application.rakib)?.screeningScore).toBe(
+      history[0].score,
+    );
+  });
+
   it('is refused without the CV text, and to someone who may not work the application', async () => {
     const noCv = (
       await co.hr.api

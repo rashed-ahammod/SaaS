@@ -128,6 +128,28 @@ describe("rate limit", () => {
     expect(
       clientIp(new Headers({ "x-forwarded-for": "103.12.4.5, 10.0.0.1" })),
     ).toBe("103.12.4.5");
+    expect(clientIp(new Headers({ "x-real-ip": "103.12.4.5" }))).toBe(
+      "103.12.4.5",
+    );
+    expect(clientIp(new Headers({ "x-forwarded-for": "2404:6800::1001" }))).toBe(
+      "2404:6800::1001",
+    );
     expect(clientIp(new Headers())).toBe("unknown");
+  });
+
+  // the value reaches the API's audit entries and rate-limit keys, so anything
+  // that is not an address must not be recorded as though it were one
+  it("client address: refuses a value that is not an IP", () => {
+    for (const forged of [
+      "not-an-ip",
+      "103.12.4.5 OR 1=1",
+      "999.1.1.1",
+      "<script>",
+      "",
+      "   ",
+      // a CRLF injection attempt needs no case of its own: the Headers API
+      // refuses to hold such a value at all ("is an invalid header value")
+    ])
+      expect(clientIp(new Headers({ "x-real-ip": forged }))).toBe("unknown");
   });
 });

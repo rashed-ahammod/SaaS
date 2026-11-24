@@ -4,8 +4,8 @@ import { use, useState } from "react";
 import {
   Alert,
   Button,
-  ButtonLink,
   Card,
+  Icon,
   CardTitle,
   ErrorBox,
   Loading,
@@ -98,31 +98,31 @@ export default function PayslipPage({
       : t(`pay.type.${data.runType}`);
   return (
     <div className="space-y-4">
-      <PageTitle
-        action={
-          <ButtonLink href="/payslips" variant="ghost">
-            {t("common.back")}
-          </ButtonLink>
-        }
-      >
-        {formatMonth(data.period, lang)}
-      </PageTitle>
-      <p className="-mt-3 text-slate-500">{title}</p>
+      <PageTitle back="/payslips">{formatMonth(data.period, lang)}</PageTitle>
 
-      <Card>
-        <Row
-          label={
-            <span className="text-lg font-bold text-slate-900">
-              {t("pay.net")}
-            </span>
-          }
-          value={
-            <span className="text-2xl font-bold text-emerald-700">
-              {formatTaka(data.net, lang)}
-            </span>
-          }
-        />
-      </Card>
+      <section className="rounded-3xl bg-emerald-700 p-5 text-white shadow-md">
+        <p className="text-sm text-emerald-100">{title}</p>
+        <p className="mt-3 text-xs font-semibold tracking-wider text-emerald-100 uppercase">
+          {t("pay.net")}
+        </p>
+        <p className="text-4xl font-bold tabular-nums">
+          {formatTaka(data.net, lang)}
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div className="rounded-2xl bg-white/10 px-3 py-2">
+            <p className="text-emerald-100">{t("pay.gross")}</p>
+            <p className="font-semibold tabular-nums">
+              {formatTaka(data.gross, lang)}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white/10 px-3 py-2">
+            <p className="text-emerald-100">{t("pay.deductions")}</p>
+            <p className="font-semibold tabular-nums">
+              {formatTaka(data.totalDeductions, lang)}
+            </p>
+          </div>
+        </div>
+      </section>
 
       <Card>
         <CardTitle>{t("pay.earnings")}</CardTitle>
@@ -181,6 +181,7 @@ export default function PayslipPage({
             busy={busy === "bn"}
             onClick={() => download("bn")}
           >
+            <Icon name="download" className="h-5 w-5" />
             {t("pay.downloadBn")}
           </Button>
           <Button
@@ -188,6 +189,7 @@ export default function PayslipPage({
             busy={busy === "en"}
             onClick={() => download("en")}
           >
+            <Icon name="download" className="h-5 w-5" />
             {t("pay.downloadEn")}
           </Button>
         </div>

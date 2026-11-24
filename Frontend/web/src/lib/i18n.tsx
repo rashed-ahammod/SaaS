@@ -82,6 +82,8 @@ const en = {
   "home.punchNow": "Punch in / out",
   "home.balances": "Leave balance",
   "home.lastPayslip": "Latest payslip",
+  "home.quick": "Quick actions",
+  "home.seeAll": "See all",
   "home.approvalsWaiting": "{n} request(s) waiting for your approval",
   "home.noEmployee":
     "Your login is not linked to an employee record. Please contact HR.",
@@ -356,6 +358,8 @@ const bn: Record<MessageKey, string> = {
   "home.punchNow": "পাঞ্চ ইন / আউট",
   "home.balances": "ছুটির ব্যালান্স",
   "home.lastPayslip": "সর্বশেষ বেতন বিবরণী",
+  "home.quick": "দ্রুত কাজ",
+  "home.seeAll": "সব দেখুন",
   "home.approvalsWaiting": "{n}টি অনুরোধ আপনার অনুমোদনের অপেক্ষায়",
   "home.noEmployee":
     "আপনার লগইন কোনো কর্মীর সাথে যুক্ত নয়। মানবসম্পদ বিভাগে যোগাযোগ করুন।",

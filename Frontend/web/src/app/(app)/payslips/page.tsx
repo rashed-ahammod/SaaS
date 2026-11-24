@@ -1,11 +1,11 @@
 "use client";
 /** My payslips: one row per approved run, newest first; then my salary advances, PF and tax certificate. */
-import Link from "next/link";
 import {
   Card,
   CardTitle,
   Empty,
   ErrorBox,
+  ListLink,
   Loading,
   PageTitle,
 } from "@/components/ui";
@@ -29,34 +29,33 @@ export default function PayslipsPage() {
       ) : !data?.length ? (
         <Empty />
       ) : (
-        <Card className="p-0">
+        <Card className="p-0!">
           <ul className="divide-y divide-slate-100">
-            {data.map((p) => (
+            {data.map((p, i) => (
               <li key={p.runId}>
-                <Link
+                <ListLink
                   href={`/payslips/${p.runId}`}
-                  className="flex items-center justify-between gap-2 px-4 py-3 active:bg-slate-50"
-                >
-                  <span>
-                    <span className="block font-medium">
-                      {formatMonth(p.period, lang)}
+                  icon="payslips"
+                  title={formatMonth(p.period, lang)}
+                  subtitle={
+                    p.runType === "bonus" && p.bonusName
+                      ? p.bonusName
+                      : t(`pay.type.${p.runType}`)
+                  }
+                  trailing={
+                    <span
+                      className={`font-bold tabular-nums ${i === 0 ? "text-emerald-700" : "text-slate-900"}`}
+                    >
+                      {formatTaka(p.net, lang)}
                     </span>
-                    <span className="block text-sm text-slate-500">
-                      {p.runType === "bonus" && p.bonusName
-                        ? p.bonusName
-                        : t(`pay.type.${p.runType}`)}
-                    </span>
-                  </span>
-                  <span className="font-bold tabular-nums">
-                    {formatTaka(p.net, lang)}
-                  </span>
-                </Link>
+                  }
+                />
               </li>
             ))}
           </ul>
         </Card>
       )}
-      <Card className="mt-4 p-0">
+      <Card className="mt-4 p-0!">
         <div className="px-4 pt-4">
           <CardTitle>{t("py.app.more")}</CardTitle>
         </div>
@@ -67,15 +66,7 @@ export default function PayslipsPage() {
             { href: "/payslips/tax", label: t("py.tax.title") },
           ].map((l) => (
             <li key={l.href}>
-              <Link
-                href={l.href}
-                className="flex items-center justify-between px-4 py-3 font-medium active:bg-slate-50"
-              >
-                {l.label}
-                <span aria-hidden className="text-slate-400">
-                  ›
-                </span>
-              </Link>
+              <ListLink href={l.href} title={l.label} />
             </li>
           ))}
         </ul>

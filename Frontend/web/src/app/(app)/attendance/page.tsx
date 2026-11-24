@@ -20,6 +20,7 @@ import {
   Empty,
   ErrorBox,
   Field,
+  Icon,
   Input,
   Loading,
   PageTitle,
@@ -192,10 +193,12 @@ function PunchCard({ onPunched }: { onPunched: () => void }) {
         </div>
       ) : mine?.status === "active" ? (
         <Button
-          className="mb-3 w-full py-4 text-lg"
+          size="lg"
+          className="mb-2 w-full"
           busy={busy === "phone"}
           onClick={punchPhone}
         >
+          <Icon name="map-pin" />
           {t("att.punch")}
         </Button>
       ) : mine?.status === "pending" ? (
@@ -270,30 +273,57 @@ function MonthDays({
       <div className="mb-3 flex items-center justify-between">
         <Button
           variant="ghost"
+          size="icon"
           aria-label="previous month"
           onClick={() => setMonth(addMonths(month, -1))}
         >
-          ‹
+          <Icon name="chevron-left" />
         </Button>
-        <CardTitle>{formatMonth(month, lang)}</CardTitle>
+        <h2 className="text-base font-semibold text-slate-900">
+          {formatMonth(month, lang)}
+        </h2>
         <Button
           variant="ghost"
+          size="icon"
           aria-label="next month"
           disabled={month >= today.slice(0, 7)}
           onClick={() => setMonth(addMonths(month, 1))}
         >
-          ›
+          <Icon name="chevron-right" />
         </Button>
       </div>
       {totals && (
-        <p className="mb-2 text-sm text-slate-600">
-          {t("att.summary", {
+        <dl
+          className="mb-3 grid grid-cols-4 gap-2"
+          aria-label={t("att.summary", {
             p: num(totals.present ?? 0, lang),
             l: num(totals.late ?? 0, lang),
             a: num(totals.absent ?? 0, lang),
             lv: num(totals.on_leave ?? 0, lang),
           })}
-        </p>
+        >
+          {(
+            [
+              ["present", totals.present, "text-emerald-700"],
+              ["late", totals.late, "text-amber-700"],
+              ["absent", totals.absent, "text-red-700"],
+              ["on_leave", totals.on_leave, "text-sky-700"],
+            ] as const
+          ).map(([key, n, color]) => (
+            <div
+              key={key}
+              // dt before dd as the spec wants, the count on top as designed
+              className="flex flex-col-reverse rounded-xl bg-slate-50 px-2 py-2 text-center"
+            >
+              <dt className="truncate text-[11px] text-slate-500">
+                {t(`status.${key}`)}
+              </dt>
+              <dd className={`text-xl font-bold tabular-nums ${color}`}>
+                {num(n ?? 0, lang)}
+              </dd>
+            </div>
+          ))}
+        </dl>
       )}
       {message && <Alert kind="success">{message}</Alert>}
       {loading ? (
@@ -308,12 +338,20 @@ function MonthDays({
             <li key={d.date} className="py-2.5">
               <button
                 type="button"
-                className="flex w-full items-center justify-between gap-2 text-left"
+                className="flex w-full items-center gap-3 text-left"
                 aria-expanded={open === d.date}
                 aria-label={`${t("ar.fix")}: ${formatDate(d.date, lang, { short: true })}`}
                 onClick={() => setOpen(open === d.date ? null : d.date)}
               >
-                <div>
+                <span
+                  aria-hidden
+                  className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-slate-50 leading-none"
+                >
+                  <span className="text-base font-bold text-slate-900 tabular-nums">
+                    {num(Number(d.date.slice(8, 10)), lang)}
+                  </span>
+                </span>
+                <div className="min-w-0 flex-1">
                   <p className="font-medium">
                     {weekdayName(d.date, lang)},{" "}
                     {formatDate(d.date, lang, { short: true })}

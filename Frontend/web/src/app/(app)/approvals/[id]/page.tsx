@@ -9,8 +9,8 @@ import {
   Alert,
   Badge,
   Button,
-  ButtonLink,
   Card,
+  Icon,
   CardTitle,
   ErrorBox,
   Field,
@@ -87,13 +87,7 @@ export default function ApprovalRequestPage({
 
   return (
     <div className="space-y-4">
-      <PageTitle
-        action={
-          <ButtonLink href="/approvals" variant="ghost">
-            {t("common.back")}
-          </ButtonLink>
-        }
-      >
+      <PageTitle back="/approvals">
         {t(`appr.type.${data.requestType}`)}
       </PageTitle>
 
@@ -111,9 +105,13 @@ export default function ApprovalRequestPage({
 
       <Card>
         <CardTitle>{t("appr.history")}</CardTitle>
-        <ul className="space-y-2 text-sm">
+        <ol className="space-y-3 border-l-2 border-slate-200 pl-4 text-sm">
           {data.history.map((h, i) => (
-            <li key={i} className="flex justify-between gap-2">
+            <li key={i} className="relative flex justify-between gap-2">
+              <span
+                aria-hidden
+                className="absolute top-1.5 -left-[23px] h-3 w-3 rounded-full bg-white ring-2 ring-emerald-600"
+              />
               <span>
                 <span className="font-medium">{h.action}</span>
                 {h.comment && (
@@ -126,7 +124,7 @@ export default function ApprovalRequestPage({
               </span>
             </li>
           ))}
-        </ul>
+        </ol>
       </Card>
 
       {open && (
@@ -140,10 +138,12 @@ export default function ApprovalRequestPage({
             />
           </Field>
           <Button
-            className="mb-2 w-full py-3"
+            size="lg"
+            className="mb-2 w-full"
             busy={busy === "approve"}
             onClick={() => decide("approve")}
           >
+            <Icon name="check" />
             {t("appr.approve")}
           </Button>
           <div className="grid grid-cols-2 gap-2">

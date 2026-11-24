@@ -59,7 +59,7 @@ export default function PfPage() {
               strong
             />
           </Card>
-          <Card className="p-0">
+          <Card className="p-0!">
             <ul className="divide-y divide-slate-100">
               {[...data.entries].reverse().map((e, i) => (
                 <li

@@ -58,6 +58,18 @@ services:
       - key: RUN_JOBS_IN_API
         value: true
 
+      # --- the deploy migrates itself ---
+      # A free Render service has no shell and no pre-deploy hook, so without
+      # this every migration has to be applied by hand from a developer's
+      # machine -- which is how 0048 sat unapplied in production for three days
+      # while /health/ready reported "1 migration(s) not applied". main.ts
+      # applies them before the port is opened, under a pg_advisory_lock, and
+      # refuses to start if one fails: serving a half-migrated database is worse
+      # than not starting. Safe here precisely because this is a single
+      # instance; re-running is a no-op.
+      - key: RUN_MIGRATIONS_ON_BOOT
+        value: true
+
       # --- Supabase ---
       # Host and suffix come from Supabase's Connect dialog (Session pooler).
       # Host looks like aws-0-ap-southeast-1.pooler.supabase.com — copy it, do

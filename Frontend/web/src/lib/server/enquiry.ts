@@ -168,11 +168,8 @@ export class RateLimiter {
   }
 }
 
-/** The caller's address, as the reverse proxy reports it (first hop). */
-export function clientIp(headers: Headers): string {
-  return (
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
+/**
+ * The caller's address. One implementation, in backend.ts, so the address the
+ * enquiry form rate-limits on is the same one the API audits.
+ */
+export { clientIp } from "./backend";

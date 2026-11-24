@@ -1,18 +1,20 @@
 "use client";
 /**
- * The employee home (/home): today's attendance with the punch button, leave balances, the latest
- * payslip, (for managers) how many requests wait for approval, and the AI
- * assistant when the company has it switched on (hidden otherwise, WP11).
+ * The employee home (/home): today's attendance with the punch button, quick
+ * actions, leave balances, the latest payslip, (for managers) how many requests
+ * wait for approval, and the AI assistant when the company has it switched on
+ * (hidden otherwise, WP11).
  */
 import Link from "next/link";
 import { DayBadge } from "@/components/status";
 import {
   Alert,
-  ButtonLink,
   Card,
   CardTitle,
+  Icon,
+  IconTile,
+  type IconName,
   Loading,
-  Row,
 } from "@/components/ui";
 import { useApi } from "@/lib/api";
 import {
@@ -59,139 +61,200 @@ export default function HomePage() {
       : profile.fullNameEn;
   const day = attendance.data?.days[0];
   const latest = payslips.data?.[0];
+  const waiting = inbox.data?.length ?? 0;
+
+  const can = (p: string) => me?.permissions.includes(p) ?? false;
+  const actions: Array<{
+    href: string;
+    icon: IconName;
+    label: string;
+    hint?: string;
+  }> = [
+    { href: "/leave/apply", icon: "leave", label: t("leave.apply") },
+    ...(can("expenses.claim_own")
+      ? [
+          {
+            href: "/claims",
+            icon: "receipt" as const,
+            label: t("x.homeCard"),
+            hint: t("x.homeHint"),
+          },
+        ]
+      : []),
+    ...(can("procurement.request_own")
+      ? [
+          {
+            href: "/requisitions",
+            icon: "cart" as const,
+            label: t("pr.home"),
+            hint: t("pr.homeHint"),
+          },
+        ]
+      : []),
+    ...(can("stock.request_own")
+      ? [
+          {
+            href: "/store-requests",
+            icon: "box" as const,
+            label: t("st.me.home"),
+            hint: t("st.me.homeHint"),
+          },
+        ]
+      : []),
+    ...(ai.data?.assistant.available
+      ? [
+          {
+            href: "/assistant",
+            icon: "sparkle" as const,
+            label: t("ai.title"),
+            hint: t("ai.cardHint"),
+          },
+        ]
+      : []),
+  ];
+  const leaveBalances =
+    balances.data?.balances.filter((b) => b.usesBalance) ?? [];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="text-slate-500">
+    <div className="space-y-5">
+      <div className="pr-12">
+        <p className="text-sm text-slate-500">
           {formatDate(today, lang, { weekday: true })}
         </p>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl font-bold text-slate-900">
           {t("home.hello", { name: name.split(" ")[0] })}
         </h1>
       </div>
 
-      {(inbox.data?.length ?? 0) > 0 && (
+      {waiting > 0 && (
         <Link
           href="/approvals"
-          className="block rounded-2xl bg-amber-100 px-4 py-3 font-semibold text-amber-900 ring-1 ring-amber-300"
+          className="flex items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3 ring-1 ring-amber-300 active:bg-amber-100"
         >
-          {t("home.approvalsWaiting", { n: num(inbox.data!.length, lang) })} →
+          <IconTile name="approvals" tone="amber" />
+          <span className="flex-1 font-semibold text-amber-900">
+            {t("home.approvalsWaiting", { n: num(waiting, lang) })}
+          </span>
+          <Icon name="chevron-right" className="h-5 w-5 text-amber-700" />
         </Link>
       )}
 
-      <Card>
-        <CardTitle>{t("home.today")}</CardTitle>
+      {/* today: the one thing most people open the app for */}
+      <section className="rounded-3xl bg-emerald-700 p-5 text-white shadow-md">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold tracking-wider text-emerald-100 uppercase">
+            {t("home.today")}
+          </h2>
+          {!attendance.loading && <DayBadge status={day?.status ?? null} />}
+        </div>
         {attendance.loading ? (
-          <Loading />
+          <div className="mb-5 text-emerald-50">
+            <Loading />
+          </div>
         ) : (
-          <>
-            <div className="mb-3 flex items-center justify-between">
-              <DayBadge status={day?.status ?? null} />
-              <span className="text-sm text-slate-600 tabular-nums">
-                {t("att.in")} {formatTime(day?.firstIn, lang)} · {t("att.out")}{" "}
-                {formatTime(day?.lastOut, lang)}
-              </span>
-            </div>
-            <ButtonLink href="/attendance" className="w-full">
-              {t("home.punchNow")}
-            </ButtonLink>
-          </>
+          <div className="mb-5 grid grid-cols-2 gap-3">
+            {[
+              [t("att.in"), day?.firstIn],
+              [t("att.out"), day?.lastOut],
+            ].map(([label, time]) => (
+              <div key={label} className="rounded-2xl bg-white/10 px-4 py-3">
+                <p className="text-xs text-emerald-100">{label}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {formatTime(time ?? null, lang)}
+                </p>
+              </div>
+            ))}
+          </div>
         )}
-      </Card>
+        <Link
+          href="/attendance"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white text-base font-semibold text-emerald-800 active:bg-emerald-50"
+        >
+          <Icon name="attendance" className="h-5 w-5" />
+          {t("home.punchNow")}
+        </Link>
+      </section>
+
+      <section>
+        <h2 className="mb-2 px-1 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+          {t("home.quick")}
+        </h2>
+        <div className="grid grid-cols-2 gap-3">
+          {actions.map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80 active:bg-slate-50"
+            >
+              <IconTile name={a.icon} />
+              <span className="leading-snug font-semibold text-slate-900">
+                {a.label}
+              </span>
+              {a.hint && (
+                <span className="line-clamp-2 text-xs text-slate-500">
+                  {a.hint}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <Card>
-        <CardTitle>{t("home.balances")}</CardTitle>
+        <CardTitle
+          action={
+            <Link
+              href="/leave"
+              className="text-sm font-semibold text-emerald-700"
+            >
+              {t("home.seeAll")}
+            </Link>
+          }
+        >
+          {t("home.balances")}
+        </CardTitle>
         {balances.loading ? (
           <Loading />
         ) : (
-          balances.data?.balances
-            .filter((b) => b.usesBalance)
-            .map((b) => (
-              <Row
+          <div className="grid grid-cols-3 gap-2">
+            {leaveBalances.map((b) => (
+              <div
                 key={b.leaveTypeId}
-                label={lang === "bn" ? (b.nameBn ?? b.nameEn) : b.nameEn}
-                value={t("leave.available", {
-                  n: formatDays(b.available, lang),
-                })}
-              />
-            ))
+                className="rounded-xl bg-slate-50 px-3 py-2.5"
+              >
+                <p className="text-2xl font-bold text-slate-900 tabular-nums">
+                  {formatDays(b.available, lang)}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {lang === "bn" ? (b.nameBn ?? b.nameEn) : b.nameEn}
+                </p>
+              </div>
+            ))}
+          </div>
         )}
-        <ButtonLink
-          href="/leave/apply"
-          variant="secondary"
-          className="mt-2 w-full"
-        >
-          {t("leave.apply")}
-        </ButtonLink>
       </Card>
 
-      {me?.permissions.includes("expenses.claim_own") && (
-        <Link
-          href="/claims"
-          className="block rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200"
-        >
-          <span className="block font-semibold text-slate-900">
-            {t("x.homeCard")} →
-          </span>
-          <span className="block text-sm text-slate-600">
-            {t("x.homeHint")}
-          </span>
-        </Link>
-      )}
-
-      {me?.permissions.includes("procurement.request_own") && (
-        <Link
-          href="/requisitions"
-          className="block rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200"
-        >
-          <span className="block font-semibold text-slate-900">
-            {t("pr.home")} →
-          </span>
-          <span className="block text-sm text-slate-600">
-            {t("pr.homeHint")}
-          </span>
-        </Link>
-      )}
-
-      {me?.permissions.includes("stock.request_own") && (
-        <Link
-          href="/store-requests"
-          className="block rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200"
-        >
-          <span className="block font-semibold text-slate-900">
-            {t("st.me.home")} →
-          </span>
-          <span className="block text-sm text-slate-600">
-            {t("st.me.homeHint")}
-          </span>
-        </Link>
-      )}
-
-      {ai.data?.assistant.available && (
-        <Link
-          href="/assistant"
-          className="block rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200"
-        >
-          <span className="block font-semibold text-emerald-900">
-            {t("ai.title")} →
-          </span>
-          <span className="block text-sm text-emerald-800">
-            {t("ai.cardHint")}
-          </span>
-        </Link>
-      )}
-
       {latest && (
-        <Link href={`/payslips/${latest.runId}`} className="block">
-          <Card>
-            <CardTitle>{t("home.lastPayslip")}</CardTitle>
-            <Row
-              label={formatMonth(latest.period, lang)}
-              value={formatTaka(latest.net, lang)}
-              strong
-            />
-          </Card>
+        <Link
+          href={`/payslips/${latest.runId}`}
+          className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80 active:bg-slate-50"
+        >
+          <IconTile name="payslips" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold tracking-wider text-slate-500 uppercase">
+              {t("home.lastPayslip")}
+            </span>
+            <span className="block text-slate-700">
+              {formatMonth(latest.period, lang)}
+            </span>
+          </span>
+          <span className="text-lg font-bold text-emerald-700 tabular-nums">
+            {formatTaka(latest.net, lang)}
+          </span>
+          <Icon
+            name="chevron-right"
+            className="h-5 w-5 shrink-0 text-slate-400"
+          />
         </Link>
       )}
     </div>

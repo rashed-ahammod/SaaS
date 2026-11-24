@@ -29,6 +29,15 @@ async function forward(
     return NextResponse.json({ code: "AUTH_REQUIRED" }, { status: 401 });
 
   const { path } = await ctx.params;
+  // encodeURIComponent does not touch dots, so "." and ".." survive it and are
+  // then resolved away when the URL is parsed: /me/.. becomes /. Nothing is
+  // reachable that way today -- BACKEND_URL has no path of its own and the API
+  // authorizes every request regardless of how it was addressed -- but give
+  // BACKEND_URL a prefix one day and these segments would climb out of it.
+  // No real route has such a segment, so refuse them rather than rely on that.
+  if (path.some((segment) => segment === "." || segment === ".."))
+    return NextResponse.json({ code: "NOT_FOUND" }, { status: 404 });
+
   const target = backendUrl(
     `/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`,
   );

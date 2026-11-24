@@ -3,6 +3,7 @@ import { loadConfig } from './config.js';
 const good = {
   NODE_ENV: 'production',
   PG_DATABASE: 'erp',
+  PG_SSL: 'require',
   PG_OWNER_PASSWORD: 'Qm7w2Lx9pR4tZ8vB1nK6',
   PG_APP_PASSWORD: 'Hs3dF8jK2lQ9wE5rT7yU',
   PG_WORKER_PASSWORD: 'Zx4cV7bN1mA8sD3fG6hJ',
@@ -52,6 +53,19 @@ describe('production start-up checks (WP12)', () => {
       'the demo clock',
       { DEV_CLOCK: '2026-10-29T10:30:00+06:00' },
       /DEV_CLOCK/,
+    ],
+    [
+      // payroll, NID numbers and bank details travel on this connection
+      'a plaintext database connection',
+      { PG_SSL: 'off' },
+      /PG_SSL/,
+    ],
+    [
+      // the test suite's switch: it removes the login rate limit, and with it
+      // the only thing that makes password guessing slow
+      'the rate limiter switched off',
+      { DISABLE_RATE_LIMIT: '1' },
+      /DISABLE_RATE_LIMIT/,
     ],
     [
       'a short n8n webhook secret',

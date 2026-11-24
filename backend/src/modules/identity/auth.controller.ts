@@ -4,6 +4,7 @@
  *   POST /auth/login        public   { workspace, login, password }
  *   POST /auth/mfa/verify   public   { mfaToken, code }
  *   GET  /auth/me           token    the user, linked employee and roles
+ *   POST /auth/sign-out     token    ends every session this user holds
  *   POST /auth/mfa/setup    token
  *   POST /auth/mfa/enable   token    { code }  -> new accessToken that counts as 2FA
  *
@@ -56,6 +57,20 @@ export class AuthController {
   @Get('me')
   me() {
     return this.authService.me();
+  }
+
+  // POST /auth/sign-out  — end every session this user holds (0050)
+  //
+  // AllowWithoutMfa, because signing out must never be the one thing a user
+  // cannot do: someone who suspects their token was copied has to be able to
+  // kill it even from a session that has not passed the 2FA step.
+  @UseGuards(AuthGuard)
+  @AnyAuthenticated()
+  @AllowWithoutMfa()
+  @Post('sign-out')
+  @HttpCode(200)
+  signOut() {
+    return this.authService.signOut();
   }
 
   // POST /auth/mfa/setup  — start 2FA setup, returns secret + QR link.
